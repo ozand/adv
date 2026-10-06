@@ -1,0 +1,5 @@
+# Private source material: cloned repositories, downloads, books, captures
+/sources/
+
+# Local QMD state and generated indexes
+/.qmd/
