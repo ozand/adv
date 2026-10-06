@@ -57,7 +57,7 @@ Rejected because source clones/books are explicitly local-only and may carry lic
 |---|---|---|
 | Sources are ignored and not tracked | `git check-ignore -v sources/README.md`; inspect `git ls-files sources` | Passing: ignored; no source files tracked |
 | KB structure conforms to bootstrap contract | `kb-bootstrap validate --dir kb --project-root .` | Blocked: installed CLI fails to import `kb_bootstrap.cli` |
-| Public remote points to intended repository | `gh repo view ozand/adv`; `git remote -v` | Repository created; remote verification pending |
+| Public remote points to intended repository | `gh repo view ozand/adv`; `git remote -v` | Passing: public repo verified; `origin` points to it |
 
 ## Rollback
 
