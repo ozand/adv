@@ -65,6 +65,24 @@ class DiagnosticCliTests(unittest.TestCase):
         self.assertEqual(port.writes, [b"status\n", b"sd_test\n"])
         self.assertTrue(port.closed)
 
+    def test_not_ready_error_from_status_is_returned_without_sd_request(self):
+        payload = json.loads(response("error", reason="not_ready"))
+        port = FakeSerial(json.dumps(payload).encode() + b"\r\n")
+        with patch.object(cli.serial, "Serial", return_value=port):
+            result = cli.run("COM-test", "sd_test")
+        self.assertEqual(result["sd"]["reason"], "not_ready")
+        self.assertEqual(port.writes, [b"status\n"])
+        self.assertTrue(port.closed)
+
+    def test_sd_test_mislabelled_terminal_ack_is_rejected(self):
+        malformed_terminal = response("sd_test", "fail", reason="mount_failed", stage="error")
+        port = FakeSerial(response() + malformed_terminal)
+        with patch.object(cli.serial, "Serial", return_value=port):
+            with self.assertRaisesRegex(ValueError, "invalid_sd_ack"):
+                cli.run("COM-test", "sd_test")
+        self.assertEqual(port.writes, [b"status\n", b"sd_test\n"])
+        self.assertTrue(port.closed)
+
     def test_status_mismatch_or_not_ready_never_sends_sd_test(self):
         wrong = json.loads(response())
         wrong["firmware_build"] = "wrong"
@@ -112,10 +130,19 @@ class DiagnosticCliTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "invalid_json_number"):
             cli.validate_response(b'{"v":NaN}', "status")
 
-    def test_success_requires_full_verification_and_cleanup(self):
-        inconsistent = response("sd_test_result", "pass", stage="complete", cleanup="failed", count=65536)
-        with self.assertRaisesRegex(ValueError, "inconsistent_sd_result"):
-            cli.validate_response(inconsistent.rstrip(), "sd_test_result")
+    def test_data_pass_with_cleanup_failure_is_not_cli_success(self):
+        cleanup_failed = response(
+            "sd_test_result", "pass", stage="complete", reason="none",
+            cleanup="failed", count=65536,
+        )
+        port = FakeSerial(
+            response() + response("sd_test", "running", stage="mount") + cleanup_failed
+        )
+        with patch.object(cli.serial, "Serial", return_value=port):
+            with self.assertRaisesRegex(ValueError, "cleanup_failed"):
+                cli.run("COM-test", "sd_test")
+        self.assertEqual(port.writes, [b"status\n", b"sd_test\n"])
+        self.assertTrue(port.closed)
 
     def test_all_firmware_reasons_are_allowed(self):
         reasons = {
