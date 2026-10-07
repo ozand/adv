@@ -53,9 +53,12 @@ static const char *cleanupName() {
 
 static void emitJson(const char *type, const char *reason) {
   char json[384];
+  const char *safeType = (strcmp(type, "status") == 0 || strcmp(type, "sd_test") == 0 ||
+                          strcmp(type, "sd_test_result") == 0 || strcmp(type, "error") == 0)
+                             ? type : "error";
   const int length = snprintf(json, sizeof(json),
       "{\"v\":1,\"type\":\"%s\",\"firmware_build\":\"adv-diagnostic-1\",\"board_ready\":%s,\"imu_ready\":%s,\"sd\":{\"state\":\"%s\",\"stage\":\"%s\",\"reason\":\"%s\",\"bytes_verified\":%u,\"cleanup\":\"%s\"}}\r\n",
-      type, boardReady ? "true" : "false", imuReady ? "true" : "false",
+      safeType, boardReady ? "true" : "false", imuReady ? "true" : "false",
       stateName(), stageName(), reason, static_cast<unsigned>(sdBytesVerified), cleanupName());
   if (length > 0 && static_cast<size_t>(length) < sizeof(json)) {
     Serial.write(reinterpret_cast<const uint8_t *>(json), static_cast<size_t>(length));
@@ -66,7 +69,7 @@ static uint8_t patternByte(size_t offset) {
   return static_cast<uint8_t>((offset * 37u + 0x5Au) & 0xFFu);
 }
 
-static void runSdSelfTest() {
+static void markSdTestStarted() {
   sdDone = true;
   sdState = SdState::Running;
   sdStage = SdStage::Mount;
@@ -74,7 +77,9 @@ static void runSdSelfTest() {
   sdCleanup = SdCleanup::NotAttempted;
   sdBytesVerified = 0;
   snprintf(sdStatus, sizeof(sdStatus), "SD: checking card...");
+}
 
+static void runSdSelfTest() {
   const int cs = M5.getPin(m5::pin_name_t::sd_spi_cs);
   const int sck = M5.getPin(m5::pin_name_t::sd_spi_sclk);
   const int miso = M5.getPin(m5::pin_name_t::sd_spi_miso);
@@ -235,10 +240,15 @@ static void handleCommandLine() {
   } else if (commandLength == 6 && memcmp(commandBuffer, "status", 6) == 0) {
     emitJson("status", "none");
   } else if (commandLength == 7 && memcmp(commandBuffer, "sd_test", 7) == 0) {
-    if (!ready && !sdDone) emitJson("sd_test", "not_ready");
-    else {
-      if (!sdDone) runSdSelfTest();
-      emitJson("sd_test", sdReason);
+    if (!ready && !sdDone) {
+      emitJson("error", "not_ready");
+    } else if (!sdDone) {
+      markSdTestStarted();
+      emitJson("sd_test", "none");
+      runSdSelfTest();
+      emitJson("sd_test_result", sdReason);
+    } else {
+      emitJson("sd_test_result", sdReason);
     }
   } else {
     emitJson("error", "invalid_command");
@@ -254,7 +264,7 @@ static void pollSerialCommands() {
       if (commandLength > 0 && commandBuffer[commandLength - 1] == '\r') --commandLength;
       handleCommandLine();
     } else if (!commandOverflow) {
-      if (value < 0x20 || value > 0x7E || commandLength == kCommandMaxBytes) {
+      if ((value < 0x20 && value != '\r') || value > 0x7E || commandLength == kCommandMaxBytes) {
         commandOverflow = true;
       } else {
         commandBuffer[commandLength++] = static_cast<char>(value);
@@ -274,7 +284,10 @@ void loop() {
   M5Cardputer.Keyboard.updateKeyList();
   M5Cardputer.Keyboard.updateKeysState();
   for (char key : M5Cardputer.Keyboard.keysState().word) {
-    if ((key == 's' || key == 'S') && !sdDone) runSdSelfTest();
+    if ((key == 's' || key == 'S') && !sdDone) {
+      markSdTestStarted();
+      runSdSelfTest();
+    }
   }
   M5.Imu.update();
   const auto data = M5.Imu.getImuData();
