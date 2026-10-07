@@ -8,11 +8,11 @@
 
 ## Context
 
-The Issue #2 diagnostic sketch has local display status but no bounded machine-readable interface. The owner authorized a narrow serial interface with `status` and `sd_test` commands and JSON telemetry. The existing SD operation is opt-in and one-shot; repeated requests must not retry its filesystem writes. This proposal records the interface rationale; it does not claim owner acceptance of every protocol detail or authorize device access.
+The Issue #2 diagnostic sketch has local display status but no bounded machine-readable interface. The owner authorized a narrow serial interface with `status` and `sd_test` commands and JSON telemetry, then authorized preparing a finite `run <ID>` / `result <ID>` runner. The existing SD operation is opt-in and one-shot; repeated requests must not retry its filesystem writes. This proposal records the interface rationale; it does not claim owner acceptance of every protocol detail or authorize device access.
 
 ### Problem statement
 
-Expose readiness and the retained SD-test outcome to a host without adding arbitrary device commands or repeat SD mutations.
+Expose readiness, retained SD-test outcome, and finite software diagnostic results to a host without adding arbitrary device commands or repeat SD mutations.
 
 ### Prior art
 
@@ -20,7 +20,7 @@ The existing physical `S` key invokes the bounded SD test. The serial command wi
 
 ## Decision
 
-Provide exactly two newline-terminated ASCII commands, `status` and `sd_test`, with fixed-schema bounded JSON v1 responses. `status` reports cached values and never accesses SD. `sd_test` and physical `S` share one one-shot gate; subsequent requests return the retained outcome.
+Provide newline-terminated ASCII commands `status`, `sd_test`, `run <ID>`, and `result <ID>`. The first two retain the fixed-schema v1-shaped response; the latter two use fixed-schema v2 responses with a 1024-byte cap. Run IDs are 1–12 uppercase ASCII letters/digits; only one volatile run record is retained. Repeating its ID returns the cached result; other IDs are rejected until reset. `status` reports cached values and never accesses SD. `sd_test` and physical `S` share one one-shot gate; subsequent requests return the retained outcome. The aggregate runner performs bounded RAM scratch and finite IMU-data checks only; physical checks remain `NOT_TESTED`, and SD is excluded.
 
 ### What this IS
 
@@ -35,7 +35,7 @@ Provide exactly two newline-terminated ASCII commands, `status` and `sd_test`, w
 
 ### Success criteria
 
-The two commands return bounded valid JSON; status does not call SD; malformed/overlong commands cause no SD operation; serial and key invocation share a one-shot guard; all terminal SD paths retain a state and fixed reason without raw device text.
+The fixed command allowlist and IDs are bounded; status does not call SD; malformed/overlong commands cause no SD operation; serial and key SD invocation share a one-shot guard; repeated run IDs do not rerun checks; result lookup is read-only; aggregate SD remains untested; all frames fit their caps and use fixed reasons without raw device text.
 
 ## Consequences
 

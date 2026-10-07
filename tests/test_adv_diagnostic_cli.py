@@ -157,7 +157,7 @@ class DiagnosticCliTests(unittest.TestCase):
 
     def test_overlong_frame_is_rejected(self):
         port = FakeSerial(b"x" * (cli.MAX_RESPONSE_BYTES + 1) + b"\n")
-        with patch.object(cli.time, "monotonic", side_effect=[0] * 2000):
+        with patch.object(cli.time, "monotonic", side_effect=[0] * 3000):
             with self.assertRaisesRegex(ValueError, "response_too_large"):
                 cli.read_line(port, 1)
 
