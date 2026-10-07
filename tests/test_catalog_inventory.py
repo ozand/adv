@@ -230,6 +230,83 @@ def test_write_inventory_rejects_parent_symlink_escape_before_write(tmp_path):
     assert not (outside / "new.json").exists()
 
 
+def _make_windows_junction(link: Path, target: Path) -> None:
+    import os
+    import subprocess
+
+    import pytest
+
+    if os.name != "nt":
+        pytest.skip("Windows directory junction test")
+    result = subprocess.run(
+        ["cmd.exe", "/c", "mklink", "/J", str(link), str(target)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode:
+        pytest.skip(f"could not create fixture-owned junction: {result.stderr.strip()}")
+
+
+def test_output_paths_reject_windows_junction_escape(tmp_path):
+    project = tmp_path / "project"
+    allowed = project / "sources" / "repo"
+    allowed.mkdir(parents=True)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    junction = allowed / "redirect"
+    _make_windows_junction(junction, outside)
+    try:
+        try:
+            MODULE.output_paths(project, Path("sources/repo/redirect/new.json"))
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("accepted output-parent junction escape")
+        assert not (outside / "new.json").exists()
+    finally:
+        junction.rmdir()
+
+
+def test_output_paths_rejects_sources_root_junction_escape(tmp_path):
+    project = tmp_path / "project"
+    project.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    junction = project / "sources"
+    _make_windows_junction(junction, outside)
+    try:
+        try:
+            MODULE.output_paths(project, Path("sources/repo/new.json"))
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("accepted sources-root junction escape")
+        assert not (outside / "repo" / "new.json").exists()
+    finally:
+        junction.rmdir()
+
+
+def test_output_paths_rejects_repo_root_junction_escape(tmp_path):
+    project = tmp_path / "project"
+    sources = project / "sources"
+    sources.mkdir(parents=True)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    junction = sources / "repo"
+    _make_windows_junction(junction, outside)
+    try:
+        try:
+            MODULE.output_paths(project, Path("sources/repo/new.json"))
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("accepted repo-root junction escape")
+        assert not (outside / "new.json").exists()
+    finally:
+        junction.rmdir()
+
+
 def test_snapshot_roundtrip_uses_project_local_root(tmp_path):
     project = tmp_path / "project"
     scripts = project / "scripts"

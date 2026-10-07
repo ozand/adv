@@ -19,10 +19,12 @@ python scripts/catalog_inventory.py /path/to/launcher-catalog.json
 The default output is `sources/repo/catalog-candidates.json`. The command resolves
 relative output paths from the project root and permits configurable destinations
 only beneath the resolved local `sources/repo/` root. Symlink, junction, or
-reparse-point redirection outside that root is rejected by the path checks; tests
-cover symlink escapes where supported, but are not a separate proof for every
-Windows junction/reparse-point type. Output creation is exclusive: an existing
-destination is left unchanged and the command reports an error; choose a new
+reparse-point redirection outside that root is rejected by the path checks. Tests
+exercise directory-symlink escapes where supported and Windows directory-junction
+escapes for the output parent, `sources/` root, and `sources/repo/` root; they do not
+prove behavior for every Windows reparse-point type. Output creation is
+exclusive: an existing destination is left unchanged and the command reports
+an error; choose a new
 filename rather than relying on implicit refresh/overwrite. These checks protect
 against accidental/static path redirection and overwrites; they are not race-safe
 against a concurrent untrusted actor changing the local directory tree between
