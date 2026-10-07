@@ -7,6 +7,9 @@ Reusable, bounded Cardputer-Adv diagnostics:
 - [`adv_launcher_probe.py`](adv_launcher_probe.py) — bounded Launcher information
   requests restricted to source-reviewed `help`, `version`, `whoami`, and
   `partitions`; prints only validated fields; no raw serial output.
+- [`adv_diagnostic_cli.py`](adv_diagnostic_cli.py) — explicit `status` / `sd_test`
+  client for the ADV hardware-check JSON protocol; sanitized output, bounded I/O,
+  no automatic retry. `sd_test` writes up to 64 KiB to the reserved test path.
 
 See [Issue #2 diagnostic report](../docs/diagnostics/ISSUE-2-CARDPUTER-ADV.md) for
 observations, safety boundaries, source citations, and untested hardware areas.
