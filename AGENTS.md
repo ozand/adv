@@ -14,6 +14,7 @@
 - Keep original source material only in ignored `sources/`; do not copy whole books or repositories into `kb/`.
 - Validate structural changes with `kb-bootstrap validate --dir kb --project-root .` when the tool is available.
 - QMD is optional local search; `.qmd/` state is ignored.
+- ADR-004 proposes (pending owner acceptance) an optional ignored `local-lessons/` store. If it exists, inspect its index before repeating a relevant diagnostic and preserve lesson evidence labels/provenance; never silently upgrade confidence. See the tracked [local lessons workflow](docs/local-lessons-workflow.md), which is available on clean clones. The local store is not public KB content and must never be staged/published.
 
 ## Git safety
 
