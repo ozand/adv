@@ -6,6 +6,7 @@ static constexpr size_t kSdTestBytes = 64 * 1024;
 static constexpr size_t kSdChunkBytes = 512;
 static bool ready = false;
 static bool sdDone = false;
+static char sdStatus[48] = "SD: press S to test";
 
 static uint8_t patternByte(size_t offset) {
   return static_cast<uint8_t>((offset * 37u + 0x5Au) & 0xFFu);
@@ -13,20 +14,20 @@ static uint8_t patternByte(size_t offset) {
 
 static void runSdSelfTest() {
   sdDone = true;
-  M5.Display.println("SD: checking card...");
+  snprintf(sdStatus, sizeof(sdStatus), "SD: checking card...");
 
   const int cs = M5.getPin(m5::pin_name_t::sd_spi_cs);
   const int sck = M5.getPin(m5::pin_name_t::sd_spi_sclk);
   const int miso = M5.getPin(m5::pin_name_t::sd_spi_miso);
   const int mosi = M5.getPin(m5::pin_name_t::sd_spi_mosi);
   if (cs < 0 || sck < 0 || miso < 0 || mosi < 0) {
-    M5.Display.println("SD: unsupported pin map");
+    snprintf(sdStatus, sizeof(sdStatus), "SD: unsupported pin map");
     return;
   }
 
   SPI.begin(sck, miso, mosi, cs);
   if (!SD.begin(cs, SPI, 4000000, "/sdcard", 2, false)) {
-    M5.Display.println("SD: mount failed; no format attempted");
+    snprintf(sdStatus, sizeof(sdStatus), "SD: mount failed; no format");
     return;
   }
 
@@ -34,20 +35,20 @@ static void runSdSelfTest() {
                     static_cast<int>(SD.cardType()),
                     static_cast<unsigned long long>(SD.cardSize() / (1024 * 1024)));
   if (SD.cardType() == CARD_NONE || SD.cardSize() < kSdTestBytes) {
-    M5.Display.println("SD: invalid/too small; no test file created");
+    snprintf(sdStatus, sizeof(sdStatus), "SD: invalid/too small");
     SD.end();
     return;
   }
 
   if (SD.exists(kSdTestPath)) {
-    M5.Display.println("SD: reserved test path exists; refusing overwrite");
+    snprintf(sdStatus, sizeof(sdStatus), "SD: test path exists");
     SD.end();
     return;
   }
 
   File testFile = SD.open(kSdTestPath, FILE_WRITE);
   if (!testFile) {
-    M5.Display.println("SD: test file create failed");
+    snprintf(sdStatus, sizeof(sdStatus), "SD: create failed");
     SD.end();
     return;
   }
@@ -70,7 +71,7 @@ static void runSdSelfTest() {
   testFile.close();
   writeOk = writeOk && written == kSdTestBytes;
   if (!writeOk) {
-    M5.Display.println("SD: write failed/timeout; test file retained");
+    snprintf(sdStatus, sizeof(sdStatus), "SD: write fail; file retained");
     SD.end();
     return;
   }
@@ -78,7 +79,7 @@ static void runSdSelfTest() {
   testFile = SD.open(kSdTestPath, FILE_READ);
   if (!testFile || testFile.size() != kSdTestBytes) {
     if (testFile) testFile.close();
-    M5.Display.println("SD: read open/size failed; test file retained");
+    snprintf(sdStatus, sizeof(sdStatus), "SD: read open/size fail; retained");
     SD.end();
     return;
   }
@@ -106,9 +107,9 @@ static void runSdSelfTest() {
   match = match && checked == kSdTestBytes;
 
   const bool removed = match && SD.remove(kSdTestPath);
-  M5.Display.printf("SD: verify %s; owned test file %s\n",
-                    match ? "PASS" : "FAIL",
-                    match ? (removed ? "removed" : "cleanup failed") : "retained for inspection");
+  snprintf(sdStatus, sizeof(sdStatus), "SD: %s; file %s",
+           match ? "PASS" : "FAIL",
+           match ? (removed ? "removed" : "cleanup fail") : "retained");
   SD.end();
 }
 
@@ -131,7 +132,7 @@ void setup() {
 
   M5Cardputer.Keyboard.begin();
   if (!M5.Imu.begin(&M5.In_I2C, M5.getBoard())) {
-    M5.Display.println("BMI270 init failed.");
+    M5.Display.println("ADV OK; BMI270 init failed.");
     return;
   }
 
@@ -140,7 +141,7 @@ void setup() {
   M5.Display.fillRect(45, 0, 40, 18, TFT_GREEN);
   M5.Display.fillRect(90, 0, 40, 18, TFT_BLUE);
   M5.Display.setCursor(0, 24);
-  M5.Display.println("ADV diagnostic / keys + IMU");
+  M5.Display.println("ADV OK / BMI270 OK");
   M5.Display.println("Press S to run bounded SD test");
   ready = true;
 }
@@ -164,6 +165,9 @@ void loop() {
   M5.Display.setCursor(0, 42);
   M5.Display.printf("G: %.2f %.2f %.2f\n", data.gyro.x, data.gyro.y, data.gyro.z);
   M5.Display.printf("A: %.2f %.2f %.2f\n", data.accel.x, data.accel.y, data.accel.z);
+  M5.Display.setCursor(0, 103);
+  M5.Display.print(sdStatus);
+  M5.Display.setCursor(0, 119);
   M5.Display.print("Keys: ");
   for (char key : M5Cardputer.Keyboard.keysState().word) {
     M5.Display.write(static_cast<uint8_t>(key));
