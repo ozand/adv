@@ -56,10 +56,20 @@ static void emitJson(const char *type, const char *reason) {
   const char *safeType = (strcmp(type, "status") == 0 || strcmp(type, "sd_test") == 0 ||
                           strcmp(type, "sd_test_result") == 0 || strcmp(type, "error") == 0)
                              ? type : "error";
+  static const char *const safeReasons[] = {
+      "none", "invalid_command", "not_ready", "unsupported_pin_map", "mount_failed",
+      "invalid_or_small", "test_path_exists", "create_failed", "write_failed_or_timeout",
+      "read_open_or_size_failed", "read_failed_or_timeout", "verify_mismatch",
+      "verify_failed_or_timeout"};
+  bool reasonAllowed = false;
+  for (const char *safeReason : safeReasons) {
+    if (strcmp(reason, safeReason) == 0) reasonAllowed = true;
+  }
+  const char *safeReason = reasonAllowed ? reason : "invalid_command";
   const int length = snprintf(json, sizeof(json),
       "{\"v\":1,\"type\":\"%s\",\"firmware_build\":\"adv-diagnostic-1\",\"board_ready\":%s,\"imu_ready\":%s,\"sd\":{\"state\":\"%s\",\"stage\":\"%s\",\"reason\":\"%s\",\"bytes_verified\":%u,\"cleanup\":\"%s\"}}\r\n",
       safeType, boardReady ? "true" : "false", imuReady ? "true" : "false",
-      stateName(), stageName(), reason, static_cast<unsigned>(sdBytesVerified), cleanupName());
+      stateName(), stageName(), safeReason, static_cast<unsigned>(sdBytesVerified), cleanupName());
   if (length > 0 && static_cast<size_t>(length) < sizeof(json)) {
     Serial.write(reinterpret_cast<const uint8_t *>(json), static_cast<size_t>(length));
   }
@@ -238,7 +248,7 @@ static void handleCommandLine() {
   if (commandOverflow || commandLength == 0) {
     emitJson("error", "invalid_command");
   } else if (commandLength == 6 && memcmp(commandBuffer, "status", 6) == 0) {
-    emitJson("status", "none");
+    emitJson("status", sdReason);
   } else if (commandLength == 7 && memcmp(commandBuffer, "sd_test", 7) == 0) {
     if (!ready && !sdDone) {
       emitJson("error", "not_ready");

@@ -35,8 +35,13 @@ class SerialContractTests(unittest.TestCase):
         self.assertIn("char json[384];", self.source)
         self.assertIn('strcmp(type, "sd_test_result") == 0', self.source)
         self.assertIn('emitJson("sd_test_result", sdReason);', self.source)
+        self.assertIn('emitJson("status", sdReason);', self.source)
+        self.assertNotIn('emitJson("status", "none")', self.source)
         self.assertIn('\\"firmware_build\\":\\"adv-diagnostic-1\\"', self.source)
         self.assertIn('\\"bytes_verified\\":%u', self.source)
+        self.assertIn('"verify_mismatch"', self.source)
+        self.assertIn('"invalid_command"', self.source)
+        self.assertIn('"not_ready"', self.source)
         self.assertNotIn("Serial.print(command", self.source)
         self.assertNotIn("Serial.write(command", self.source)
 

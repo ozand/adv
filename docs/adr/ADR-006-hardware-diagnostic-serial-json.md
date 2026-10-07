@@ -25,7 +25,7 @@ Provide exactly two newline-terminated ASCII commands, `status` and `sd_test`, w
 ### What this IS
 
 - A fixed 64-byte command-line limit; malformed, unknown, and overlong lines are rejected after consuming through newline.
-- Bounded JSON fields for firmware build label, board/IMU readiness, and SD state, stage, fixed reason enum, verified bytes, and cleanup result.
+- Bounded JSON fields for firmware build label, board/IMU readiness, and SD state, stage, fixed reason enum, verified bytes, and cleanup result. Command errors use the same envelope and a fixed error reason, including `not_ready` without starting or latching an SD test.
 - An opt-in operation only; no automatic SD access during boot.
 
 ### What this IS NOT
