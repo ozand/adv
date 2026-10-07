@@ -5,6 +5,8 @@ description: Entry point for synthesized, cited Cardputer knowledge.
 status: stable
 ---
 
+[KB guide](README.md)
+
 # adv Cardputer Knowledge Base
 
 This is the entry point for synthesized knowledge about Cardputer projects. Original source materials live locally under the ignored `sources/` directory and must not be committed.

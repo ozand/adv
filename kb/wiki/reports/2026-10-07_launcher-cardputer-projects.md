@@ -4,7 +4,7 @@ title: "Selected Cardputer Launcher projects: source-backed overview"
 description: "A small, revision-pinned overview of three catalog-linked projects, based on upstream public documentation."
 created: "2026-10-07"
 issue: "https://github.com/ozand/adv/issues/3"
-status: reviewed
+status: stable
 sources:
   - resource: "https://github.com/engneer-hamachan/area512"
     revision: "5d0fef94f389161421b1f7559c15d8303effa7be"
