@@ -10,7 +10,7 @@
 
 The Cardputer project lives under `Project/servers/adv/` in the `servers_team` workspace, whose worktree contains unrelated local changes. The owner wants a public repository for synthesized knowledge about multiple Cardputer projects, while source repositories, web captures, and books remain local-only. A separate Git root prevents parent repository changes from being included and provides an explicit publication boundary.
 
-The public/private choice and source exclusion were confirmed by the owner in this session. The address `192.168.1.140` is owner-provided and has not been verified.
+The public/private choice and source exclusion were confirmed by the owner in this session. Private local network details are intentionally excluded from this public ADR.
 
 ## Decision
 
