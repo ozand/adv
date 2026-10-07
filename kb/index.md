@@ -14,6 +14,8 @@ This is the entry point for synthesized knowledge about Cardputer projects. Orig
 ## Topics
 
 - [Selected Launcher projects](wiki/reports/2026-10-07_launcher-cardputer-projects.md) — revision-pinned, source-linked overview of three examples.
+- [CalcPuter](wiki/entities/calculator-calcputer.md) — upstream-documented calculator features and source/license references.
+- [Cardulator](wiki/entities/calculator-cardulator.md) — upstream-documented scientific calculator/REPL features and source/license references.
 
 ## Workflow
 
