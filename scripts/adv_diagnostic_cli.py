@@ -97,7 +97,8 @@ def validate_response(raw: bytes, expected_type: str) -> dict[str, Any]:
         raise ValueError("invalid_error_reason")
     if sd["state"] == "pass" and not (
         sd["stage"] == "complete" and sd["reason"] == "none"
-        and sd["cleanup"] == "removed" and sd["bytes_verified"] == 65536
+        and sd["bytes_verified"] == 65536
+        and sd["cleanup"] in {"removed", "failed"}
     ):
         raise ValueError("inconsistent_sd_result")
     return obj
@@ -124,13 +125,15 @@ def run(port_name: str, command: str) -> dict[str, Any]:
         status = validate_response(read_line(port, deadline), "status")
         if status["type"] == "error":
             return status
+        if command == "status":
+            if not status["board_ready"] or not status["imu_ready"]:
+                raise ValueError("firmware_not_ready")
+            return status
         if not status["board_ready"] or not status["imu_ready"]:
             raise ValueError("firmware_not_ready")
-        if command == "status":
-            return status
-        if status["type"] == "error":
-            return status
         if status["sd"]["state"] in {"pass", "fail"}:
+            if status["type"] != "status":
+                raise ValueError("invalid_cached_terminal")
             return status
         sd_frame = b"sd_test\n"
         if len(sd_frame) > MAX_LINE_BYTES:
@@ -144,12 +147,14 @@ def run(port_name: str, command: str) -> dict[str, Any]:
         if not ack["board_ready"] or not ack["imu_ready"]:
             raise ValueError("firmware_not_ready")
         if ack["sd"]["state"] in {"pass", "fail"}:
-            return ack
+            raise ValueError("invalid_sd_ack")
         if ack["sd"]["state"] != "running":
             raise ValueError("invalid_sd_ack")
         result = validate_response(read_line(port, deadline), "sd_test_result")
         if result["type"] == "error":
             return result
+        if result["sd"]["state"] == "pass" and result["sd"]["cleanup"] == "failed":
+            raise ValueError("cleanup_failed")
         if not result["board_ready"] or not result["imu_ready"]:
             raise ValueError("firmware_not_ready")
         if result["sd"]["state"] not in {"pass", "fail"}:
@@ -172,9 +177,21 @@ def main() -> int:
             "protocol_mismatch", "firmware_mismatch", "unexpected_fields", "invalid_status",
             "invalid_sd_status", "invalid_sd_ack", "invalid_sd_result", "firmware_not_ready",
             "invalid_command", "command_too_large",
-            "incomplete_command_write",
+            "incomplete_command_write", "cleanup_failed", "invalid_cached_terminal",
         } else "serial_error_or_indeterminate"
         print(json.dumps({"ok": False, "error": code}, separators=(",", ":")))
+        return 2
+    if result["type"] == "error":
+        print(json.dumps(
+            {"ok": False, "error": result["sd"]["reason"], "result": result},
+            separators=(",", ":"),
+        ))
+        return 2
+    if result["sd"]["state"] == "pass" and result["sd"]["cleanup"] == "failed":
+        print(json.dumps(
+            {"ok": False, "error": "cleanup_failed", "result": result},
+            separators=(",", ":"),
+        ))
         return 2
     print(json.dumps({"ok": True, "result": result}, separators=(",", ":")))
     return 0
