@@ -25,7 +25,7 @@ def test_groups_repeated_listing_without_losing_identity():
     assert candidate["canonical"] == "example/repo"
     assert [row["fid"] for row in candidate["catalog_listings"]] == ["a", "b"]
     assert candidate["status"] == "candidate-unverified"
-    assert candidate["local_id"] == "example--repo"
+    assert candidate["local_id"] == MODULE.hashlib.sha256(b"example/repo").hexdigest()[:20]
 
 
 def test_local_ids_preserve_owner_repository_boundary():
@@ -36,7 +36,7 @@ def test_local_ids_preserve_owner_repository_boundary():
          "github": "https://github.com/a/b-c"},
     ]
     ids = {row["local_id"] for row in MODULE.build_inventory(rows, "fixture")["repositories"]}
-    assert ids == {"a-b--c", "a--b-c"}
+    assert len(ids) == 2
 
 
 def test_unresolved_urls_are_explicit():

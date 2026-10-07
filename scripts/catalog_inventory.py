@@ -7,6 +7,7 @@ claim that a GitHub URL is a verified repository.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from collections import defaultdict
@@ -50,9 +51,9 @@ def build_inventory(rows: list[dict], source: str) -> dict:
             groups[target].append(listing)
     repositories = []
     for target, listings in sorted(groups.items()):
-        # Preserve the owner/repository boundary; punctuation-folding slugs can
-        # collide (for example, a-b/c and a/b-c).
-        local_id = target.replace("/", "--")
+        # Hash the canonical identity so the local directory key remains
+        # collision-resistant even for unusual punctuation in URL components.
+        local_id = hashlib.sha256(target.encode("utf-8")).hexdigest()[:20]
         repositories.append({"repository": f"https://github.com/{target}",
                              "canonical": target, "local_id": local_id,
                              "catalog_listings": listings,
