@@ -1,6 +1,6 @@
-# Local operational lessons workflow (proposed)
+# Local operational lessons workflow
 
-This document describes an optional private, ignored local store proposed by [ADR-004](adr/ADR-004-keep-operational-lessons-in-ignored-project-local-store.md). ADR-004 is **Proposed**, pending owner acceptance; this is guidance for the candidate workflow, not an accepted publication policy. The store does not exist in a clean clone. Create `local-lessons/` locally when needed; never commit or publish its contents.
+This document describes the optional private, ignored local store accepted by [ADR-004](adr/ADR-004-keep-operational-lessons-in-ignored-project-local-store.md). This is local operational guidance, not authorization to publish lesson contents. The store does not exist in a clean clone. Create `local-lessons/` locally when needed; never commit or publish its contents.
 
 ## Where knowledge belongs
 
