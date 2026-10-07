@@ -26,6 +26,8 @@ def normalize_github(value: str | None) -> tuple[str | None, str | None]:
     parts = [part for part in parsed.path.split("/") if part]
     if len(parts) < 2:
         return None, "account-or-path-only"
+    if len(parts) > 2:
+        return None, "extra-path-unverified"
     owner, repo = parts[0], re.sub(r"\.git$", "", parts[1], flags=re.I)
     if not owner or not repo or owner in (".", "..") or repo in (".", ".."):
         return None, "invalid-owner-repository"
@@ -48,7 +50,9 @@ def build_inventory(rows: list[dict], source: str) -> dict:
             groups[target].append(listing)
     repositories = []
     for target, listings in sorted(groups.items()):
-        local_id = re.sub(r"[^a-z0-9]+", "-", target).strip("-")
+        # Preserve the owner/repository boundary; punctuation-folding slugs can
+        # collide (for example, a-b/c and a/b-c).
+        local_id = target.replace("/", "--")
         repositories.append({"repository": f"https://github.com/{target}",
                              "canonical": target, "local_id": local_id,
                              "catalog_listings": listings,

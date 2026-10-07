@@ -20,7 +20,9 @@ The default output is `sources/repo/catalog-candidates.json`. Both the snapshot
 and output must remain local/ignored; do not put raw catalog data or cloned
 source content in `kb/`. The candidate inventory is a reproducible URL
 normalization, not an assertion that every URL is a repository or that multiple
-listings are one product.
+listings are one product. URLs with extra path segments are unresolved until
+verified as repository roots. The local directory ID preserves the owner/repo
+separator to prevent collisions between different owner/repository pairs.
 
 ## Clone and refresh safeguards
 

@@ -25,6 +25,18 @@ def test_groups_repeated_listing_without_losing_identity():
     assert candidate["canonical"] == "example/repo"
     assert [row["fid"] for row in candidate["catalog_listings"]] == ["a", "b"]
     assert candidate["status"] == "candidate-unverified"
+    assert candidate["local_id"] == "example--repo"
+
+
+def test_local_ids_preserve_owner_repository_boundary():
+    rows = [
+        {"fid": "a", "category": "cardputer", "name": "one",
+         "github": "https://github.com/a-b/c"},
+        {"fid": "b", "category": "cardputer", "name": "two",
+         "github": "https://github.com/a/b-c"},
+    ]
+    ids = {row["local_id"] for row in MODULE.build_inventory(rows, "fixture")["repositories"]}
+    assert ids == {"a-b--c", "a--b-c"}
 
 
 def test_unresolved_urls_are_explicit():
@@ -32,10 +44,12 @@ def test_unresolved_urls_are_explicit():
         {"fid": "a", "category": "cardputer", "name": "No URL", "github": None},
         {"fid": "b", "category": "cardputer", "name": "Account", "github": "https://github.com/example"},
         {"fid": "c", "category": "cardputer", "name": "Other host", "github": "https://gitlab.com/a/b"},
+        {"fid": "d", "category": "cardputer", "name": "Tree URL", "github": "https://github.com/a/b/tree/main"},
     ]
     result = MODULE.build_inventory(rows, "fixture")
     assert [row["status"] for row in result["unresolved_listings"]] == [
-        "missing-url", "account-or-path-only", "unsupported-host-or-url"
+        "missing-url", "account-or-path-only", "unsupported-host-or-url",
+        "extra-path-unverified"
     ]
     assert result["repository_candidate_count"] == 0
 
