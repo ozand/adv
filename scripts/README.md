@@ -3,10 +3,10 @@
 Reusable, bounded Cardputer-Adv diagnostics:
 
 - [`adv_serial_rx.ps1`](adv_serial_rx.ps1) — passive serial receive only; DTR/RTS
-  disabled; bounded duration and byte count; does not save raw output.
+  disabled; bounded duration and byte count; serial content is suppressed.
 - [`adv_launcher_probe.py`](adv_launcher_probe.py) — bounded Launcher information
   requests restricted to source-reviewed `help`, `version`, `whoami`, and
-  `partitions`; no reset or persistence command.
+  `partitions`; prints only validated fields; no raw serial output.
 
 See [Issue #2 diagnostic report](../docs/diagnostics/ISSUE-2-CARDPUTER-ADV.md) for
 observations, safety boundaries, source citations, and untested hardware areas.

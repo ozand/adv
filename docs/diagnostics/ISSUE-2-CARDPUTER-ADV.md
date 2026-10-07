@@ -5,11 +5,11 @@ observations, source-backed interpretations, limitations, and safe follow-up tes
 
 ## Measured host and Launcher observations
 
-- Host inventory at 2026-10-07 05:55 UTC found the Espressif USB JTAG/serial unit and
-  `USB Serial Device (COM5)` present with status OK. No removable volume or USB disk
+- Host inventory at 2026-10-07 08:09 UTC found an Espressif USB JTAG/serial unit and
+  USB serial interface present with status OK. No removable volume or USB disk
   was exposed. USB enumeration does not by itself identify running firmware or prove
   SD presence/health.
-- One passive RX on COM5 (115200 baud, 8 seconds, DTR/RTS disabled, no TX) received
+- One passive RX on the USB serial interface (115200 baud, 8 seconds, DTR/RTS disabled, no TX) received
   zero bytes. Silence alone does not identify boot state or imply a firmware fault.
 - A subsequent bounded probe (12-second cap, 1094 bytes) sent only `help`, `version`,
   `whoami`, `partitions`, then `help`; the serial handle closed in `finally`.
@@ -43,7 +43,7 @@ application.
 
 | Area | Status and evidence | Safe next test / limitation |
 |---|---|---|
-| USB/JTAG serial | Measured: COM5 enumerated; Launcher information probe responded. | Repeat host inventory only if needed; do not infer board identity solely from VID/PID. |
+| USB/JTAG serial | Measured: USB serial interface enumerated; Launcher information probe responded. | Repeat host inventory only if needed; do not infer board identity solely from VID/PID. |
 | Firmware/Launcher | Measured: Launcher 2.9.1, compiled Cardputer & ADV name. | Capture bounded boot text on a future authorized session; no app-version command was verified. |
 | Flash/partitions | Measured metadata only; `wifibl` marked boot-selected. | No content reads; metadata does not certify app integrity or health. |
 | Keyboard controller | Not physically tested. Launcher source initializes TCA8418 at I2C 0x34 on SDA 8/SCL 9. | Future boot log may show init/ACK; owner must press keys to verify physical response. `nav` is not a physical test. |
@@ -65,6 +65,14 @@ Cardputer-specific paths returned not found. This is a bounded check of that lis
 not proof that no third-party port exists. Generic ESP32-S3 support is not proof of
 Cardputer-Adv board support, correct peripheral pins/drivers, or installed firmware.
 No MicroPython image was downloaded or installed.
+
+## Output privacy behavior
+
+The reusable scripts suppress raw serial bytes. The Launcher probe emits only strictly
+validated version, known device-name, flash-size, free-space, and partition metadata
+fields; all other device text is discarded. The passive receiver reports only byte
+count and never emits the serial content. Local diagnostic notes and raw evidence remain
+outside the tracked report.
 
 ## Safe follow-up and residuals
 

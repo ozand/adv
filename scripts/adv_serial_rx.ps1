@@ -28,17 +28,12 @@ try {
             $read = $serial.Read($buffer, 0, [Math]::Min($buffer.Length, 8192 - $total))
             if ($read -gt 0) {
                 $total += $read
-                $safeText = [Text.Encoding]::UTF8.GetString($buffer, 0, $read)
-                $safeText = $safeText -replace '(?i)(password|passwd|token|api[_ -]?key|ssid)\s*[:=]\s*\S+', '$1=[REDACTED]'
-                $safeText = $safeText -replace '\b(?:\d{1,3}\.){3}\d{1,3}\b', '[IP]'
-                $safeText = $safeText -replace '\b(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}\b', '[MAC]'
-                Write-Output $safeText
             }
         } catch [TimeoutException] {
             continue
         }
     }
-    Write-Host "Received $total bytes. Raw output is not saved."
+    Write-Host "Received $total bytes. Serial content was suppressed and not saved."
 } finally {
     if ($serial.IsOpen) { $serial.Close() }
     $serial.Dispose()
