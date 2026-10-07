@@ -16,9 +16,14 @@ root:
 python scripts/catalog_inventory.py /path/to/launcher-catalog.json
 ```
 
-The default output is `sources/repo/catalog-candidates.json`. Both the snapshot
-and output must remain local/ignored; do not put raw catalog data or cloned
-source content in `kb/`. The candidate inventory is a reproducible URL
+The default output is `sources/repo/catalog-candidates.json`. The command resolves
+relative output paths from the project root and permits configurable destinations
+only beneath the resolved local `sources/repo/` root. Symlink, junction, or
+reparse-point redirection outside that root is rejected. Output creation is
+exclusive: an existing destination is left unchanged and the command reports an
+error; choose a new filename rather than relying on implicit refresh/overwrite.
+Both the snapshot and output must remain local/ignored; do not put raw catalog
+data or cloned source content in `kb/`. The candidate inventory is a reproducible URL
 normalization, not an assertion that every URL is a repository or that multiple
 listings are one product. URLs with extra path segments are unresolved until
 verified as repository roots. The local directory ID preserves the owner/repo
