@@ -51,6 +51,9 @@ void loop() {
   M5.Display.printf("G: %.2f %.2f %.2f\n", data.gyro.x, data.gyro.y, data.gyro.z);
   M5.Display.printf("A: %.2f %.2f %.2f\n", data.accel.x, data.accel.y, data.accel.z);
   M5.Display.print("Keys: ");
-  M5.Display.println(M5Cardputer.Keyboard.keysState().word.data());
+  for (char key : M5Cardputer.Keyboard.keysState().word) {
+    M5.Display.write(static_cast<uint8_t>(key));
+  }
+  M5.Display.println();
   delay(100);
 }
