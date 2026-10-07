@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from math import isfinite
 from time import monotonic
 from urllib.parse import urlsplit
 
@@ -25,6 +26,8 @@ class Budget:
     def __post_init__(self) -> None:
         if (
             self.max_attempts < 1
+            or not isfinite(self.per_attempt_seconds)
+            or not isfinite(self.total_seconds)
             or self.per_attempt_seconds <= 0
             or self.total_seconds <= 0
             or self.max_attempts > DEFAULT_MAX_ATTEMPTS
@@ -110,6 +113,11 @@ def check_repositories(
             elif status == 429:
                 outcome = "rate_limited"
         duration = max(0.0, clock() - before)
+        total_elapsed = clock() - started
+        if outcome == "ok" and duration > limit:
+            status, outcome = None, "timeout"
+        elif outcome == "ok" and total_elapsed >= budget.total_seconds:
+            status, outcome = None, "total_budget"
         events.append(
             {
                 "ordinal": ordinal,
@@ -121,8 +129,8 @@ def check_repositories(
         )
         if (
             outcome != "ok"
-            or duration > limit
-            or clock() - started >= budget.total_seconds
+            or outcome == "total_budget"
+            or total_elapsed >= budget.total_seconds
         ):
             stopped = True
             break

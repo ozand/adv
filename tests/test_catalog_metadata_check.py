@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from math import inf, nan
 
 import pytest
 from scripts.catalog_metadata_check import Budget, Response, check_repositories
@@ -106,6 +107,14 @@ def test_attempt_limit_rejected_before_dispatch() -> None:
     assert calls == 0
 
 
+@pytest.mark.parametrize("value", [nan, inf, -inf])
+def test_non_finite_time_budgets_rejected(value: float) -> None:
+    with pytest.raises(ValueError, match="budgets"):
+        Budget(per_attempt_seconds=value)
+    with pytest.raises(ValueError, match="budgets"):
+        Budget(total_seconds=value)
+
+
 def test_hard_budget_maxima_cannot_be_raised() -> None:
     with pytest.raises(ValueError, match="hard maxima"):
         Budget(max_attempts=13)
@@ -148,3 +157,24 @@ def test_per_attempt_overrun_stops() -> None:
     )
     assert result["attempt_count"] == 1
     assert result["stopped"] is True
+    assert result["events"][0]["outcome"] == "timeout"
+    assert result["events"][0]["status"] is None
+
+
+def test_total_deadline_reply_is_not_success() -> None:
+    clock = FakeClock()
+
+    def transport(repo: str, timeout: float) -> Response:
+        clock.advance(3.0)
+        return Response(200)
+
+    result = check_repositories(
+        ["a/b", "c/d"],
+        transport,
+        budget=Budget(per_attempt_seconds=3, total_seconds=3),
+        clock=clock,
+    )
+    assert result["attempt_count"] == 1
+    assert result["stopped"] is True
+    assert result["events"][0]["outcome"] == "total_budget"
+    assert result["events"][0]["status"] is None
