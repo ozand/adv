@@ -36,7 +36,7 @@ Both the snapshot and output must remain local/ignored; do not put raw catalog d
 
 For an audit, record the relative snapshot path, its SHA-256, capture date, and the exact `scripts/catalog_inventory.py` commit (and blob SHA) used. Treat a pull request's version as a candidate until merged. Run only the normalizer against a copied, immutable JSON snapshot; do not run clone or source-project scripts for reconciliation.
 
-Check that every Cardputer listing FID appears exactly once across normalized repository groups and explicit unresolved listings. Assert that the total partition equals `listing_count`, that grouped FIDs are unique, and that `repository_candidate_count` equals the number of unique normalized canonical URLs. Report listing-row count and unique URL count separately; do not expect the legacy `catalog-candidates.json` total (423) to match, because it used a different candidate-selection process.
+Check that every Cardputer listing row appears exactly once across normalized repository groups and explicit unresolved listings; preserve row identity separately from its FID value. Assert that the total row partition equals `listing_count` and that `repository_candidate_count` equals the number of unique normalized canonical URLs. If the source contract requires unique FIDs, verify that separately; otherwise flag duplicate FID values without discarding or coalescing their distinct listing rows. Report listing-row count and unique URL count separately; do not expect the legacy `catalog-candidates.json` total (423) to match, because it used a different candidate-selection process.
 
 Compare modern normalized output, legacy `sources/repo/catalog-candidates.json`, and `sources/repo/corpus-manifest.json` as separate datasets. Classify matches, unresolved reasons, known pilot URL exclusions, manifest-only fork/hardware-variant records, clone statuses, and unexplained differences. Do not invent FID links for manifest entries that lack them. A candidate omission does not imply the project is absent from the corpus; a manifest relation does not prove which catalog listing it represents.
 
@@ -72,9 +72,11 @@ manifest to a distinct repository and exact commit. Until that scoped collection
 and provenance are verified, QMD coverage is **not demonstrated**; no claim of
 complete searchable corpus is made here.
 
-Use read-only inspection/search commands only: `qmd collection list`, `qmd
-status`, `qmd search "<terms>" -c adv-source`, and `qmd get <qmd://result>`. For
-example:
+First use `qmd collection list` to confirm which collections are registered in
+the selected local index; names below are examples, not a claim that every host
+has them configured. Use read-only commands only: `qmd status`, `qmd search
+"<terms>" -c <registered-source-collection>`, and `qmd get <qmd://result>`. For
+example, if `adv-source` and `adv-source-metadata` are registered:
 
 ```sh
 qmd search "CalcPuter Cardputer calculator" -c adv-source
