@@ -19,9 +19,15 @@ python scripts/catalog_inventory.py /path/to/launcher-catalog.json
 The default output is `sources/repo/catalog-candidates.json`. The command resolves
 relative output paths from the project root and permits configurable destinations
 only beneath the resolved local `sources/repo/` root. Symlink, junction, or
-reparse-point redirection outside that root is rejected. Output creation is
-exclusive: an existing destination is left unchanged and the command reports an
-error; choose a new filename rather than relying on implicit refresh/overwrite.
+reparse-point redirection outside that root is rejected by the path checks; tests
+cover symlink escapes where supported, but are not a separate proof for every
+Windows junction/reparse-point type. Output creation is exclusive: an existing
+destination is left unchanged and the command reports an error; choose a new
+filename rather than relying on implicit refresh/overwrite. These checks protect
+against accidental/static path redirection and overwrites; they are not race-safe
+against a concurrent untrusted actor changing the local directory tree between
+validation and file creation. The workflow assumes the local project directory is
+not concurrently mutated by an untrusted actor.
 Both the snapshot and output must remain local/ignored; do not put raw catalog
 data or cloned source content in `kb/`. The candidate inventory is a reproducible URL
 normalization, not an assertion that every URL is a repository or that multiple
