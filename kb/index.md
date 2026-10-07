@@ -11,12 +11,12 @@ This is the entry point for synthesized knowledge about Cardputer projects. Orig
 
 ## Topics
 
-No synthesized topics have been added yet.
+- [Selected Launcher projects](wiki/reports/2026-10-07_launcher-cardputer-projects.md) — revision-pinned, source-linked overview of three examples.
 
 ## Workflow
 
-1. Store source material locally in `sources/` and confirm its license and handling constraints.
-2. Extract only the facts needed for the task; preserve precise references and dates.
-3. Write a concise synthesized concept here or in a linked topic, with non-empty OKF `type` frontmatter and source citations.
-4. Check for secrets, personal data, copyrighted bulk excerpts, and private network details before publishing.
+1. Keep source repositories, catalog payloads, captures, binaries, and books under ignored `sources/`.
+2. Check primary-source documentation and license metadata; pin code-derived claims to exact revisions.
+3. Publish only concise paraphrased synthesis with provenance and links, not copied source material.
+4. Check for secrets, personal data, and private network details before publication.
 5. Run `kb-bootstrap validate --dir kb --project-root .` when available.
