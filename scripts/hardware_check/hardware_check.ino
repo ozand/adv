@@ -8,6 +8,15 @@ static bool ready = false;
 static bool boardReady = false;
 static bool imuReady = false;
 static bool sdDone = false;
+static char lastRunId[13] = "";
+static bool runRecordValid = false;
+static char runOverall[16] = "NOT_TESTED";
+static char runChecks[12][16];
+static char runReasons[12][32];
+static uint32_t runHeapBytes = 0;
+static uint16_t runRamBytesVerified = 0;
+static uint8_t runImuSamples = 0;
+static const char *const kCheckNames[12] = {"mcu", "ram_scratch", "imu_data", "motion", "display", "keyboard", "audio", "ir", "radio", "battery", "connectors", "sd"};
 enum class SdState { NotRun, Running, Pass, Fail };
 enum class SdStage { Idle, Mount, Write, Read, Cleanup, Complete, Error };
 enum class SdCleanup { NotAttempted, Removed, Failed, Retained };
@@ -67,12 +76,66 @@ static void emitJson(const char *type, const char *reason) {
   }
   const char *safeReason = reasonAllowed ? reason : "invalid_command";
   const int length = snprintf(json, sizeof(json),
-      "{\"v\":1,\"type\":\"%s\",\"firmware_build\":\"adv-diagnostic-1\",\"board_ready\":%s,\"imu_ready\":%s,\"sd\":{\"state\":\"%s\",\"stage\":\"%s\",\"reason\":\"%s\",\"bytes_verified\":%u,\"cleanup\":\"%s\"}}\r\n",
+      "{\"v\":1,\"type\":\"%s\",\"firmware_build\":\"adv-diagnostic-2\",\"board_ready\":%s,\"imu_ready\":%s,\"sd\":{\"state\":\"%s\",\"stage\":\"%s\",\"reason\":\"%s\",\"bytes_verified\":%u,\"cleanup\":\"%s\"}}\r\n",
       safeType, boardReady ? "true" : "false", imuReady ? "true" : "false",
       stateName(), stageName(), safeReason, static_cast<unsigned>(sdBytesVerified), cleanupName());
   if (length > 0 && static_cast<size_t>(length) < sizeof(json)) {
     Serial.write(reinterpret_cast<const uint8_t *>(json), static_cast<size_t>(length));
   }
+}
+
+static constexpr size_t kRunFrameMaxBytes = 1024;
+static const char *responseRunId(const char *requestedId) {
+  if (runRecordValid && strcmp(lastRunId, requestedId) == 0) return lastRunId;
+  return requestedId;
+}
+static void emitRunJson(const char *type, const char *errorReason, const char *requestedId) {
+  const char *responseId = responseRunId(requestedId);
+  char json[kRunFrameMaxBytes];
+  const char *safeType = (strcmp(type, "run_ack") == 0 || strcmp(type, "run_result") == 0 ||
+                          strcmp(type, "result") == 0 || strcmp(type, "error") == 0) ? type : "error";
+  size_t used = 0;
+  int n = snprintf(json, sizeof(json), "{\"v\":2,\"type\":\"%s\",\"firmware_build\":\"adv-diagnostic-2\",\"run_id\":\"%s\",\"overall\":\"%s\",\"check_names\":[", safeType, responseId, runOverall);
+  if (n < 0 || static_cast<size_t>(n) >= sizeof(json)) return;
+  used = static_cast<size_t>(n);
+  for (size_t i = 0; i < 12; ++i) {
+    n = snprintf(json + used, sizeof(json) - used, "%s\"%s\"", i ? "," : "", kCheckNames[i]);
+    if (n < 0 || static_cast<size_t>(n) >= sizeof(json) - used) return;
+    used += static_cast<size_t>(n);
+  }
+  n = snprintf(json + used, sizeof(json) - used, "],\"checks\":[");
+  if (n < 0 || static_cast<size_t>(n) >= sizeof(json) - used) return;
+  used += static_cast<size_t>(n);
+  for (size_t i = 0; i < 12; ++i) {
+    n = snprintf(json + used, sizeof(json) - used, "%s\"%s\"", i ? "," : "", runChecks[i]);
+    if (n < 0 || static_cast<size_t>(n) >= sizeof(json) - used) return;
+    used += static_cast<size_t>(n);
+  }
+  n = snprintf(json + used, sizeof(json) - used, "],\"reasons\":[");
+  if (n < 0 || static_cast<size_t>(n) >= sizeof(json) - used) return;
+  used += static_cast<size_t>(n);
+  for (size_t i = 0; i < 12; ++i) {
+    n = snprintf(json + used, sizeof(json) - used, "%s\"%s\"", i ? "," : "", runReasons[i]);
+    if (n < 0 || static_cast<size_t>(n) >= sizeof(json) - used) return;
+    used += static_cast<size_t>(n);
+  }
+  n = snprintf(json + used, sizeof(json) - used, ",\"metrics\":{\"free_heap_bytes\":%lu,\"ram_bytes_verified\":%u,\"imu_samples\":%u},\"reason\":\"%s\"}\r\n",
+      static_cast<unsigned long>(runHeapBytes), static_cast<unsigned>(runRamBytesVerified),
+      static_cast<unsigned>(runImuSamples), errorReason);
+  if (n < 0 || static_cast<size_t>(n) >= sizeof(json) - used) return;
+  used += static_cast<size_t>(n);
+  if (used > kRunFrameMaxBytes || Serial.write(reinterpret_cast<const uint8_t *>(json), used) != used) {
+    Serial.end();  // A partial protocol frame must not be followed by another response.
+  }
+}
+
+static bool validRunId(const char *value, size_t length) {
+  if (length < 1 || length > 12) return false;
+  for (size_t i = 0; i < length; ++i) {
+    if (!((value[i] >= 'A' && value[i] <= 'Z') ||
+          (value[i] >= '0' && value[i] <= '9'))) return false;
+  }
+  return true;
 }
 
 static uint8_t patternByte(size_t offset) {
@@ -245,6 +308,7 @@ static size_t commandLength = 0;
 static bool commandOverflow = false;
 
 static void handleCommandLine() {
+  commandBuffer[commandLength < kCommandMaxBytes ? commandLength : kCommandMaxBytes - 1] = '\0';
   if (commandOverflow || commandLength == 0) {
     emitJson("error", "invalid_command");
   } else if (commandLength == 6 && memcmp(commandBuffer, "status", 6) == 0) {
@@ -259,6 +323,33 @@ static void handleCommandLine() {
       emitJson("sd_test_result", sdReason);
     } else {
       emitJson("sd_test_result", sdReason);
+    }
+  } else if (commandLength > 4 && memcmp(commandBuffer, "run ", 4) == 0) {
+    const size_t idLength = commandLength - 4;
+    if (!validRunId(commandBuffer + 4, idLength)) {
+      emitRunJson("error", "invalid_id", "");
+    } else if (runRecordValid && strncmp(lastRunId, commandBuffer + 4, idLength) == 0 && strlen(lastRunId) == idLength) {
+      emitRunJson("result", "none", commandBuffer + 4);
+    } else if (runRecordValid) {
+      emitRunJson("error", "run_id_busy", commandBuffer + 4);
+    } else if (!ready) {
+      emitRunJson("error", "not_ready", commandBuffer + 4);
+    } else {
+      strlcpy(lastRunId, commandBuffer + 4, sizeof(lastRunId));
+      for (size_t i = 0; i < 12; ++i) { strlcpy(runChecks[i], "NOT_TESTED", sizeof(runChecks[i])); strlcpy(runReasons[i], "unavailable", sizeof(runReasons[i])); }
+      strlcpy(runOverall, "INCONCLUSIVE", sizeof(runOverall));
+      emitRunJson("run_ack", "none", lastRunId);
+      executeRun(commandBuffer + 4);
+      emitRunJson("run_result", "none", lastRunId);
+    }
+  } else if (commandLength > 7 && memcmp(commandBuffer, "result ", 7) == 0) {
+    const size_t idLength = commandLength - 7;
+    if (!validRunId(commandBuffer + 7, idLength)) {
+      emitRunJson("error", "invalid_id", "");
+    } else if (!runRecordValid || strncmp(lastRunId, commandBuffer + 7, idLength) != 0 || strlen(lastRunId) != idLength) {
+      emitRunJson("error", "run_not_found", commandBuffer + 7);
+    } else {
+      emitRunJson("result", "none", lastRunId);
     }
   } else {
     emitJson("error", "invalid_command");
@@ -281,6 +372,66 @@ static void pollSerialCommands() {
       }
     }
   }
+}
+
+static void executeRun(const char *runId) {
+  strlcpy(lastRunId, runId, sizeof(lastRunId));
+  runRecordValid = true;
+  runHeapBytes = ESP.getFreeHeap();
+  runRamBytesVerified = 0;
+  runImuSamples = 0;
+  for (size_t i = 0; i < 12; ++i) {
+    strlcpy(runChecks[i], "NOT_TESTED", sizeof(runChecks[i]));
+    strlcpy(runReasons[i], "unavailable", sizeof(runReasons[i]));
+  }
+  if (boardReady) { strlcpy(runChecks[0], "PASS", sizeof(runChecks[0])); strlcpy(runReasons[0], "none", sizeof(runReasons[0])); }
+  else { strlcpy(runChecks[0], "FAIL", sizeof(runChecks[0])); strlcpy(runReasons[0], "unsupported_board", sizeof(runReasons[0])); }
+
+  uint8_t scratch[256];
+  for (size_t i = 0; i < sizeof(scratch); ++i) scratch[i] = static_cast<uint8_t>((i * 73u + 0x5Au) & 0xFFu);
+  bool ramOk = true;
+  for (size_t i = 0; i < sizeof(scratch); ++i) {
+    if (scratch[i] != static_cast<uint8_t>((i * 73u + 0x5Au) & 0xFFu)) { ramOk = false; break; }
+    ++runRamBytesVerified;
+  }
+  strlcpy(runChecks[1], ramOk ? "PASS" : "FAIL", sizeof(runChecks[1]));
+  strlcpy(runReasons[1], ramOk ? "none" : "pattern_mismatch", sizeof(runReasons[1]));
+
+  if (!imuReady) {
+    strlcpy(runChecks[2], "FAIL", sizeof(runChecks[2]));
+    strlcpy(runReasons[2], "imu_unavailable", sizeof(runReasons[2]));
+  } else {
+    bool finite = true;
+    for (uint8_t i = 0; i < 8; ++i) {
+      M5.Imu.update();
+      const auto sample = M5.Imu.getImuData();
+      const float values[] = {sample.gyro.x, sample.gyro.y, sample.gyro.z,
+                              sample.accel.x, sample.accel.y, sample.accel.z};
+      for (float value : values) if (!isfinite(value)) finite = false;
+      if (!finite) break;
+      ++runImuSamples;
+      delay(5);
+    }
+    strlcpy(runChecks[2], finite && runImuSamples == 8 ? "PASS" : "FAIL", sizeof(runChecks[2]));
+    strlcpy(runReasons[2], finite && runImuSamples == 8 ? "none" : "nonfinite_sample", sizeof(runReasons[2]));
+  }
+  strlcpy(runReasons[3], "owner_observation_required", sizeof(runReasons[3]));
+  strlcpy(runReasons[4], "owner_observation_required", sizeof(runReasons[4]));
+  strlcpy(runReasons[5], "owner_observation_required", sizeof(runReasons[5]));
+  strlcpy(runReasons[6], "owner_observation_required", sizeof(runReasons[6]));
+  strlcpy(runReasons[7], "unavailable", sizeof(runReasons[7]));
+  strlcpy(runReasons[8], "not_requested", sizeof(runReasons[8]));
+  strlcpy(runReasons[9], "unavailable", sizeof(runReasons[9]));
+  strlcpy(runReasons[10], "accessory_unknown", sizeof(runReasons[10]));
+  strlcpy(runReasons[11], "not_requested", sizeof(runReasons[11]));
+
+  bool failed = false;
+  bool incomplete = false;
+  for (size_t i = 0; i < 12; ++i) {
+    if (strcmp(runChecks[i], "FAIL") == 0) failed = true;
+    if (strcmp(runChecks[i], "NOT_TESTED") == 0 || strcmp(runChecks[i], "INCONCLUSIVE") == 0) incomplete = true;
+  }
+  strlcpy(runOverall, failed ? "FAIL" : incomplete ? "INCONCLUSIVE" : "PASS", sizeof(runOverall));
 }
 
 void loop() {

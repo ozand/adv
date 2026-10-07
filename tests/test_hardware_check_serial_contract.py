@@ -37,7 +37,7 @@ class SerialContractTests(unittest.TestCase):
         self.assertIn('emitJson("sd_test_result", sdReason);', self.source)
         self.assertIn('emitJson("status", sdReason);', self.source)
         self.assertNotIn('emitJson("status", "none")', self.source)
-        self.assertIn('\\"firmware_build\\":\\"adv-diagnostic-1\\"', self.source)
+        self.assertIn('\\"firmware_build\\":\\"adv-diagnostic-2\\"', self.source)
         self.assertIn('\\"bytes_verified\\":%u', self.source)
         self.assertIn('"verify_mismatch"', self.source)
         self.assertIn('"invalid_command"', self.source)
@@ -57,6 +57,30 @@ class SerialContractTests(unittest.TestCase):
         self.assertIn("64 printable command bytes", self.docs)
         self.assertIn("status` reads cached state only", self.docs)
         self.assertIn("physical `S` key uses the same one-shot guard", self.docs)
+
+    def test_runner_is_bounded_idempotent_and_excludes_sd_side_effects(self):
+        self.assertIn('commandLength > 4 && memcmp(commandBuffer, "run ", 4)', self.source)
+        self.assertIn('commandLength > 7 && memcmp(commandBuffer, "result ", 7)', self.source)
+        self.assertIn('emitRunJson("run_ack", "none", lastRunId);', self.source)
+        self.assertIn('executeRun(commandBuffer + 4);', self.source)
+        self.assertIn('emitRunJson("run_result", "none", lastRunId);', self.source)
+        self.assertIn('emitRunJson("result", "none", lastRunId);', self.source)
+        run_block = self.source[self.source.index("static void executeRun") : self.source.index("void loop()")]
+        self.assertNotIn("SD.", run_block)
+        self.assertIn("uint8_t scratch[256]", run_block)
+        self.assertIn("i < 8", run_block)
+        self.assertIn("runReasons[11], " + '"not_requested"', run_block)
+        self.assertIn("kRunFrameMaxBytes = 1024", self.source)
+        self.assertIn("run data is volatile", self.docs.lower())
+        expected = ["mcu", "ram_scratch", "imu_data", "motion", "display", "keyboard", "audio", "ir", "radio", "battery", "connectors", "sd"]
+        names = re.search(r"kCheckNames\[12\] = \{([^}]+)\}", self.source)
+        self.assertEqual(expected, re.findall(r'"([a-z_]+)"', names.group(1)))
+        self.assertIn('adv-diagnostic-2', self.source)
+        self.assertIn("accessory_unknown", self.source)
+        self.assertIn("responseRunId(const char *requestedId)", self.source)
+        self.assertIn('return requestedId;', self.source)
+        self.assertIn('emitRunJson("error", "run_not_found", commandBuffer + 7);', self.source)
+        self.assertIn('emitRunJson("error", "run_id_busy", commandBuffer + 4);', self.source)
 
 
 if __name__ == "__main__":
