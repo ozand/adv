@@ -2,7 +2,7 @@
 
 **Status**: Accepted
 **Date**: 2026-10-07
-**Accepted**: 2026-10-07 by repository owner in this session
+**Accepted**: 2026-10-07 by repository owner (explicit current-session authorization relayed before this update)
 **Authors**: Repository owner and coding assistant
 **Supersedes**: None
 **Related**: ADR-001, ADR-002, ADR-003; Issue #7
@@ -11,7 +11,7 @@
 
 The public repository separates reviewed source captures (`kb/research/`), canonical knowledge (`kb/wiki/`), durable architectural decisions (`docs/adr/`), and reusable procedures (`.agents/skills/`). Reusable facts from local diagnostics need to persist between sessions without publishing raw captures, private host paths, identifiers, or device data.
 
-Issue #7 requested a separate project-local lessons mechanism. The owner explicitly accepted storing operational lessons in an ignored `local-lessons/` directory, without automatic synchronization/publication or a new search dependency. This ADR records that decision and its boundaries. Owner acceptance came after PR #9 was opened; the accepted status is therefore a follow-up to, not part of, the original reviewed PR head.
+Issue #7 requested a separate project-local lessons mechanism. On 2026-10-07 the repository owner explicitly accepted storing operational lessons in an ignored `local-lessons/` directory, without automatic synchronization/publication or a new search dependency. This ADR records that decision and its boundaries. Acceptance was provided after PR #9 was opened and is recorded in this follow-up; it was not part of the original reviewed PR head.
 
 ## Decision
 
