@@ -1,14 +1,15 @@
 # ADR-006: Expose hardware diagnostic status through bounded serial JSON
 
-**Status**: Proposed
+**Status**: Accepted
 **Date**: 2026-10-07
-**Authors**: Repository owner and coding assistant (candidate)
+**Authors**: Repository owner and coding assistant
+**Accepted by**: Repository owner, 2026-10-07 (Issue #2 owner direction; see acceptance comment 6047336687)
 **Supersedes**: None
 **Related**: ADR-001; Issue #2
 
 ## Context
 
-The Issue #2 diagnostic sketch has local display status but no bounded machine-readable interface. The owner authorized a narrow serial interface with `status` and `sd_test` commands and JSON telemetry, then authorized preparing a finite `run <ID>` / `result <ID>` runner. The existing SD operation is opt-in and one-shot; repeated requests must not retry its filesystem writes. This proposal records the interface rationale; it does not claim owner acceptance of every protocol detail or authorize device access.
+The Issue #2 diagnostic sketch has local display status but no bounded machine-readable interface. The owner authorized a narrow serial interface with `status` and `sd_test` commands and JSON telemetry, then authorized preparing a finite `run <ID>` / `result <ID>` runner. The existing SD operation is opt-in and one-shot; repeated requests must not retry its filesystem writes. The owner accepted the bounded four-command interface and its stated run/cache/SD scope in Issue #2. That acceptance is limited to the source contract; it does not authorize serial/device execution, installation, flashing, or claim hardware PASS.
 
 ### Problem statement
 
@@ -16,11 +17,11 @@ Expose readiness, retained SD-test outcome, and finite software diagnostic resul
 
 ### Prior art
 
-The existing physical `S` key invokes the bounded SD test. The serial command will share that one-shot operation rather than introduce a second SD path.
+The existing physical `S` key invokes the bounded SD test. The serial command shares that one-shot operation rather than introducing a second SD path. The owner explicitly accepted that SD remains opt-in and that unmeasured nodes remain `NOT_TESTED`/`INCONCLUSIVE` (Issue #2 owner direction, 2026-10-07).
 
 ## Decision
 
-Provide newline-terminated ASCII commands `status`, `sd_test`, `run <ID>`, and `result <ID>`. The first two retain the fixed-schema v1-shaped response; the latter two use fixed-schema v2 responses with a 1024-byte cap. Run IDs are 1–12 uppercase ASCII letters/digits; only one volatile run record is retained. Repeating its ID returns the cached result; other IDs are rejected until reset. `status` reports cached values and never accesses SD. `sd_test` and physical `S` share one one-shot gate; subsequent requests return the retained outcome. The aggregate runner performs bounded RAM scratch and finite IMU-data checks only; physical checks remain `NOT_TESTED`, and SD is excluded.
+Provide newline-terminated ASCII commands `status`, `sd_test`, `run <ID>`, and `result <ID>`. The `status` and `sd_test` envelopes retain the fixed-schema v1 shape; `run` and `result` use v2 frames capped at 1024 bytes. Both firmware shapes identify build `adv-diagnostic-2`; v1 describes the envelope version, not a firmware rollback. Run IDs are 1–12 uppercase ASCII letters/digits. The firmware retains one volatile result record in RAM: repeating the exact ID returns the cached result without rerunning checks; a different ID is rejected while occupied; reset loses the record. `result <ID>` only reads the retained record. `status` reports cached values and never accesses SD. `sd_test` and physical `S` share one one-shot gate; repeated requests return retained outcome. The aggregate runner performs board-identity reporting, a bounded 256-byte RAM scratch-pattern check, and eight finite IMU samples only; physical checks remain `NOT_TESTED`/`INCONCLUSIVE`, and SD is excluded unless explicitly requested separately.
 
 ### What this IS
 
@@ -35,7 +36,7 @@ Provide newline-terminated ASCII commands `status`, `sd_test`, `run <ID>`, and `
 
 ### Success criteria
 
-The fixed command allowlist and IDs are bounded; status does not call SD; malformed/overlong commands cause no SD operation; serial and key SD invocation share a one-shot guard; repeated run IDs do not rerun checks; result lookup is read-only; aggregate SD remains untested; all frames fit their caps and use fixed reasons without raw device text.
+The fixed command allowlist and IDs are bounded; status does not call SD; malformed/overlong commands cause no SD operation; serial and key SD invocation share a one-shot guard; repeated run IDs do not rerun checks; result lookup is read-only; aggregate SD remains untested; all frames fit their caps and use fixed reasons without raw device text. Acceptance of this source contract does not authorize runtime/device operations.
 
 ## Consequences
 
@@ -80,5 +81,5 @@ Remove the serial parser/response path while retaining the physical display/keyb
 
 ## References
 
-- [Issue #2](https://github.com/ozand/adv/issues/2)
+- [Issue #2](https://github.com/ozand/adv/issues/2), including owner acceptance comment [6047336687](https://github.com/ozand/adv/issues/2#issuecomment-6047336687)
 - [Hardware diagnostic sketch](../../scripts/hardware_check/hardware_check.ino)
