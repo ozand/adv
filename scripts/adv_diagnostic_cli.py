@@ -213,13 +213,22 @@ def validate_run_response(
     return obj
 
 
-def run_v2(port: Any, command: str, run_id: str) -> dict[str, Any]:
+def run_v2(
+    port: Any, command: str, run_id: str, trace: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Send one run or read-only result command; never retry a run."""
     if command not in {"run", "result"} or not RUN_ID_PATTERN.fullmatch(run_id):
         raise ValueError("invalid_run_id")
     frame = f"{command} {run_id}\n".encode("ascii")
+    phase = "run" if command == "run" else "result"
+    if trace is not None:
+        trace["phase"] = f"{phase}_write"
+        trace[f"{phase}_write_attempted"] = True
     if len(frame) > MAX_LINE_BYTES or port.write(frame) != len(frame):
         raise ValueError("run_command_write_failed")
+    if trace is not None:
+        trace[f"{phase}_write_returned_full_length"] = True
+        trace["phase"] = f"{phase}_response"
     deadline = time.monotonic() + RUN_TIMEOUT_SECONDS
     first = validate_run_response(read_line(port, deadline, max_bytes=MAX_RESPONSE_BYTES), "run_ack" if command == "run" else "result", run_id)
     if first["type"] == "error":
@@ -232,6 +241,8 @@ def run_v2(port: Any, command: str, run_id: str) -> dict[str, Any]:
         return first
     if first["type"] != "run_ack":
         raise ValueError("invalid_run_ack")
+    if trace is not None:
+        trace["phase"] = "run_result_response"
     return validate_run_response(read_line(port, deadline, max_bytes=MAX_RESPONSE_BYTES), "run_result", run_id)
 
 
@@ -282,20 +293,29 @@ def build_report(
     }
 
 
-def run_full_port(port: Any, run_id: str, with_sd: bool = False) -> dict[str, Any]:
+def run_full_port(
+    port: Any, run_id: str, with_sd: bool = False,
+    trace: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Handshake, run v2 checks once, then optionally report separate cached SD evidence."""
     status_frame = b"status\n"
+    if trace is not None:
+        trace["phase"] = "status_write"
+        trace["status_write_attempted"] = True
     if port.write(status_frame) != len(status_frame):
         raise OSError("incomplete_command_write")
+    if trace is not None:
+        trace["status_write_returned_full_length"] = True
+        trace["phase"] = "status_response"
     status = validate_response(
         read_line(port, time.monotonic() + IDLE_REPLY_SECONDS), "status",
         allowed_builds={CURRENT_BUILD},
     )
     if status["type"] == "error" or not status["board_ready"] or not status["imu_ready"]:
         raise ValueError("firmware_not_ready")
-    run_result = run_v2(port, "run", run_id)
+    run_result = run_v2(port, "run", run_id, trace=trace)
     sd_result = (
-        run_v1(port, "sd_test", allowed_builds={CURRENT_BUILD})
+        run_v1(port, "sd_test", allowed_builds={CURRENT_BUILD}, trace=trace)
         if with_sd and run_result["type"] != "error" else None
     )
     return build_report(run_result, sd_result, usb_handshake=True)
@@ -313,7 +333,8 @@ def open_port(port_name: str) -> Any:
 
 
 def run_v1(
-    port: Any, command: str, *, allowed_builds: set[str] | None = None
+    port: Any, command: str, *, allowed_builds: set[str] | None = None,
+    trace: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Perform one v1 operation on an already-open serial port."""
     if command not in {"status", "sd_test"}:
@@ -321,8 +342,15 @@ def run_v1(
     status_frame = b"status\n"
     if len(status_frame) > MAX_LINE_BYTES:
         raise ValueError("command_too_large")
+    status_phase = "sd_status" if command == "sd_test" else "status"
+    if trace is not None:
+        trace["phase"] = f"{status_phase}_write"
+        trace["status_write_attempted"] = True
     if port.write(status_frame) != len(status_frame):
         raise OSError("incomplete_command_write")
+    if trace is not None:
+        trace["status_write_returned_full_length"] = True
+        trace["phase"] = f"{status_phase}_response"
     deadline = time.monotonic() + IDLE_REPLY_SECONDS
     builds = allowed_builds or {LEGACY_BUILD, CURRENT_BUILD}
     status = validate_response(read_line(port, deadline), "status", allowed_builds=builds)
@@ -341,8 +369,14 @@ def run_v1(
     sd_frame = b"sd_test\n"
     if len(sd_frame) > MAX_LINE_BYTES:
         raise ValueError("command_too_large")
+    if trace is not None:
+        trace["phase"] = "sd_test_write"
+        trace["sd_test_write_attempted"] = True
     if port.write(sd_frame) != len(sd_frame):
         raise OSError("incomplete_command_write")
+    if trace is not None:
+        trace["sd_test_write_returned_full_length"] = True
+        trace["phase"] = "sd_test_response"
     deadline = time.monotonic() + SD_RESULT_SECONDS
     ack = validate_response(read_line(port, deadline), "sd_test", allowed_builds=builds)
     if ack["type"] == "error":
@@ -363,7 +397,9 @@ def run_v1(
     return result
 
 
-def run(port_name: str, command: str) -> dict[str, Any]:
+def run(
+    port_name: str, command: str, trace: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Open a bounded serial session for one status or explicit SD command."""
     if serial.Serial is None:
         raise RuntimeError("pyserial_required")
@@ -373,9 +409,20 @@ def run(port_name: str, command: str) -> dict[str, Any]:
     port.port = port_name
     try:
         port.open()
-        return run_v1(port, command)
+        return run_v1(port, command, trace=trace)
     finally:
         port.close()
+
+
+def build_error_report(
+    error: str, run_id: str | None, execution: dict[str, Any]
+) -> dict[str, Any]:
+    """Return sanitized command-phase flags without retaining serial bytes."""
+    report: dict[str, Any] = {"ok": False, "error": error}
+    if run_id and RUN_ID_PATTERN.fullmatch(run_id):
+        report["run_id"] = run_id
+        report["execution"] = dict(execution)
+    return report
 
 
 def main() -> int:
@@ -388,19 +435,30 @@ def main() -> int:
     if args.with_sd and args.command != "run":
         parser.error("--with-sd is valid only with --command run")
     try:
+        trace = {
+            "phase": "validation",
+            "status_write_attempted": False,
+            "status_write_returned_full_length": False,
+            "run_write_attempted": False,
+            "run_write_returned_full_length": False,
+            "result_write_attempted": False,
+            "result_write_returned_full_length": False,
+            "sd_test_write_attempted": False,
+            "sd_test_write_returned_full_length": False,
+        }
         if args.command in {"run", "result"}:
             if not args.run_id or not RUN_ID_PATTERN.fullmatch(args.run_id):
                 raise ValueError("invalid_run_id")
             port = open_port(args.port)
             try:
                 if args.command == "result":
-                    result = build_report(run_v2(port, "result", args.run_id), None)
+                    result = build_report(run_v2(port, "result", args.run_id, trace=trace), None)
                 else:
-                    result = run_full_port(port, args.run_id, with_sd=args.with_sd)
+                    result = run_full_port(port, args.run_id, with_sd=args.with_sd, trace=trace)
             finally:
                 port.close()
         else:
-            result = run(args.port, args.command)
+            result = run(args.port, args.command, trace=trace)
     except (OSError, TimeoutError, ValueError, RuntimeError) as exc:
         code = str(exc) if str(exc) in {
             "response_timeout", "response_too_large", "invalid_json", "invalid_response",
@@ -414,7 +472,7 @@ def main() -> int:
             "invalid_run_reason", "invalid_run_error", "invalid_run_ack",
             "inconsistent_run_overall", "run_id_busy",
         } else "serial_error_or_indeterminate"
-        print(json.dumps({"ok": False, "error": code}, separators=(",", ":")))
+        print(json.dumps(build_error_report(code, args.run_id, trace), separators=(",", ":")))
         return 2
     if isinstance(result, dict) and "checks" in result and "coverage" in result:
         overall_ok = result["overall"] == "PASS"
