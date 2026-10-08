@@ -9,7 +9,7 @@ status: stable
 
 # adv Cardputer Knowledge Base
 
-This is the entry point for synthesized knowledge about Cardputer projects. Original source materials live locally under the ignored `sources/` directory and must not be committed.
+This is the entry point for Cardputer knowledge. Bounded research captures in `raw/` and `research/` may be publicly tracked after privacy, secret, relevance, provenance, and rights review; they are evidence, not canonical conclusions. Original repositories, books/PDFs, binaries, private captures, and bulky source materials remain local-only under ignored `sources/` and must not be committed.
 
 ## Topics
 
@@ -19,8 +19,8 @@ This is the entry point for synthesized knowledge about Cardputer projects. Orig
 
 ## Workflow
 
-1. Keep source repositories, catalog payloads, captures, binaries, and books under ignored `sources/`.
+1. Keep original source repositories, catalog payloads, books/PDFs, binaries, private captures, and bulky materials under ignored `sources/`.
 2. Check primary-source documentation and license metadata; pin code-derived claims to exact revisions.
-3. Publish only concise paraphrased synthesis with provenance and links, not copied source material.
+3. Publish reviewed, bounded evidence captures under `raw/` or `research/` only after privacy, secret, relevance, provenance, and rights review. Synthesize supported claims into `wiki/` with provenance and links; captures remain evidence, not canonical synthesis.
 4. Check for secrets, personal data, and private network details before publication.
 5. Run `kb-bootstrap validate --dir kb --project-root .` when available.
