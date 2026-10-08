@@ -1,6 +1,6 @@
 # ADR-007: Publish reviewed research captures while excluding local source originals
 
-**Status**: Proposed
+**Status**: Accepted
 **Date**: 2026-10-08
 **Authors**: Repository owner and coding assistant
 **Supersedes**: ADR-001
@@ -8,9 +8,9 @@
 
 ## Context
 
-The repository needs to distinguish publishable, reviewed research evidence from private or bulky source originals. Existing public ADR-001 establishes a standalone public knowledge repository, local-only source repositories/books, and a synthesis-oriented publication boundary. Owner direction in this task explicitly permits publishing reviewed research/raw captures while keeping original sources excluded. This supersedes ADR-001's synthesis-only capture restriction; it does not remove the standalone repository, local-source, privacy, or separate-repository boundaries. ADR-001 itself will remain unchanged until ADR-007 is accepted; at that point, its status alone will be updated to `Superseded by ADR-007`.
+The repository needs to distinguish publishable, reviewed research evidence from private or bulky source originals. Existing public ADR-001 establishes a standalone public knowledge repository, local-only source repositories/books, and a synthesis-oriented publication boundary. Owner direction in this task explicitly permits publishing reviewed research/raw captures while keeping original sources excluded. This supersedes ADR-001's synthesis-only capture restriction; it does not remove the standalone repository, local-source, privacy, or separate-repository boundaries. ADR-001 remains immutable under the accepted-ADR amendment rule and is represented as superseded by this decision in the index.
 
-Public issue comments record prior decisions and implementation reports, but comments alone do not independently prove the provenance of the originating human turn. The current decision basis is the owner's explicit direction in this task. Existing ADR drafts and their status headers are not treated as published authority.
+The current decision basis is the owner's explicit direction in this task: reviewed research/raw evidence may be publicly published, while original source material remains local-only. Earlier issue comments are historical supporting records, not a substitute for this current decision. Existing unpublished ADR drafts are not treated as published authority.
 
 ### Problem statement
 

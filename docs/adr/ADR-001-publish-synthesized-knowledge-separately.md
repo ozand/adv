@@ -1,6 +1,6 @@
 # ADR-001: Publish synthesized knowledge in a separate public repository
 
-**Status**: Accepted
+**Status**: Superseded by ADR-007
 **Date**: 2026-10-06
 **Authors**: Repository owner and coding assistant
 **Supersedes**: None

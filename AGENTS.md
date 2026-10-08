@@ -12,14 +12,14 @@ Before starting work, read:
 
 - This is the standalone public repository for synthesized Cardputer knowledge.
 - `sources/` is local-only and must never be tracked, staged, committed, or published.
-- `kb/` contains synthesized, provenance-linked Markdown suitable for public release.
+- `kb/raw/` and `kb/research/` may contain reviewed, bounded research evidence that is tracked only after privacy, secret, relevance, provenance, and rights review; it remains evidence, not canonical knowledge. `kb/wiki/` contains synthesized, provenance-linked knowledge suitable for public release.
 - Check source licenses and remove secrets, personal data, private network details, and unlicensed excerpts before publishing.
 - Do not store device credentials, raw logs, or unredacted operational captures here.
 
 ## Knowledge workflow
 
 - Preserve source identity and citations when synthesizing claims into `kb/`.
-- Keep original source material only in ignored `sources/`; do not copy whole books or repositories into `kb/`.
+- Keep original repositories, books/PDFs, binaries, private captures, and bulky source material only in ignored `sources/`; do not copy whole books or repositories into public KB paths. Publish reviewed captures only under `kb/raw/` or `kb/research/` after privacy, secret, relevance, provenance, and rights review.
 - Validate structural changes with `kb-bootstrap validate --dir kb --project-root .` when the tool is available.
 - QMD is optional local search; `.qmd/` state is ignored.
 - ADR-004 (Accepted) defines an optional ignored `local-lessons/` store. If it exists, inspect its index before repeating a relevant diagnostic and preserve lesson evidence labels/provenance; never silently upgrade confidence. See the tracked [local lessons workflow](docs/local-lessons-workflow.md), which is available on clean clones. The local store is not public KB content and must never be staged/published.
