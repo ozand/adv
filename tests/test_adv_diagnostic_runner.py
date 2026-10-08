@@ -126,6 +126,16 @@ class RunnerContractTests(unittest.TestCase):
             cli.run_v2(port, "result", "RUN1")
         self.assertEqual(port.writes, [b"result RUN1\n"])
 
+    def test_status_and_sd_commands_pass_trace_to_v1_runner(self):
+        trace = {}
+        port = FakeSerial(line(v1()))
+        with patch.object(cli.serial, "Serial", return_value=port):
+            cli.run("COM5", "status", trace=trace)
+        self.assertEqual(port.writes, [b"status\n"])
+        self.assertEqual(trace["phase"], "status_response")
+        self.assertTrue(trace["status_write_attempted"])
+        self.assertTrue(trace["status_write_returned_full_length"])
+
     def test_reported_error_json_contains_only_sanitized_phase_context(self):
         trace = {
             "phase": "status_response", "status_write_attempted": True,

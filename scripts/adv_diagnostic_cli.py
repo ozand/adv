@@ -397,7 +397,9 @@ def run_v1(
     return result
 
 
-def run(port_name: str, command: str) -> dict[str, Any]:
+def run(
+    port_name: str, command: str, trace: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Open a bounded serial session for one status or explicit SD command."""
     if serial.Serial is None:
         raise RuntimeError("pyserial_required")
@@ -407,7 +409,7 @@ def run(port_name: str, command: str) -> dict[str, Any]:
     port.port = port_name
     try:
         port.open()
-        return run_v1(port, command)
+        return run_v1(port, command, trace=trace)
     finally:
         port.close()
 
@@ -456,7 +458,7 @@ def main() -> int:
             finally:
                 port.close()
         else:
-            result = run(args.port, args.command)
+            result = run(args.port, args.command, trace=trace)
     except (OSError, TimeoutError, ValueError, RuntimeError) as exc:
         code = str(exc) if str(exc) in {
             "response_timeout", "response_too_large", "invalid_json", "invalid_response",
