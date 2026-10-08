@@ -131,7 +131,7 @@ class RunnerContractTests(unittest.TestCase):
         port = FakeSerial(line(v1()))
         with patch.object(cli.serial, "Serial", return_value=port):
             cli.run("COM5", "status", trace=trace)
-        self.assertEqual(port.writes, [b"status\n"])
+        self.assertEqual(port.writes, [bytes((115, 116, 97, 116, 117, 115, 10))])
         self.assertEqual(trace["phase"], "status_response")
         self.assertTrue(trace["status_write_attempted"])
         self.assertTrue(trace["status_write_returned_full_length"])
