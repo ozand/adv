@@ -21,7 +21,7 @@ This is a bounded evidence inventory, not a roadmap selection or demand ranking.
 
 ## Cross-cutting evidence and overlap
 
-- The first three repositories overlap the Issue #35 usage-scout set by canonical repository and pinned revision; they are not additional independent sources. The three additional repositories are MQTT, ntfy and SSH client. Count unique repository evidence by canonical URL + full revision + document path, not page count.
+- All six README repositories were already in the Issue #35 scout set. Three (AIFlow, Cardputer LLM, Claude Buddy) also overlap the lead's separately opened pages at the same canonical repository revisions; MQTT, ntfy, and SSH are additional documents in this six-row inventory but not new repositories beyond #35. This inventory contributes zero new repository sources to the #35 corpus. Count unique source records by canonical URL + full revision + document path, not page or study count.
 - AIFlow and Claude Buddy are related host/device agent patterns but differ: IDE plus terminal bridge versus dedicated status/approval peripheral. MQTT and ntfy both support remote awareness but differ in command/state control versus notification. Cardputer LLM routes inference to an external Pi; do not conflate it with local/on-device inference. SSH is a general-purpose remote terminal, with a materially larger authority and credential risk.
 - Issue #2 / ADR-006 already owns `status`, `sd_test`, `run <ID>`, and `result <ID>`. Those fixed commands are excluded as new rows. ADR-006 acceptance/tests establish a source contract only, not installed firmware or hardware behavior.
 
