@@ -93,7 +93,7 @@ Questions left open for owner/security decision include: who is the trusted prin
 
 ## Coordination and review status
 
-The coordinator reports that the hardware lead reviewed the Issue #38 comparison plan and returned bounded-method approval with finite corrections; an independent method review also passed. These were plan reviews, not review of this report's final content. The #37 draft records prior hardware-owner and independent review for an earlier contract-draft commit, but explicitly requires review of the exact delivered draft before treating its own criterion as final. No owner acceptance, security approval or architecture decision is claimed. Independent review of this exact comparison artifact remains required before delivery.
+The coordinator records that the hardware lead and independent reviewer returned content/method PASS for this comparison at commit `59d257eabfd38bbbea78af83f22d2e7b292c592e` on 2026-10-08. Their review applies to that exact reviewed content; the subsequent commit `92ebd746fb94416905b127aa7d41cae4bd16fc08` changed only timing-provenance and rights-scope notes. Targeted confirmation is required for these receipt-only note changes before treating the current revision as fully reviewed. The hardware review is not owner acceptance, security approval, or an architecture decision. No owner acceptance or architecture decision is claimed.
 
 ## Method and limitations
 
