@@ -21,7 +21,7 @@ Before starting work, read:
 - Preserve source identity and citations when synthesizing claims into `kb/`.
 - Keep original repositories, books/PDFs, binaries, private captures, and bulky source material only in ignored `sources/`; do not copy whole books or repositories into public KB paths. Publish reviewed captures only under `kb/raw/` or `kb/research/` after privacy, secret, relevance, provenance, and rights review.
 - Validate structural changes with `kb-bootstrap validate --dir kb --project-root .` when the tool is available.
-- QMD is optional local search; `.qmd/` state is ignored.
+- QMD is optional local search; `.qmd/` state is ignored. Before QMD lookup, read [Project QMD usage](docs/qmd-usage.md); do not mutate indexes or collections without separate authorization.
 - ADR-004 (Accepted) defines an optional ignored `local-lessons/` store. If it exists, inspect its index before repeating a relevant diagnostic and preserve lesson evidence labels/provenance; never silently upgrade confidence. See the tracked [local lessons workflow](docs/local-lessons-workflow.md), which is available on clean clones. The local store is not public KB content and must never be staged/published.
 
 ## Issue, PRD, ADR, and PR workflow
