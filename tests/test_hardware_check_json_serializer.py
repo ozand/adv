@@ -21,16 +21,22 @@ def test_emitter_fragments_build_parseable_v2_response():
              "audio", "ir", "radio", "battery", "connectors", "sd"]
     checks = ["PASS", "PASS", "PASS"] + ["NOT_TESTED"] * 9
     reasons = ["none"] * 3 + ["owner_observation_required"] * 9
-    frame = prefix % ("run_result", "RUN0001", "INCONCLUSIVE")
-    frame += ",".join(json.dumps(value) for value in names)
-    frame += "],\"checks\":[" + ",".join(json.dumps(value) for value in checks)
-    frame += "],\"reasons\":[" + ",".join(json.dumps(value) for value in reasons)
-    frame += suffix % (345028, 256, 8, "none")
-    encoded = (frame + "\r\n").encode("ascii")
+    metrics = {"free_heap_bytes": 345028, "ram_bytes_verified": 256, "imu_samples": 8}
 
-    assert len(encoded) <= 1024
-    parsed = json.loads(encoded)
-    assert parsed["type"] == "run_result"
-    assert parsed["run_id"] == "RUN0001"
-    assert len(parsed["check_names"]) == len(parsed["checks"]) == len(parsed["reasons"]) == 12
-    assert parsed["metrics"] == {"free_heap_bytes": 345028, "ram_bytes_verified": 256, "imu_samples": 8}
+    for response_type in ("run_ack", "run_result", "result", "error"):
+        run_id = "Z" * 12
+        reason = "run_not_found" if response_type == "error" else "none"
+        frame = prefix % (response_type, run_id, "INCONCLUSIVE")
+        frame += ",".join(json.dumps(value) for value in names)
+        frame += "],\"checks\":[" + ",".join(json.dumps(value) for value in checks)
+        frame += "],\"reasons\":[" + ",".join(json.dumps(value) for value in reasons)
+        frame += suffix % (metrics["free_heap_bytes"], metrics["ram_bytes_verified"],
+                           metrics["imu_samples"], reason)
+        encoded = frame.encode("ascii")
+        assert len(encoded) <= 1024
+        parsed = json.loads(encoded)
+        assert parsed["type"] == response_type
+        assert parsed["run_id"] == run_id
+        assert len(parsed["check_names"]) == len(parsed["checks"]) == len(parsed["reasons"]) == 12
+        assert parsed["metrics"] == metrics
+        assert parsed["reason"] == reason
