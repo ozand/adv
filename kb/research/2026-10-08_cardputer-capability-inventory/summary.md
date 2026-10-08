@@ -8,7 +8,7 @@ status: draft
 
 # Candidate capability inventory (source-documented; not device-verified)
 
-This is a bounded evidence inventory, not a roadmap selection or demand ranking. Every upstream behavior below is a claim in a pinned README. No implementation was run and no physical device was tested. The project diagnostic contract is described separately in [ADR-006](../../../docs/adr/ADR-006-hardware-diagnostic-serial-json.md).
+This is a bounded evidence inventory, not a roadmap selection or demand ranking. Every upstream behavior below is a claim in a pinned README. No implementation was run and no physical device was tested. The project diagnostic contract is described separately in [ADR-006](https://github.com/ozand/adv/blob/e253cf84f6caefb61a9e82ab6a8082a9b5fab3da/docs/adr/ADR-006-hardware-diagnostic-serial-json.md).
 
 | Candidate capability | Pinned source and exact evidence | Interface / reported effect | Prerequisites and authority | Risks / uncertainty / verification gap |
 |---|---|---|---|---|
