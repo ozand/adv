@@ -119,7 +119,7 @@ static void emitRunJson(const char *type, const char *errorReason, const char *r
     if (n < 0 || static_cast<size_t>(n) >= sizeof(json) - used) return;
     used += static_cast<size_t>(n);
   }
-  n = snprintf(json + used, sizeof(json) - used, ",\"metrics\":{\"free_heap_bytes\":%lu,\"ram_bytes_verified\":%u,\"imu_samples\":%u},\"reason\":\"%s\"}\r\n",
+  n = snprintf(json + used, sizeof(json) - used, "],\"metrics\":{\"free_heap_bytes\":%lu,\"ram_bytes_verified\":%u,\"imu_samples\":%u},\"reason\":\"%s\"}\r\n",
       static_cast<unsigned long>(runHeapBytes), static_cast<unsigned>(runRamBytesVerified),
       static_cast<unsigned>(runImuSamples), errorReason);
   if (n < 0 || static_cast<size_t>(n) >= sizeof(json) - used) return;
