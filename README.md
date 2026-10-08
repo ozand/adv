@@ -5,7 +5,7 @@ A public, evidence-based knowledge repository about software and projects for th
 See [GOALS.md](GOALS.md) for the project's strategic vision and desired outcomes, and [AGENTS.md](AGENTS.md) for agent/contributor workflow and repository mechanics.
 
 - **Device:** M5Stack Cardputer
-- **Local address:** `192.168.1.140` (provided by owner; not independently verified)
+- **Local network details:** intentionally omitted from this public repository.
 - **Knowledge base:** [`kb/index.md`](kb/index.md)
 - **Local operational lessons:** optional ignored `local-lessons/` store; create locally when needed, not published (see [ADR-004](docs/adr/ADR-004-keep-operational-lessons-in-ignored-project-local-store.md))
 - **Private source materials:** `sources/` (local-only; excluded from Git)
