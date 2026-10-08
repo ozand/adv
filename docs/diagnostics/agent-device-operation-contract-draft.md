@@ -105,7 +105,7 @@ No choices are made here. A chosen public contract or trust-boundary change requ
 | Preserve ADR-006 four commands; differences unresolved | §3 lists the unchanged four commands and explicitly excludes changes. |
 | Transport-neutral; transport cannot broaden authority or hide uncertainty | §5 states invariants; no transport selected. |
 | Traceable to Stage A; unsupported assumptions and owner/security questions marked | §1 and §6 cite pinned #36 evidence; §7 lists unresolved decisions; all examples source-documented only. |
-| Hardware-owner coordination and independent review recorded; proposal clearly labeled | **Pending:** this draft is labeled proposal; record coordination/review only when performed. |
+| Hardware-owner coordination and independent review recorded; proposal clearly labeled | Hardware-owner read-only review of exact draft commit `a8d64246bd8df0061b816851c1672f70f0014e4d` returned PASS as draft-only proposal on 2026-10-08; no API/security approval or major blocker was conveyed. Independent content/structure review also returned PASS on that same draft. These reviews do not constitute owner acceptance, security approval, or an accepted contract. The current post-receipt candidate must be re-reviewed before treating this criterion as final for the updated commit. |
 | Future public contract/trust-boundary implementation gated on accepted ADR and authorization | §§1, 7 state separate accepted ADR/authorization gate. |
 | No API/code/firmware/device/QMD mutation | Drafting-only scope; verify at review/delivery. |
 
