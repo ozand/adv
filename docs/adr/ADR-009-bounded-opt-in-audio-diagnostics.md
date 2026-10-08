@@ -1,15 +1,14 @@
 # ADR-009: Add bounded opt-in microphone and tone diagnostics
 
-**Status**: Accepted
+**Status**: Proposed
 **Date**: 2026-10-08
 **Authors**: Repository owner and coding assistant
-**Accepted by**: Repository owner, 2026-10-08 (Issue #43 owner direction)
 **Supersedes**: None
 **Related**: ADR-006 (bounded diagnostic serial JSON); Issue #43
 
 ## Context
 
-Issue #2's finite diagnostic runner represents audio as a physical check requiring owner observation; it does not define explicit microphone capture or tone-output operations. Issue #43 records the owner's acceptance of separate opt-in `mic_test` and `tone_test` operations and confirms headphones are connected. This is source-contract acceptance only; it does not authorize runtime capture, playback, device/serial access, installation, or flashing.
+Issue #2's finite diagnostic runner represents audio as a physical check requiring owner observation; it does not define explicit microphone capture or tone-output operations. Issue #43 records the owner's authorization to prepare a `mic_test` and `tone_test` proposal and confirms headphones are connected. That authorization does not accept this ADR's detailed public contract; owner review is required before acceptance. It does not authorize runtime capture, playback, device/serial access, installation, or flashing.
 
 The pinned M5Unified 0.2.25 source configures Cardputer-Adv microphone input on GPIO46/41/43, I2S0, and speaker output on GPIO42/41/43, I2S1. Microphone enable/disable callbacks configure and power the ES8311; `Mic.end()` waits for capture-task quiescence, clears pending requests, invokes the disable callback, and uninstalls its I2S driver. The ES8311 may produce zero samples for about one second after power-up; this is an estimate, not a guaranteed warm-up duration. A completed `record` request writes exactly the requested sample count, while `isRecording()` may drop before a callback is delivered; callback absence is not completion evidence.
 
@@ -25,7 +24,7 @@ ADR-006 supplies the existing bounded serial command and volatile-result pattern
 
 ## Decision
 
-The owner-selected source contract adds two independent, explicitly requested, one-shot operations to the bounded serial command interface:
+The proposed source contract adds two independent, explicitly requested, one-shot operations to the bounded serial command interface:
 
 - `mic_test <ID>` captures a fixed 256 mono `int16_t` sample buffer at 16 kHz after an approximately one-second ES8311 warm-up delay. It returns only bounded integer RMS and peak aggregates, finite state/reason, and cleanup status. The capture buffer is volatile RAM only and is cleared after confirmed microphone-task quiescence. No sample, waveform, or raw audio is emitted or persisted. Zero signal is `INCONCLUSIVE`, not proof of microphone failure. A completed capture and nonzero aggregate are not a hardware PASS unless the owner provides the separately requested acoustic observation.
 - `tone_test <ID>` synthesizes only a fixed 440 Hz software tone with at most 100 ms duration and library master volume 8/255. It has no startup behavior and accepts no arbitrary waveform, frequency, or gain input. A completed software playback is not proof that sound was audible; its result remains `INCONCLUSIVE` pending owner observation. The owner must remove headphones from ears/place them aside before any separately authorized physical playback test.
@@ -34,13 +33,13 @@ Each operation uses the existing uppercase ASCII run-ID bound (1–12 characters
 
 The host/device source contract uses fixed bounded JSON fields and reason enums; raw input, samples, and free-form device errors are excluded. Microphone cleanup calls `Mic.end()` outside the capture callback and clears the sample buffer only after the library reports task stopped and no request pending. Speaker cleanup stops playback, restores the prior software volume, and reports codec power/routing state as unknown. A timeout or uncertain cleanup is `INCONCLUSIVE`; no automatic retry is allowed.
 
-This decision extends the diagnostic operation set without changing the four existing ADR-006 commands or their frame contracts. It does not claim that the speaker is safely routed to headphones, that a tone is inaudible with headphones connected, that codec power is restored, that acoustic measurements are calibrated, or that either operation has passed on hardware. It does not authorize runtime execution, serial access, installation, or flashing.
+If accepted, this decision will extend the diagnostic operation set without changing the four existing ADR-006 commands or their frame contracts. It does not claim that the speaker is safely routed to headphones, that a tone is inaudible with headphones connected, that codec power is restored, that acoustic measurements are calibrated, or that either operation has passed on hardware. It does not authorize runtime execution, serial access, installation, or flashing.
 
 ### What this IS
 
 - Two explicit, bounded diagnostic commands that reuse already pinned M5Unified APIs.
 - Aggregate-only microphone reporting and a fixed synthesized tone; operation outcomes remain distinct from physical observation.
-- A source/API contract for reviewed implementation and build verification only.
+- A proposed source/API contract for review; Issue #43 separately authorizes source/build work but does not itself accept this ADR.
 
 ### What this IS NOT
 
@@ -91,6 +90,8 @@ Rejected because the examined pinned source does not establish a safe supported 
 | Conflicting operations are serialized and cached IDs do not rerun | Firmware and host fake-transport contract tests | Pending implementation |
 | Existing ADR-006 command/frame behavior is unchanged | Existing regression suite and pinned firmware compile | Pending implementation |
 | Codec power/routing uncertainty is not reported as restored or audibly verified | ADR/source review and result-schema tests | Pending implementation; hardware behavior unknown |
+
+Owner acceptance of the detailed bounds, response fields, cache behavior, and cleanup semantics remains pending. Source/build authorization is not acceptance of these design details.
 
 ## Rollback
 
