@@ -13,6 +13,8 @@ This is the entry point for Cardputer knowledge. Bounded research captures in `r
 
 ## Topics
 
+- [Reported Cardputer and agent-device interface examples](research/2026-10-08_cardputer-agent-usage/output.md) — Issue #35 bounded evidence handoff; project reports, not adoption data.
+
 - [Selected Launcher projects](wiki/reports/2026-10-07_launcher-cardputer-projects.md) — revision-pinned, source-linked overview of three examples.
 - [CalcPuter](wiki/entities/calculator-calcputer.md) — upstream-documented calculator features and source/license references.
 - [Cardulator](wiki/entities/calculator-cardulator.md) — upstream-documented scientific calculator/REPL features and source/license references.
