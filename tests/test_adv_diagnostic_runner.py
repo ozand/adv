@@ -126,6 +126,62 @@ class RunnerContractTests(unittest.TestCase):
             cli.run_v2(port, "result", "RUN1")
         self.assertEqual(port.writes, [b"result RUN1\n"])
 
+    def test_reported_error_json_contains_only_sanitized_phase_context(self):
+        trace = {
+            "phase": "status_response", "status_write_attempted": True,
+            "status_write_returned_full_length": True,
+            "run_write_attempted": False, "run_write_returned_full_length": False,
+            "result_write_attempted": False, "result_write_returned_full_length": False,
+            "sd_test_write_attempted": False,
+            "sd_test_write_returned_full_length": False,
+        }
+        payload = cli.build_error_report("invalid_json", "RUN0001", trace)
+        self.assertEqual(payload, {
+            "ok": False, "error": "invalid_json", "run_id": "RUN0001",
+            "execution": trace,
+        })
+        self.assertNotIn("raw", json.dumps(payload).lower())
+        self.assertNotIn("port", json.dumps(payload).lower())
+
+    def test_malformed_status_reports_phase_without_sending_run(self):
+        port = FakeSerial(b"not-json" + bytes((13, 10)))
+        trace = {"status_write_attempted": False, "status_write_returned_full_length": False,
+                 "run_write_attempted": False, "run_write_returned_full_length": False,
+                 "sd_test_write_attempted": False}
+        with self.assertRaisesRegex(ValueError, "invalid_json"):
+            cli.run_full_port(port, "RUN1", trace=trace)
+        self.assertEqual(port.writes, [b"status\n"])
+        self.assertEqual(trace["phase"], "status_response")
+        self.assertTrue(trace["status_write_attempted"])
+        self.assertTrue(trace["status_write_returned_full_length"])
+        self.assertFalse(trace.get("run_write_attempted", False))
+        self.assertFalse(trace["sd_test_write_attempted"])
+
+    def test_malformed_run_response_reports_run_sent_without_retry(self):
+        port = FakeSerial(b"not-json" + bytes((13, 10)))
+        trace = {"run_write_attempted": False, "run_write_returned_full_length": False,
+                 "result_write_attempted": False}
+        with self.assertRaisesRegex(ValueError, "invalid_json"):
+            cli.run_v2(port, "run", "RUN1", trace=trace)
+        self.assertEqual(port.writes, [b"run RUN1\n"])
+        self.assertEqual(trace["phase"], "run_response")
+        self.assertTrue(trace["run_write_attempted"])
+        self.assertTrue(trace["run_write_returned_full_length"])
+        self.assertFalse(trace.get("result_write_attempted", False))
+
+    def test_malformed_sd_handshake_does_not_send_sd_test(self):
+        port = FakeSerial(line(v1()) + line(v2("run_ack")) + line(v2()) + b"not-json" + bytes((13, 10)))
+        trace = {"run_write_attempted": False, "run_write_returned_full_length": False,
+                 "sd_test_write_attempted": False, "sd_test_write_returned_full_length": False}
+        with self.assertRaisesRegex(ValueError, "invalid_json"):
+            cli.run_full_port(port, "RUN1", with_sd=True, trace=trace)
+        self.assertEqual(port.writes, [b"status\n", b"run RUN1\n", b"status\n"])
+        self.assertEqual(trace["phase"], "sd_status_response")
+        self.assertTrue(trace["run_write_attempted"])
+        self.assertTrue(trace["run_write_returned_full_length"])
+        self.assertFalse(trace["sd_test_write_attempted"])
+        self.assertFalse(trace["sd_test_write_returned_full_length"])
+
     def test_lost_run_ack_never_retries(self):
         port = FakeSerial(b"")
         with patch.object(cli.serial, "Serial", return_value=port), patch.object(
