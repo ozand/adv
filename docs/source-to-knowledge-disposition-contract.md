@@ -36,17 +36,17 @@ Explicitly excluded records and unresolved listing/candidate identities are repo
 
 - Assessment coverage = (`studied` + `synthesized`) / `N`.
 - Synthesis coverage = `synthesized` / `N`.
-- Target-linked synthesis coverage = distinct eligible synthesized artifacts with at least one target link / `N`; count artifacts, not links.
+- Target-linked synthesized-artifact coverage = eligible `synthesized` artifacts with at least one target relation / `N`; by definition this equals synthesis coverage because synthesized requires a target link. Report distinct-target count separately as a descriptive count, not as artifact coverage.
 - If `N = 0`, ratios are not-applicable, not 0%.
 - Unresolved eligible artifacts stay in `N` with zero assessment/synthesis credit; unresolved identities outside the artifact unit are separately reported as unresolved scope and make catalog-wide coverage partial/unknown.
 
 ## Worked examples (specification arithmetic only)
 
-Example A: a frozen set has 12 eligible artifacts: 2 `not-assessed`, 3 `studied`, 2 `synthesized`, 3 `deferred`, and 2 `unresolved`. Separately report one unresolved listing identity and two explicitly excluded records outside `N`. Assessment coverage is (3+2)/12 = 41.7%; synthesis coverage is 2/12 = 16.7%. If one synthesized artifact has a target link, target-linked coverage is 1/12 = 8.3%. These are illustrative values, not current corpus facts.
+Example A: a frozen set has 12 eligible artifacts: 2 `not-assessed`, 3 `studied`, 2 `synthesized`, 3 `deferred`, and 2 `unresolved`. Separately report one unresolved listing identity and two explicitly excluded records outside `N`. Assessment coverage is (3+2)/12 = 41.7%; synthesis coverage is 2/12 = 16.7%. Because each synthesized artifact requires at least one target link, target-linked synthesized-artifact coverage is also 2/12 = 16.7%. If those two artifacts link to the same canonical target, report one distinct target separately; do not use target count as an artifact-coverage numerator. These are illustrative values, not current corpus facts.
 
 Example B: an artifact that is retrieved and indexed but has no assessment receipt remains `not-assessed`; it enters `N` only if the declared eligibility rule includes it and counts in neither study nor synthesis numerator.
 
-Example C: one artifact linked to two targets counts once in target-linked coverage; two artifacts supporting one target count as two artifacts and one distinct target. These examples are not executable tests, audited manifest rows, or evidence that any source was actually reviewed.
+Example C: one synthesized artifact linked to two targets counts once in synthesis and target-linked artifact coverage; report the two distinct targets separately. Two synthesized artifacts supporting one target count as two artifacts in both coverage numerators and one distinct target. These examples are not executable tests, audited manifest rows, or evidence that any source was actually reviewed.
 
 ## Relationship to Issue #5 and adoption boundary
 
