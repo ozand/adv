@@ -52,4 +52,4 @@ Example C: one synthesized artifact linked to two targets counts once in synthes
 
 Extend existing Issue #5 catalog/candidate/manifest/QMD identities; do not duplicate them. Historical Issue #5 totals are historical receipts, not current counts. No private manifest or local corpus was inspected.
 
-This Accepted contract defines semantics only; it does not select serialization or mandate a manifest/companion-file change. No live scan, cloning, source acquisition, QMD/index operation, migration/backfill, runtime enforcement, or device operation is authorized. Any implementation or future change requires separate scope and authorization.
+ADR-011 accepts this finite source-to-knowledge disposition and coverage contract for Issue #46. It defines semantics only; it does not select serialization or mandate a manifest/companion-file change. No live scan, cloning, source acquisition, QMD/index operation, migration/backfill, runtime enforcement, or device operation is authorized. Any implementation or future change requires separate scope and authorization.
