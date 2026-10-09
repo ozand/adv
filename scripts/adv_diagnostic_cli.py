@@ -720,8 +720,10 @@ def main() -> int:
         } else "serial_error_or_indeterminate"
         print(json.dumps(build_error_report(code, args.run_id, trace), separators=(",", ":")))
         return 2
-    if isinstance(result, dict) and result.get("type") in {"mic_test", "tone_test", "error"}:
-        print(json.dumps({"ok": False, "result": result}, separators=(",", ":")))
+    if args.command in AUDIO_COMMANDS:
+        print(json.dumps(
+            {"ok": False, "result": result}, separators=(",", ":")
+        ))
         return 2
     if isinstance(result, dict) and "checks" in result and "coverage" in result:
         overall_ok = result["overall"] == "PASS"
