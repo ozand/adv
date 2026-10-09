@@ -13,6 +13,7 @@ This is the entry point for Cardputer knowledge. Bounded research captures in `r
 
 ## Topics
 
+- [Getting started with M5Stack Cardputer](wiki/reports/cardputer-setup.md) — identify Cardputer vs Cardputer-Adv and choose a documented, non-destructive development route.
 - [Reported Cardputer and agent-device interface examples](research/2026-10-08_cardputer-agent-usage/output.md) — Issue #35 bounded evidence handoff; project reports, not adoption data.
 
 - [Selected Launcher projects](wiki/reports/2026-10-07_launcher-cardputer-projects.md) — revision-pinned, source-linked overview of three examples.
