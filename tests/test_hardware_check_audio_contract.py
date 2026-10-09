@@ -60,6 +60,9 @@ def test_capture_callback_is_the_only_metrics_gate_and_end_is_join_boundary():
     assert "responseRms" in source and "responsePeak" in source
     assert "Serial.write(reinterpret_cast<const uint8_t *>(frame), static_cast<size_t>(n)) != static_cast<size_t>(n)" in source
     assert "Serial.end();  // Never append another frame after a partial audio response." in source
+    tone = source[source.index("static void executeToneTest() {") : source.index("void loop()")]
+    assert "M5.Speaker.end();" in tone
+    assert tone.index("M5.Speaker.end();") < tone.index("memset(toneSamples")
     assert "emitAudioJson(\"error\", \"mic_test\", id, true, \"run_not_found\", \"not_attempted\")" in source
     assert "emitAudioJson(\"error\", \"tone_test\", id, false, \"run_not_found\", \"not_attempted\")" in source
 
