@@ -205,6 +205,8 @@ def test_pinned_universal_source_invocation_and_mismatch_fail_closed(tmp_path):
     assert report["universal"]["profile"] == f"kb-bootstrap-validate-core:{MODULE.FRAMEWORK_PIN}"
     assert report["universal"]["exit_code"] == 0
     assert "ERRORS: 0" in report["universal"]["stdout"]
+    assert "ORPHANS (0 Incoming Links): 5" in report["universal"]["stdout"]
+    assert "retrieval, index freshness and publication readiness: not checked" in report["universal"]["stdout"]
     unrelated = subprocess.run([sys.executable,str(SCRIPT),str(fixture),"--kb-python",python],capture_output=True,text=True)
     assert unrelated.returncode == 2 and "both --kb-bootstrap-source" in json.loads(unrelated.stdout)["error"]
     bad = subprocess.run([sys.executable,str(SCRIPT),str(fixture),"--kb-bootstrap-source",str(tmp_path),"--kb-python",python],capture_output=True,text=True)

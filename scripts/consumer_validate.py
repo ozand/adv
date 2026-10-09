@@ -54,8 +54,6 @@ def run_pinned_universal(source_root: Path, python_exe: str, consumer_root: Path
         return {"status":"FAIL","profile":f"kb-bootstrap-source:{FRAMEWORK_PIN}","errors":["qualified Python interpreter not found"]}
     if source_root.resolve() != source_root or not source_root.is_dir() or source_root.is_symlink():
         return {"status":"FAIL","profile":f"kb-bootstrap-source:{FRAMEWORK_PIN}","errors":["framework source root must be an existing resolved non-symlink directory"]}
-    if os.name != "nt" and str(source_root) != str(source_root.resolve()):
-        return {"status":"FAIL","profile":f"kb-bootstrap-source:{FRAMEWORK_PIN}","errors":["framework source root must use canonical path spelling"]}
     checks = [("rev-parse", "HEAD")]
 
     observed: list[str] = []
@@ -68,8 +66,7 @@ def run_pinned_universal(source_root: Path, python_exe: str, consumer_root: Path
         if result.returncode != 0:
             return {"status":"FAIL","profile":f"kb-bootstrap-source:{FRAMEWORK_PIN}","errors":["cannot verify framework checkout"]}
         observed.append(result.stdout.strip())
-    env = {**os.environ, "PYTHONDONTWRITEBYTECODE":"1", "PYTHONPYCACHEPREFIX":str((Path("C:/Temp/adv-kb-bootstrap-pycache-73277") if os.name == "nt" else Path("/tmp/adv-kb-bootstrap-pycache-73277")).resolve())}
-    os.makedirs(env["PYTHONPYCACHEPREFIX"], exist_ok=True)
+    env = {**os.environ, "PYTHONDONTWRITEBYTECODE":"1"}
     status = subprocess.run(
         ["git", "-C", str(source_root), "status", "--porcelain", "--untracked-files=all"],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
@@ -77,18 +74,6 @@ def run_pinned_universal(source_root: Path, python_exe: str, consumer_root: Path
     )
     if status.returncode != 0 or observed[0] != FRAMEWORK_PIN or status.stdout.strip():
         return {"status":"FAIL","profile":f"kb-bootstrap-source:{FRAMEWORK_PIN}","errors":["framework checkout pin mismatch or source tree has unexpected changes"]}
-    if os.name == "nt":
-        cache_path = Path("C:/Temp/adv-kb-bootstrap-pycache-73277")
-        temp_root = Path("C:/Temp")
-    else:
-        cache_path = Path("/tmp/adv-kb-bootstrap-pycache-73277")
-        temp_root = Path("/tmp")
-    cache_root = cache_path.resolve()
-    try:
-        cache_root.relative_to(temp_root.resolve())
-    except ValueError:
-        return {"status":"FAIL","profile":f"kb-bootstrap-source:{FRAMEWORK_PIN}","errors":["configured bytecode cache must be under isolated temp root"]}
-    env["PYTHONPYCACHEPREFIX"] = str(cache_root)
     code = (
         "import sys; sys.path.insert(0, sys.argv[1]); "
         "import kb_bootstrap; "
@@ -113,7 +98,7 @@ def run_pinned_universal(source_root: Path, python_exe: str, consumer_root: Path
     )
     result = subprocess.run(
         [python_exe, "-B", "-c", cli, str(source_root), str(consumer_root / "kb")],
-        cwd=str(source_root), env=env, capture_output=True, text=True,
+        cwd=str(source_root), env={**env, "PYTHONDONTWRITEBYTECODE":"1"}, capture_output=True, text=True,
         encoding="utf-8", errors="replace", timeout=120, check=False,
     )
     output = (result.stdout + result.stderr)[-20_000:]
