@@ -1,6 +1,6 @@
 # ADR-010: Define an extensible knowledge and evidence contract
 
-**Status**: Proposed
+**Status**: Accepted
 **Date**: 2026-10-09
 **Authors**: Repository owner and coding assistant
 **Supersedes**: None
@@ -8,6 +8,7 @@
 
 ## Context
 
+Owner acceptance was recorded in [Issue #45 comment 6072992191](https://github.com/ozand/adv/issues/45#issuecomment-6072992191) for the finite proposal published at main commit `60172a4ac68739d5b19745f2bee503f0f46ca02a`, including the `docs/knowledge-model-contract.md` blob `fa6c098eb2d71187c2feffd8dca02428acb3a0d2`. Acceptance covers advancement of Issues #46–#51 under that contract only; it is not blanket acceptance of future ADRs, migration, QMD/index changes, or device claims.
 The Cardputer KB needs consistent object classification, claim-level evidence, applicability context, and minimal metadata without implying that structure proves truth. Existing OKF uses a required nonempty `type` and permits unknown types/additional fields. Existing cards vary in source detail and distinguish upstream statements from runtime verification. ADR-007 separates reviewed public raw/research evidence from canonical wiki synthesis and ignored original sources; ADR-004 keeps operational lessons local-only.
 
 Evidence basis: inspected published CalcPuter and Cardulator cards and current OKF profile behavior. These are examples of current document practice, not proof that every card follows one contract. The knowledge model is a proposal; no migration or schema adoption is authorized by filing this ADR. An OpenWIKI proposal was reviewed read-only at source revision `d1c7fc75a6a906da258cd94dbcb1602f98516480`; its compatibility guidance is advisory only and adds no requirement or evidence to this contract.
@@ -24,7 +25,7 @@ OKF `type` is required, nonempty, and extensible. Existing cards use `Project`, 
 
 Propose the finite contract in `docs/knowledge-model-contract.md` for review. Preserve OKF's required extensible `type`; recommend `title` for adv canonical cards, not as an OKF universal requirement. Keep optional `object_profile` separate from `type`. Record evidence per claim/source, not as a document-wide grade. Distinguish source-reported, code-inspected, device-observed, and the higher-threshold device-verified claim class; keep applicability and lifecycle separate. No existing cards or vocabularies are migrated or promoted.
 
-**This is not** an accepted schema, universal object taxonomy, source disposition workflow, publication-boundary change, or authorization to migrate content, index QMD, or assert device verification.
+**This is not** a universal object taxonomy, source disposition workflow, publication-boundary change, or authorization to migrate content, index QMD, or assert device verification. Acceptance applies only to the finite proposal identified in the Issue #45 owner decision; implementation and migration remain separately scoped.
 
 ## Consequences
 
@@ -59,7 +60,7 @@ OKF `type`, raw/research/wiki/sources boundaries, local lessons, and current car
 
 ## Rollback
 
-Because this is Proposed and no content is migrated, withdraw the proposed contract and remove its index entry in a reviewed follow-up. Do not alter existing cards or accepted ADRs as rollback.
+Any future reversal requires a reviewed superseding ADR. No content was migrated by this decision. Do not alter existing cards or accepted ADRs as rollback.
 
 ## References
 
