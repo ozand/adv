@@ -25,7 +25,7 @@ Define a bounded proposal for Cardputer consumer checks/reports that separates u
 
 Accept `docs/consumer-validation-contract.md` as the finite read-only Cardputer consumer-validation contract. Preserve universal `kb-bootstrap` results as a separate layer; consumer checks must not replace or reinterpret them. This recorded owner acceptance authorizes implementation of the specified consumer checks and deterministic fixtures. Existing records remain governed by accepted universal/contract semantics; no mandatory title or retroactive migration is imposed. No repair, status promotion, or live data/index/device operations.
 
-**This is not** a claim that a consumer validator exists, a framework upgrade, migration plan, factual/privacy/rights oracle, index-freshness check, or permission to migrate, repair, promote status, refresh QMD, or operate a device. Acceptance is recorded; implementation is authorized only within the finite read-only consumer-check and fixture scope. The acceptance-record PR and independent exact-commit review remain gates before implementation starts.
+**This is not** a claim that a consumer validator exists, a framework upgrade, migration plan, factual/privacy/rights oracle, index-freshness check, or permission to migrate, repair, promote status, refresh QMD, or operate a device. Acceptance is recorded; implementation is authorized only within the finite read-only consumer-check and fixture scope. The acceptance-record PR was merged and passed independent exact-commit review before implementation started.
 
 ### Output layers and compatibility
 
@@ -65,13 +65,13 @@ No existing card is migrated, rewritten, or promoted. ADR-010/011 semantics, pub
 
 | Claim | Check | Current evidence |
 |---|---|---|
-| Universal/local checks remain distinct | Fixtures assert separate labels/sections | Not yet written |
-| Required metadata/evidence checks reflect ADR-010 | Positive/negative fixtures for nonempty type, claim/source evidence, applicability, status/evidence separation, and required source revision/locator | Proposed; fixtures await acceptance |
-| Recommended/optional metadata stays compatible | Selected new/revised adv title recommendation warns when unmet; out-of-scope legacy is NOT CHECKED; optional profile is not universal failure; types remain extensible | Proposed; fixtures await acceptance |
-| Disposition/coverage checks reflect ADR-011 | Exact partition: not_assessed=0, studied=1, synthesized=2, deferred=0, unresolved_eligible=2; N=5; assessment (studied+synthesized)/N=3/5; synthesis/target-linked=2/5; 2 reasoned exclusions outside N; unknown non-artifact listing affects completeness only; N=0 is NOT APPLICABLE | Proposed; fixtures await acceptance |
-| Link scope permits citations safely | Positive external source URL; negative canonical target outside approved wiki/root, traversal, private source path, dangling target | Proposed; fixtures await acceptance |
-| QMD declaration does not imply runtime state | Output fixture labels declaration-only | Not yet written |
-| Validation is read-only | Future before/after fixture tree/index comparison | Proposed; implementation awaits acceptance |
+| Universal/local checks remain distinct | Optional composition verifies clean source checkout at exact framework pin, imported package path/version, invokes actual `validate-core`, and preserves proxy/consumer outputs separately | Implemented; pinned-source CLI test plus synthetic composition fixtures (19 focused tests) |
+| Required metadata/evidence checks reflect ADR-010 | Positive/negative fixtures for nonempty type, claim/source evidence, applicability, status/evidence separation, required source revision/locator, and bounded device-receipt fields | Implemented; focused tests pass (18 total) |
+| Recommended/optional metadata stays compatible | Selected new/revised adv title recommendation warns when unmet; out-of-scope legacy is NOT CHECKED; optional profile is not universal failure; types remain extensible | Implemented fixtures; no current corpus assessment |
+| Disposition/coverage checks reflect ADR-011 | Five-state exact partition, stable artifact IDs, revision-aware identity, deduplication/conflicting state, receipts, target relations checked by canonical-target validator, reasoned exclusions, unknown eligibility, N=0 and coverage arithmetic | Implemented; focused tests pass (19 total) |
+| Link scope permits citations safely | Public HTTP(S) source URLs accepted; canonical targets must be internal and resolve under explicit root without traversal/private-path/dangling/symlink escape | Implemented with temporary-root fixture; unsupported symlink creation is skipped by the test |
+| QMD declaration does not imply runtime state | Fixture rejects declaration text claiming freshness/retrieval/truth; no QMD runtime operation | Implemented synthetic fixture; QMD runtime not tested |
+| Validation is read-only | Input object remains unchanged; checker reads only explicit input, and path fixture uses temporary root | Implemented fixtures; checker does not enumerate current corpus |
 
 ## Rollback
 
