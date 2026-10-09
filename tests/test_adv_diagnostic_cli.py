@@ -1,4 +1,7 @@
+import contextlib
+import io
 import json
+import sys
 import unittest
 from unittest.mock import patch
 
@@ -12,7 +15,7 @@ def response(kind="status", state="not_run", reason="none", stage="idle", cleanu
         "sd": {"state": state, "stage": stage, "reason": reason,
                "bytes_verified": count, "cleanup": cleanup},
     }
-    return json.dumps(value, separators=(",", ":")).encode() + b"\r\n"
+    return json.dumps(value, separators=(",", ":")).encode() + bytes((13, 10))
 
 
 class FakeSerial:
@@ -43,6 +46,99 @@ class FakeSerial:
 
 
 class DiagnosticCliTests(unittest.TestCase):
+    def test_legacy_error_main_preserves_output_and_audio_error_stays_wrapped(self):
+        for command, replies, expected_error, writes in (
+            ("status", response("error", reason="not_ready"), "not_ready",
+             [b"status\n"]),
+            ("sd_test", response() + response("error", reason="not_ready"), "not_ready",
+             [b"status\n", b"sd_test\n"]),
+        ):
+            with self.subTest(command=command):
+                port = FakeSerial(replies)
+                output = io.StringIO()
+                with patch.object(cli.serial, "Serial", return_value=port), \
+                     patch.object(sys, "argv", ["cli", "--port", "COM-test", "--command", command]), \
+                     contextlib.redirect_stdout(output):
+                    exit_code = cli.main()
+                self.assertEqual(exit_code, 2)
+                report = json.loads(output.getvalue())
+                self.assertEqual(report["error"], expected_error)
+                self.assertEqual(report["result"]["type"], "error")
+                self.assertNotIn("execution", report)
+                self.assertEqual(port.writes, writes)
+
+    def test_audio_error_main_uses_audio_wrapper(self):
+        status_obj = json.loads(response())
+        status_obj["firmware_build"] = cli.AUDIO_BUILD
+        audio_error = {
+            "v": 1, "type": "error", "firmware_build": cli.AUDIO_BUILD,
+            "operation": "mic_test", "operation_id": "A1", "state": "INCONCLUSIVE",
+            "reason": "audio_busy", "cleanup": "not_attempted",
+        }
+        port = FakeSerial(
+            json.dumps(status_obj).encode() + bytes((13, 10))
+            + json.dumps(audio_error).encode() + bytes((13, 10))
+        )
+        output = io.StringIO()
+        with patch.object(cli.serial, "Serial", return_value=port), \
+             patch.object(sys, "argv", ["cli", "--port", "COM-test", "--command",
+                                          "mic_test", "--run-id", "A1"]), \
+             contextlib.redirect_stdout(output):
+            exit_code = cli.main()
+        report = json.loads(output.getvalue())
+        self.assertEqual(exit_code, 2)
+        self.assertFalse(report["ok"])
+        self.assertEqual(report["result"], audio_error)
+        self.assertEqual(port.writes, [bytes((115, 116, 97, 116, 117, 115, 10)), bytes((109, 105, 99, 95, 116, 101, 115, 116, 32, 65, 49, 10))])
+
+    def test_legacy_error_responses_keep_legacy_cli_shape(self):
+        status_error = json.loads(response("error", reason="not_ready"))
+        sd_error = json.loads(response("error", reason="not_ready"))
+        cases = (
+            ("status", status_error, [b"status\n"], response("error", reason="not_ready")),
+            ("sd_test", sd_error, [b"status\n", b"sd_test\n"],
+             response() + response("error", reason="not_ready")),
+        )
+        for command, expected_result, expected_writes, replies in cases:
+            with self.subTest(command=command):
+                port = FakeSerial(replies)
+                output = io.StringIO()
+                with patch.object(cli.serial, "Serial", return_value=port), \
+                     patch.object(sys, "argv", ["adv_diagnostic_cli.py", "--port", "COM-test",
+                                                   "--command", command]), \
+                     contextlib.redirect_stdout(output):
+                    exit_code = cli.main()
+                payload = json.loads(output.getvalue())
+                self.assertEqual(exit_code, 2)
+                self.assertEqual(payload["error"], expected_result["sd"]["reason"])
+                self.assertEqual(payload["result"], expected_result)
+                self.assertNotIn("execution", payload)
+                self.assertEqual(port.writes, expected_writes)
+
+    def test_audio_error_dispatch_keeps_audio_wrapper_and_inconclusive_state(self):
+        audio_error = {
+            "v": 1, "type": "error", "firmware_build": cli.AUDIO_BUILD,
+            "operation": "mic_test", "operation_id": "A1", "state": "INCONCLUSIVE",
+            "reason": "audio_busy", "cleanup": "not_attempted",
+        }
+        audio_status = json.loads(response())
+        audio_status["firmware_build"] = cli.AUDIO_BUILD
+        port = FakeSerial(
+            json.dumps(audio_status).encode() + bytes((13, 10))
+            + json.dumps(audio_error).encode() + bytes((13, 10))
+        )
+        output = io.StringIO()
+        with patch.object(cli.serial, "Serial", return_value=port), \
+             patch.object(sys, "argv", ["adv_diagnostic_cli.py", "--port", "COM-test",
+                                           "--command", "mic_test", "--run-id", "A1"]), \
+             contextlib.redirect_stdout(output):
+            exit_code = cli.main()
+        payload = json.loads(output.getvalue())
+        self.assertEqual(exit_code, 2)
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["result"], audio_error)
+        self.assertEqual(port.writes, [b"status" + bytes((10,)), b"mic_test A1" + bytes((10,))])
+
     def test_legacy_status_and_sd_accept_audio_build_without_changing_wire_version(self):
         payload = response().replace(cli.PROTOCOL_BUILD.encode(), cli.AUDIO_BUILD.encode())
         cli.validate_response(
@@ -100,7 +196,7 @@ class DiagnosticCliTests(unittest.TestCase):
 
     def test_not_ready_error_from_status_is_returned_without_sd_request(self):
         payload = json.loads(response("error", reason="not_ready"))
-        port = FakeSerial(json.dumps(payload).encode() + b"\r\n")
+        port = FakeSerial(json.dumps(payload).encode() + bytes((13, 10)))
         with patch.object(cli.serial, "Serial", return_value=port):
             result = cli.run("COM-test", "sd_test")
         self.assertEqual(result["sd"]["reason"], "not_ready")
@@ -119,7 +215,7 @@ class DiagnosticCliTests(unittest.TestCase):
     def test_status_mismatch_or_not_ready_never_sends_sd_test(self):
         wrong = json.loads(response())
         wrong["firmware_build"] = "wrong"
-        port = FakeSerial(json.dumps(wrong).encode() + b"\r\n")
+        port = FakeSerial(json.dumps(wrong).encode() + bytes((13, 10)))
         with patch.object(cli.serial, "Serial", return_value=port):
             with self.assertRaisesRegex(ValueError, "firmware_mismatch"):
                 cli.run("COM-test", "sd_test")
@@ -128,7 +224,7 @@ class DiagnosticCliTests(unittest.TestCase):
 
         not_ready = json.loads(response())
         not_ready["board_ready"] = False
-        port = FakeSerial(json.dumps(not_ready).encode() + b"\r\n")
+        port = FakeSerial(json.dumps(not_ready).encode() + bytes((13, 10)))
         with patch.object(cli.serial, "Serial", return_value=port):
             with self.assertRaisesRegex(ValueError, "firmware_not_ready"):
                 cli.run("COM-test", "sd_test")
@@ -142,7 +238,7 @@ class DiagnosticCliTests(unittest.TestCase):
 
     def test_error_snapshot_is_validated_and_returned(self):
         payload = json.loads(response("error", reason="not_ready"))
-        result, port = self.run_fake(json.dumps(payload).encode() + b"\r\n")
+        result, port = self.run_fake(json.dumps(payload).encode() + bytes((13, 10)))
         self.assertEqual(result["type"], "error")
         self.assertEqual(result["sd"]["reason"], "not_ready")
         self.assertEqual(port.writes, [b"status\n"])

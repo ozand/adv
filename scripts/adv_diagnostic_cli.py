@@ -566,8 +566,12 @@ def validate_audio_response(
             "v", "type", "firmware_build", "operation", "operation_id",
             "state", "reason", "cleanup",
         }
-        if set(obj) != fields or obj["operation"] not in {"mic_test", "tone_test", "unknown"}:
+        if set(obj) != fields:
             raise ValueError("unexpected_audio_fields")
+        if obj["operation"] != family and not (
+            obj["operation"] == "unknown" and obj["reason"] == "invalid_command"
+        ):
+            raise ValueError("audio_operation_mismatch")
         if obj["operation_id"] != ("" if obj["reason"] == "invalid_command" else operation_id):
             raise ValueError("audio_id_mismatch")
     else:
@@ -720,8 +724,10 @@ def main() -> int:
         } else "serial_error_or_indeterminate"
         print(json.dumps(build_error_report(code, args.run_id, trace), separators=(",", ":")))
         return 2
-    if isinstance(result, dict) and result.get("type") in {"mic_test", "tone_test", "error"}:
-        print(json.dumps({"ok": False, "result": result}, separators=(",", ":")))
+    if args.command in AUDIO_COMMANDS:
+        print(json.dumps(
+            {"ok": False, "result": result}, separators=(",", ":")
+        ))
         return 2
     if isinstance(result, dict) and "checks" in result and "coverage" in result:
         overall_ok = result["overall"] == "PASS"

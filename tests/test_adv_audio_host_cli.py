@@ -152,6 +152,26 @@ class AudioHostTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "invalid_audio_state"):
             cli.validate_audio_response(frame(error)[:-2], "mic_test", "A1")
 
+    def test_wrong_operation_error_is_rejected_for_requested_family(self):
+        for command, other in (
+            ("mic_test", "tone_test"), ("tone_test", "mic_test"),
+            ("mic_result", "tone_test"), ("tone_result", "mic_test"),
+        ):
+            with self.subTest(command=command):
+                error = {"v": 1, "type": "error", "firmware_build": cli.AUDIO_BUILD,
+                         "operation": other, "operation_id": "A1", "state": "INCONCLUSIVE",
+                         "reason": "not_ready" if command.endswith("test") else "run_not_found",
+                         "cleanup": "not_attempted"}
+                with self.assertRaisesRegex(ValueError, "audio_operation_mismatch"):
+                    cli.validate_audio_response(frame(error)[:-2], command, "A1")
+
+    def test_unknown_operation_error_requires_invalid_command_reason(self):
+        error = {"v": 1, "type": "error", "firmware_build": cli.AUDIO_BUILD,
+                 "operation": "unknown", "operation_id": "A1", "state": "INCONCLUSIVE",
+                 "reason": "run_not_found", "cleanup": "not_attempted"}
+        with self.assertRaisesRegex(ValueError, "audio_operation_mismatch"):
+            cli.validate_audio_response(frame(error)[:-2], "mic_test", "A1")
+
     def test_invalid_command_has_empty_id_and_fixed_error_shape(self):
         error = {"v": 1, "type": "error", "firmware_build": cli.AUDIO_BUILD,
                  "operation": "mic_test", "operation_id": "", "state": "INCONCLUSIVE",
