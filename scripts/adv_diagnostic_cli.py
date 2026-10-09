@@ -169,7 +169,7 @@ def validate_run_response(
         allowed_types.update({"run_result", "result"})
     if obj["v"] != 2 or obj["type"] not in allowed_types:
         raise ValueError("run_protocol_mismatch")
-    if obj["firmware_build"] != CURRENT_BUILD:
+    if obj["firmware_build"] not in {CURRENT_BUILD, AUDIO_BUILD}:
         raise ValueError("firmware_mismatch")
     if obj["type"] == "error":
         valid_error_id = (
@@ -315,13 +315,13 @@ def run_full_port(
         trace["phase"] = "status_response"
     status = validate_response(
         read_line(port, time.monotonic() + IDLE_REPLY_SECONDS), "status",
-        allowed_builds={CURRENT_BUILD},
+        allowed_builds={CURRENT_BUILD, AUDIO_BUILD},
     )
     if status["type"] == "error" or not status["board_ready"] or not status["imu_ready"]:
         raise ValueError("firmware_not_ready")
     run_result = run_v2(port, "run", run_id, trace=trace)
     sd_result = (
-        run_v1(port, "sd_test", allowed_builds={CURRENT_BUILD}, trace=trace)
+        run_v1(port, "sd_test", allowed_builds={CURRENT_BUILD, AUDIO_BUILD}, trace=trace)
         if with_sd and run_result["type"] != "error" else None
     )
     return build_report(run_result, sd_result, usb_handshake=True)
@@ -358,7 +358,7 @@ def run_v1(
         trace["status_write_returned_full_length"] = True
         trace["phase"] = f"{status_phase}_response"
     deadline = time.monotonic() + IDLE_REPLY_SECONDS
-    builds = allowed_builds or {LEGACY_BUILD, CURRENT_BUILD}
+    builds = allowed_builds or {LEGACY_BUILD, CURRENT_BUILD, AUDIO_BUILD}
     status = validate_response(read_line(port, deadline), "status", allowed_builds=builds)
     if status["type"] == "error":
         return status
