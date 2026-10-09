@@ -102,4 +102,5 @@ def test_tone_is_fixed_bounded_and_uncertainty_is_not_pass():
     assert "tone_test_result" not in source
     assert "cfg.internal_mic = true;" in source and "cfg.internal_spk = true;" in source
     assert 'firmware_build\\\":\\\"adv-diagnostic-3-audio-proposal' in source
-    assert "PREVIOUS_BUILD = \"adv-diagnostic-2\"" in (ROOT / "scripts" / "adv_diagnostic_cli.py").read_text(encoding="utf-8")
+    host = (ROOT / "scripts" / "adv_diagnostic_cli.py").read_text(encoding="utf-8")
+    assert "AUDIO_BUILD = \"adv-diagnostic-3-audio-proposal\"" in host

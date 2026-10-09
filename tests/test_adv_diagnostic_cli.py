@@ -43,21 +43,44 @@ class FakeSerial:
 
 
 class DiagnosticCliTests(unittest.TestCase):
+    def test_legacy_status_and_sd_accept_audio_build_without_changing_wire_version(self):
+        payload = response().replace(cli.PROTOCOL_BUILD.encode(), cli.AUDIO_BUILD.encode())
+        cli.validate_response(
+            payload.rstrip(), "status", allowed_builds={cli.CURRENT_BUILD, cli.AUDIO_BUILD}
+        )
+        ack = response("sd_test", "running", stage="mount").replace(
+            cli.PROTOCOL_BUILD.encode(), cli.AUDIO_BUILD.encode()
+        )
+        result_frame = response(
+            "sd_test_result", "pass", stage="complete", count=65536, cleanup="removed"
+        ).replace(cli.PROTOCOL_BUILD.encode(), cli.AUDIO_BUILD.encode())
+        port = FakeSerial(payload + ack + result_frame)
+        with patch.object(cli.serial, "Serial", return_value=port):
+            result = cli.run("COM-test", "sd_test")
+        self.assertEqual(result["type"], "sd_test_result")
+        self.assertEqual(port.writes, [b"status" + bytes((10,)), b"sd_test" + bytes((10,))])
+        self.assertEqual(result["v"], 1)
+
+    def test_run_v2_accepts_audio_build_with_existing_v2_schema(self):
+        value = {
+            "v": 2, "type": "result", "firmware_build": cli.AUDIO_BUILD,
+            "run_id": "A1", "overall": "INCONCLUSIVE",
+            "check_names": list(cli.RUN_CHECKS),
+            "checks": ["NOT_TESTED"] * 12,
+            "reasons": ["unavailable"] * 12,
+            "metrics": {"free_heap_bytes": 0, "ram_bytes_verified": 0, "imu_samples": 0},
+            "reason": "none",
+        }
+        for build in (cli.AUDIO_BUILD, cli.CURRENT_BUILD):
+            value["firmware_build"] = build
+            payload = json.dumps(value, separators=(",", ":")).encode()
+            self.assertEqual(cli.validate_run_response(payload, "result", "A1")["v"], 2)
+
     def run_fake(self, replies, command="sd_test"):
         port = FakeSerial(replies)
         with patch.object(cli.serial, "Serial", return_value=port):
             result = cli.run("COM-test", command)
         return result, port
-
-    def test_new_status_build_marker_is_the_current_protocol(self):
-        self.assertEqual(cli.CURRENT_BUILD, "adv-diagnostic-3-audio-proposal")
-        self.assertEqual(cli.PREVIOUS_BUILD, "adv-diagnostic-2")
-        new_build = response().replace(b'adv-diagnostic-1', b'adv-diagnostic-3-audio-proposal')
-        parsed = cli.validate_response(new_build.rstrip(), "status")
-        self.assertEqual(parsed["firmware_build"], cli.CURRENT_BUILD)
-        previous = new_build.replace(b'adv-diagnostic-3-audio-proposal', b'adv-diagnostic-2')
-        parsed_previous = cli.validate_response(previous.rstrip(), "status")
-        self.assertEqual(parsed_previous["firmware_build"], cli.PREVIOUS_BUILD)
 
     def test_status_is_one_cached_request(self):
         result, port = self.run_fake(response(), "status")
