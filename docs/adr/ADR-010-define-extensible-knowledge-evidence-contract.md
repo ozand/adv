@@ -22,7 +22,7 @@ OKF `type` is required, nonempty, and extensible. Existing cards use `Project`, 
 
 ## Decision
 
-Propose the minimal contract in `docs/knowledge-model-contract.md` for review. Keep the existing OKF `type` unchanged; add optional, extensible `object_profile` as a consumer classification. Record evidence per claim and source, not as one document-wide confidence label. Keep evidence kind, applicability, and lifecycle status orthogonal. Missing applicability remains `unknown`, not unsupported. Existing cards and vocabularies are not migrated or promoted by this proposal.
+Propose the finite contract in `docs/knowledge-model-contract.md` for review. Preserve OKF's required extensible `type`; recommend `title` for adv canonical cards, not as an OKF universal requirement. Keep optional `object_profile` separate from `type`. Record evidence per claim/source, not as a document-wide grade. Distinguish source-reported, code-inspected, device-observed, and the higher-threshold device-verified claim class; keep applicability and lifecycle separate. No existing cards or vocabularies are migrated or promoted.
 
 **This is not** an accepted schema, universal object taxonomy, source disposition workflow, publication-boundary change, or authorization to migrate content, index QMD, or assert device verification.
 
