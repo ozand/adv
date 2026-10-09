@@ -566,8 +566,12 @@ def validate_audio_response(
             "v", "type", "firmware_build", "operation", "operation_id",
             "state", "reason", "cleanup",
         }
-        if set(obj) != fields or obj["operation"] not in {"mic_test", "tone_test", "unknown"}:
+        if set(obj) != fields:
             raise ValueError("unexpected_audio_fields")
+        if obj["operation"] != family and not (
+            obj["operation"] == "unknown" and obj["reason"] == "invalid_command"
+        ):
+            raise ValueError("audio_operation_mismatch")
         if obj["operation_id"] != ("" if obj["reason"] == "invalid_command" else operation_id):
             raise ValueError("audio_id_mismatch")
     else:
