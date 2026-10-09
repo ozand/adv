@@ -267,7 +267,7 @@ def _check_links(targets: Any, repo_root: Path | None = None) -> list[str]:
         if parsed.scheme:
             errors.append(f"canonical_targets[{index}]: canonical targets are internal links; use source evidence for external citations")
             continue
-        if "\\\\" in target or re.match(r"^(?:[A-Za-z]:|//|\\\\\\\\)", target):
+        if "\\" in target or re.match(r"^(?:[A-Za-z]:|//)", target):
             errors.append(f"canonical_targets[{index}]: Windows drive/UNC/separator form is not allowed")
             continue
         decoded = unquote(target)

@@ -95,7 +95,7 @@ def test_zero_denominator_is_not_applicable_and_conflicting_duplicates_fail():
     assert MODULE.validate({"coverage":distinct})["consumer"]["coverage"]["assessment"] == "1/2"
 
 def test_windows_and_private_path_forms_are_rejected(tmp_path):
-    hostile = [r"C:\private\card.md", r"\\server\share\card.md", "kb/wiki/%2e%2e/private.md", "kb/wiki/%43%3a/private.md", "kb/wiki/sources/private.md", "kb/wiki/.qmd/index.md", "kb/wiki/local-lessons/index.md"]
+    hostile = [r"C:\private\card.md", r"\\server\share\card.md", r"kb\wiki\Sources\private.md", r"sources\private.md", "kb/wiki/%2e%2e/private.md", "kb/wiki/%43%3a/private.md", "kb/wiki/sources/private.md", "kb/wiki/.qmd/index.md", "kb/wiki/local-lessons/index.md"]
     for target in hostile:
         result = MODULE.validate({"graph":{"canonical_targets":[target]}}, repo_root=tmp_path)
         assert result["graph"]["status"] == "FAIL", target
