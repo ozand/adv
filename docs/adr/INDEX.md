@@ -10,4 +10,4 @@
 | [ADR-010](ADR-010-define-extensible-knowledge-evidence-contract.md) | Define an extensible knowledge and evidence contract | Accepted |
 | [ADR-011](ADR-011-define-source-disposition-and-coverage.md) | Define source-to-knowledge disposition and coverage | Accepted |
 | [ADR-012](ADR-012-define-cardputer-consumer-validation-contract.md) | Define a Cardputer consumer-validation contract | Accepted |
-| [ADR-013](ADR-013-define-bounded-batch-knowledge-workflow.md) | Define a bounded batch knowledge workflow | Proposed |
+| [ADR-013](ADR-013-define-bounded-batch-knowledge-workflow.md) | Define a bounded batch knowledge workflow | Accepted |

@@ -1,0 +1,20 @@
+{
+  "batch_id":"issue48-synthetic-example",
+  "issue":"https://github.com/example/repo/issues/1",
+  "base":"1111111111111111111111111111111111111111",
+  "candidate_sha":"2222222222222222222222222222222222222222",
+  "owner":"batch-owner-role",
+  "objective":"synthetic bounded batch example",
+  "writer":"single-writer-role",
+  "inputs":[
+    {"id":"artifact-a","source":"https://github.com/example/public-docs","revision":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","locator":"README.md#feature-a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","eligibility":"eligible"},
+    {"id":"artifact-b","source":"https://github.com/example/public-docs","revision":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","locator":"docs/feature-b.md","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","eligibility":"eligible"},
+    {"id":"artifact-excluded","source":"https://github.com/example/public-docs","revision":"cccccccccccccccccccccccccccccccccccccccc","locator":"LICENSE","eligibility":"excluded","reason":"synthetic scope example"}
+  ],
+  "results":[{"input_id":"artifact-a","disposition":"studied"},{"input_id":"artifact-b","disposition":"unresolved"}],
+  "validation":{"source":{"status":"PASS"},"content":{"status":"PARTIAL"},"retrieval":{"status":"NOT RUN","reason":"not required for this synthetic example"}},
+  "gate":"PARTIAL",
+  "review":{"reviewer":"independent-review-role","reviewer_role":"independent-review-role","mode":"read-only","candidate_sha":"2222222222222222222222222222222222222222","status":"PASS"},
+  "receipt":{"url":"https://github.com/example/repo/issues/1#issuecomment-123","issue":"https://github.com/example/repo/issues/1","retention":"retained with governing issue record","sanitized":true},
+  "release":{"authorized":false}
+}

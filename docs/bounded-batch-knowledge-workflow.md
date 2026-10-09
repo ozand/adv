@@ -1,6 +1,6 @@
-# Bounded batch knowledge workflow (Proposed)
+# Bounded batch knowledge workflow (Accepted)
 
-**Status:** Proposed under Issue #48 / ADR-013; not accepted or enforced. This document is a workflow contract proposal, not a service, schema mandate, or authorization to acquire sources, migrate corpus data, operate QMD, or publish automatically.
+**Status:** Accepted under Issue #48 / ADR-013. This document defines a finite workflow contract; it does not authorize source acquisition, corpus migration, QMD operations, or automatic publication.
 
 ## Purpose and boundaries
 
@@ -8,7 +8,9 @@ Make batch research/synthesis reproducible and independently reviewable while ke
 
 ## Batch record
 
-For each proposed batch, retain these fields in its Issue/PR record or an explicitly scoped companion artifact:
+The minimal machine-readable example/checker subset is: batch/Issue identity, base and candidate SHA, one writer, frozen input IDs/source/revision/locator/hash and eligibility, one result per eligible input, three validation-layer statuses and aggregate gate, exact-SHA read-only review declaration, durable sanitized Issue receipt pointer, and an explicit release-decision field. Owner, objective, exclusions and stop conditions remain documented in the governing Issue. The checker does not authenticate identities or approval.
+
+For each batch, retain these fields in its Issue/PR record or an explicitly scoped companion artifact. [`batch-record.example.json`](batch-record.example.json) is a machine-readable synthetic example; the read-only checker validates its structure only.
 
 | Field | Required meaning |
 |---|---|
@@ -74,7 +76,7 @@ synthesis coverage: 0/2
 unresolved scope: none
 ```
 
-The partition is `N=0+1+0+0+1=2`. If complete assessment is required, the gate is PARTIAL because an eligible artifact is unresolved. The excluded artifact is visible separately and outside N. If a listing's artifact eligibility is unknown, report it outside N and mark catalog scope PARTIAL/unknown; do not claim complete catalog coverage. If N=0, ratios are NOT APPLICABLE, not zero percent.
+The partition is `N=0+1+0+0+1=2`. If complete assessment is required, the gate is PARTIAL because an eligible artifact is unresolved. The excluded artifact is visible separately and outside N. If a listing's artifact eligibility is unknown, report it outside N and mark catalog scope PARTIAL/unknown; do not claim complete catalog coverage. If N=0, ratios are NOT APPLICABLE, not zero percent. The checker enforces that every eligible input has one result and that layer outcomes agree with the aggregate gate; it does not compute these coverage ratios.
 
 A sanitized receipt can summarize the separate checks, for example:
 
@@ -90,11 +92,11 @@ These placeholders are not execution evidence. Never claim binary/source identit
 
 ## Owner acceptance and implementation boundary
 
-This workflow is Proposed under ADR-013. Proposal review may assess clarity, finite scope, consistency with ADR-007/010/011/012, example arithmetic, and privacy boundaries. It does not authorize code, automation, enforcement, source acquisition, QMD updates, corpus migration, or publication. Owner acceptance of the exact ADR and workflow contract is required before an implementation increment begins.
+Owner acceptance is recorded on [Issue #48](https://github.com/ozand/adv/issues/48#issuecomment-6091040472) for the exact ADR/workflow revision described in ADR-013. This workflow is Accepted under ADR-013. Acceptance authorizes a separate implementation increment for minimal templates, read-only aggregate checks, and synthetic fixtures only. It does not establish current-corpus conformance, authorize live source acquisition/QMD operations/migration, or grant publication permission.
 
 ## Verification status
 
 - Example manifest/result arithmetic is specification-only; no source artifacts were retrieved or assessed.
-- No executable gate, batch engine, schema validator, or review enforcement is implemented.
+- The local read-only structural receipt checker is implemented; no batch engine, schema validator for source content, or review identity authentication is implemented.
 - No QMD runtime state, private corpus, or device/hardware state was inspected.
-- Proposal review/acceptance does not assert operational performance or production readiness.
+- Contract acceptance does not assert operational performance or production readiness.
