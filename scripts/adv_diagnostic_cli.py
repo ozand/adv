@@ -15,7 +15,8 @@ except ImportError:  # Allows protocol tests without installing host dependencie
     serial = SimpleNamespace(Serial=None)
 
 LEGACY_BUILD = "adv-diagnostic-1"
-CURRENT_BUILD = "adv-diagnostic-2"
+CURRENT_BUILD = "adv-diagnostic-3-audio-proposal"
+PREVIOUS_BUILD = "adv-diagnostic-2"
 PROTOCOL_BUILD = LEGACY_BUILD
 RUN_CHECKS = (
     "mcu", "ram_scratch", "imu_data", "motion", "display", "keyboard",
@@ -89,7 +90,7 @@ def validate_response(
         raise ValueError("invalid_response")
     if obj.get("v") != 1 or obj.get("type") not in {expected_type, "error"}:
         raise ValueError("protocol_mismatch")
-    if obj.get("firmware_build") not in (allowed_builds or {LEGACY_BUILD, CURRENT_BUILD}):
+    if obj.get("firmware_build") not in (allowed_builds or {LEGACY_BUILD, PREVIOUS_BUILD, CURRENT_BUILD}):
         raise ValueError("firmware_mismatch")
     if set(obj) != {"v", "type", "firmware_build", "board_ready", "imu_ready", "sd"}:
         raise ValueError("unexpected_fields")

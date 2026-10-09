@@ -49,6 +49,16 @@ class DiagnosticCliTests(unittest.TestCase):
             result = cli.run("COM-test", command)
         return result, port
 
+    def test_new_status_build_marker_is_the_current_protocol(self):
+        self.assertEqual(cli.CURRENT_BUILD, "adv-diagnostic-3-audio-proposal")
+        self.assertEqual(cli.PREVIOUS_BUILD, "adv-diagnostic-2")
+        new_build = response().replace(b'adv-diagnostic-1', b'adv-diagnostic-3-audio-proposal')
+        parsed = cli.validate_response(new_build.rstrip(), "status")
+        self.assertEqual(parsed["firmware_build"], cli.CURRENT_BUILD)
+        previous = new_build.replace(b'adv-diagnostic-3-audio-proposal', b'adv-diagnostic-2')
+        parsed_previous = cli.validate_response(previous.rstrip(), "status")
+        self.assertEqual(parsed_previous["firmware_build"], cli.PREVIOUS_BUILD)
+
     def test_status_is_one_cached_request(self):
         result, port = self.run_fake(response(), "status")
         self.assertEqual(result["type"], "status")
