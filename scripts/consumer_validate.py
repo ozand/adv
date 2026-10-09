@@ -3,13 +3,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
+import subprocess
 import sys
 from pathlib import Path, PurePosixPath
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 VERSION = "1.0"
 PROFILE_LABEL = "universal-profile-structural-proxy"
+FRAMEWORK_PIN = "73277fdb3e54184901f67268bc676a562b0a677a"
 STATES = {"not_assessed", "studied", "synthesized", "deferred", "unresolved_eligible"}
 
 
@@ -17,6 +21,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input", help="JSON file path, or - for stdin")
     parser.add_argument("--repo-root", help="explicit root for checking caller-listed canonical targets")
+    parser.add_argument("--kb-bootstrap-source", help="verified kb-bootstrap Git checkout at ADR-012 pin")
+    parser.add_argument("--kb-python", help="Python interpreter for that source checkout")
     args = parser.parse_args(argv)
     try:
         if args.input == "-":
@@ -29,11 +35,95 @@ def main(argv: list[str] | None = None) -> int:
         if len(raw.encode("utf-8")) > 1_000_000:
             raise ValueError("input exceeds 1 MiB limit")
         report = validate(json.loads(raw), repo_root=Path(args.repo_root).resolve() if args.repo_root else None)
-    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+        if args.kb_bootstrap_source or args.kb_python:
+            if not args.kb_bootstrap_source or not args.kb_python:
+                raise ValueError("both --kb-bootstrap-source and --kb-python are required")
+            report["universal"] = run_pinned_universal(
+                Path(args.kb_bootstrap_source), args.kb_python, Path(__file__).parents[1]
+            )
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError, subprocess.SubprocessError) as exc:
         print(json.dumps({"version": VERSION, "error": str(exc)}, sort_keys=True))
         return 2
     print(json.dumps(report, sort_keys=True))
     return 1 if report["universal"]["status"] == "FAIL" or report["consumer"]["status"] != "PASS" else 0
+
+
+def run_pinned_universal(source_root: Path, python_exe: str, consumer_root: Path) -> dict[str, Any]:
+    """Invoke validate-core from an explicitly verified framework source checkout."""
+    if not Path(python_exe).is_file():
+        return {"status":"FAIL","profile":f"kb-bootstrap-source:{FRAMEWORK_PIN}","errors":["qualified Python interpreter not found"]}
+    if source_root.resolve() != source_root or not source_root.is_dir() or source_root.is_symlink():
+        return {"status":"FAIL","profile":f"kb-bootstrap-source:{FRAMEWORK_PIN}","errors":["framework source root must be an existing resolved non-symlink directory"]}
+    if os.name != "nt" and str(source_root) != str(source_root.resolve()):
+        return {"status":"FAIL","profile":f"kb-bootstrap-source:{FRAMEWORK_PIN}","errors":["framework source root must use canonical path spelling"]}
+    checks = [("rev-parse", "HEAD")]
+
+    observed: list[str] = []
+    for command in checks:
+        result = subprocess.run(
+            ["git", "-C", str(source_root), *command],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=15, check=False,
+        )
+        if result.returncode != 0:
+            return {"status":"FAIL","profile":f"kb-bootstrap-source:{FRAMEWORK_PIN}","errors":["cannot verify framework checkout"]}
+        observed.append(result.stdout.strip())
+    env = {**os.environ, "PYTHONDONTWRITEBYTECODE":"1", "PYTHONPYCACHEPREFIX":str((Path("C:/Temp/adv-kb-bootstrap-pycache-73277") if os.name == "nt" else Path("/tmp/adv-kb-bootstrap-pycache-73277")).resolve())}
+    os.makedirs(env["PYTHONPYCACHEPREFIX"], exist_ok=True)
+    status = subprocess.run(
+        ["git", "-C", str(source_root), "status", "--porcelain", "--untracked-files=all"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=15, check=False, env=env,
+    )
+    if status.returncode != 0 or observed[0] != FRAMEWORK_PIN or status.stdout.strip():
+        return {"status":"FAIL","profile":f"kb-bootstrap-source:{FRAMEWORK_PIN}","errors":["framework checkout pin mismatch or source tree has unexpected changes"]}
+    if os.name == "nt":
+        cache_path = Path("C:/Temp/adv-kb-bootstrap-pycache-73277")
+        temp_root = Path("C:/Temp")
+    else:
+        cache_path = Path("/tmp/adv-kb-bootstrap-pycache-73277")
+        temp_root = Path("/tmp")
+    cache_root = cache_path.resolve()
+    try:
+        cache_root.relative_to(temp_root.resolve())
+    except ValueError:
+        return {"status":"FAIL","profile":f"kb-bootstrap-source:{FRAMEWORK_PIN}","errors":["configured bytecode cache must be under isolated temp root"]}
+    env["PYTHONPYCACHEPREFIX"] = str(cache_root)
+    code = (
+        "import sys; sys.path.insert(0, sys.argv[1]); "
+        "import kb_bootstrap; "
+        "from pathlib import Path; expected=Path(sys.argv[1]).resolve(); actual=Path(kb_bootstrap.__file__).resolve(); "
+        "print(kb_bootstrap.__version__); print(actual); "
+        "raise SystemExit(0 if actual.is_relative_to(expected) else 3)"
+    )
+    identity = subprocess.run(
+        [python_exe, "-B", "-c", code, str(source_root)],
+        cwd=str(source_root), env=env, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=20, check=False,
+    )
+    if identity.returncode != 0 or not identity.stdout.splitlines() or identity.stdout.splitlines()[0] != "0.4.0":
+        return {"status":"FAIL","profile":f"kb-bootstrap-source:{FRAMEWORK_PIN}","errors":["runtime import does not match pinned framework source/version"]}
+    if len(identity.stdout.splitlines()) < 2 or Path(identity.stdout.splitlines()[1]).resolve().parent != (source_root / "kb_bootstrap").resolve():
+        return {"status":"FAIL","profile":f"kb-bootstrap-source:{FRAMEWORK_PIN}","errors":["runtime import path is outside pinned framework package"]}
+    # The verified source tree is invoked explicitly, never via a global console script.
+    cli = (
+        "import sys; sys.path.insert(0, sys.argv[1]); "
+        "sys.argv=['kb-bootstrap','validate-core','--dir',sys.argv[2]]; "
+        "from kb_bootstrap.cli import main; raise SystemExit(main())"
+    )
+    result = subprocess.run(
+        [python_exe, "-B", "-c", cli, str(source_root), str(consumer_root / "kb")],
+        cwd=str(source_root), env=env, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=120, check=False,
+    )
+    output = (result.stdout + result.stderr)[-20_000:]
+    return {
+        "status":"PASS" if result.returncode == 0 else "FAIL",
+        "profile":f"kb-bootstrap-validate-core:{FRAMEWORK_PIN}",
+        "exit_code":result.returncode,
+        "stdout":output,
+        "stderr_truncated":len(result.stdout + result.stderr) > 20_000,
+    }
 
 
 def _bounded_shape(value: Any, depth: int = 0) -> None:
@@ -97,7 +187,7 @@ def validate(data: Any, repo_root: Path | None = None) -> dict[str, Any]:
         raise ValueError("canonical_targets exceeds 5000 entries")
     graph_errors = _check_links(targets, repo_root)
     consumer_errors.extend(graph_errors)
-    coverage_errors, coverage_result = _check_coverage(data.get("coverage"))
+    coverage_errors, coverage_result = _check_coverage(data.get("coverage"), repo_root)
     consumer_errors.extend(coverage_errors)
     qmd = data.get("qmd", {})
     if not isinstance(qmd, dict):
@@ -192,9 +282,20 @@ def _check_links(targets: Any, repo_root: Path | None = None) -> list[str]:
         if parsed.scheme:
             errors.append(f"canonical_targets[{index}]: canonical targets are internal links; use source evidence for external citations")
             continue
-        path = PurePosixPath(target)
-        if path.is_absolute() or ".." in path.parts or target.startswith(("sources/", ".")):
+        if "\\\\" in target or re.match(r"^(?:[A-Za-z]:|//|\\\\\\\\)", target):
+            errors.append(f"canonical_targets[{index}]: Windows drive/UNC/separator form is not allowed")
+            continue
+        decoded = unquote(target)
+        if "\\\\" in decoded or re.match(r"^(?:[A-Za-z]:|//|\\\\\\\\)", decoded):
+            errors.append(f"canonical_targets[{index}]: encoded Windows drive/UNC/separator form is not allowed")
+            continue
+        path = PurePosixPath(decoded)
+        if path.is_absolute() or ".." in path.parts or any(part.startswith(".") for part in path.parts):
             errors.append(f"canonical_targets[{index}]: target escapes approved repository content")
+            continue
+        private_parts = {"sources", "local-lessons", ".search", ".qmd", ".pi", ".agents", ".config", ".claude"}
+        if any(part.casefold() in private_parts for part in path.parts):
+            errors.append(f"canonical_targets[{index}]: target enters private/local content")
             continue
         if repo_root is None:
             errors.append(f"canonical_targets[{index}]: explicit repository root required to resolve internal target")
@@ -211,7 +312,7 @@ def _check_links(targets: Any, repo_root: Path | None = None) -> list[str]:
     return errors
 
 
-def _check_coverage(value: Any) -> tuple[list[str], dict[str, Any]]:
+def _check_coverage(value: Any, repo_root: Path | None = None) -> tuple[list[str], dict[str, Any]]:
     empty = {"n":0, "assessment":"NOT APPLICABLE", "synthesis":"NOT APPLICABLE", "scope":"KNOWN", "state":"NOT APPLICABLE"}
     if value is None:
         return [], empty
@@ -280,8 +381,12 @@ def _check_coverage(value: Any) -> tuple[list[str], dict[str, Any]]:
         actual[state] += 1
         if state == "studied" and not _has_assessment_receipt(artifact.get("receipt")):
             errors.append(f"{prefix}: studied state requires receipt")
-        if state == "synthesized" and (not isinstance(artifact.get("targets"), list) or not artifact["targets"]):
-            errors.append(f"{prefix}: synthesized state requires target relation")
+        if state == "synthesized":
+            targets = artifact.get("targets")
+            if not isinstance(targets, list) or not targets:
+                errors.append(f"{prefix}: synthesized state requires target relation")
+            else:
+                errors.extend(f"{prefix}: {error}" for error in _check_links(targets, repo_root))
     if actual != counts:
         errors.append("coverage counts differ from distinct artifact records")
     overlap = seen_artifact_ids.intersection(excluded_ids)
@@ -304,7 +409,7 @@ def _check_coverage(value: Any) -> tuple[list[str], dict[str, Any]]:
     else:
         assessed = counts["studied"] + counts["synthesized"]
         synthesis_count = counts['synthesized']
-        status = "PARTIAL" if scope == "PARTIAL" else "PASS"
+        status = "PARTIAL" if scope == "PARTIAL" or assessed < n else "PASS"
         metrics = {"n":n, "assessment":f"{assessed}/{n}", "synthesis":f"{synthesis_count}/{n}", "scope":scope, "state":status}
     return errors, metrics
 

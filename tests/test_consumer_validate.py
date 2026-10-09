@@ -53,12 +53,17 @@ def test_claim_source_provenance_is_conditional_and_locator_specific():
     assert missing["consumer"]["status"] == "FAIL"
     assert valid["consumer"]["status"] == "PASS"
 
-def test_five_state_partition_arithmetic_and_reasoned_exclusions():
+def test_five_state_partition_arithmetic_and_reasoned_exclusions(tmp_path):
     rows = [artifact("not_assessed",locator="a.md"), artifact("studied",locator="b.md"), artifact("synthesized",locator="c.md"), artifact("synthesized",locator="d.md"), artifact("unresolved_eligible",locator="e.md")]
+    target = tmp_path / "kb/wiki/entities/example.md"
+    target.parent.mkdir(parents=True)
+    target.write_text("synthetic target", encoding="utf-8")
     value = coverage(rows, exclusions=[{"id":"excluded-1","reason":"outside rights scope"},{"id":"excluded-2","reason":"excluded alias per snapshot rule"}])
-    report = MODULE.validate({"coverage":value})
-    assert report["consumer"]["status"] == "PASS"
-    assert report["consumer"]["coverage"] == {"n":5,"assessment":"3/5","synthesis":"2/5","scope":"KNOWN","state":"PASS"}
+    report = MODULE.validate({"coverage":value}, repo_root=tmp_path)
+    assert report["universal"]["status"] == "PASS"
+    assert report["graph"]["status"] == "PASS"
+    assert report["consumer"]["status"] == "PARTIAL"
+    assert report["consumer"]["coverage"] == {"n":5,"assessment":"3/5","synthesis":"2/5","scope":"KNOWN","state":"PARTIAL"}
     assert report["universal"]["status"] == "PASS"
     assert report["graph"]["status"] == "PASS"
     assert value["n"] == 5
@@ -86,7 +91,14 @@ def test_zero_denominator_is_not_applicable_and_conflicting_duplicates_fail():
     # The same source path at a different revision is a distinct artifact.
     distinct = coverage([first,artifact("unresolved_eligible",revision="r2")])
     assert distinct["n"] == 2
-    assert MODULE.validate({"coverage":distinct})["consumer"]["status"] == "PASS"
+    assert MODULE.validate({"coverage":distinct})["consumer"]["status"] == "PARTIAL"
+    assert MODULE.validate({"coverage":distinct})["consumer"]["coverage"]["assessment"] == "1/2"
+
+def test_windows_and_private_path_forms_are_rejected(tmp_path):
+    hostile = [r"C:\private\card.md", r"\\server\share\card.md", "kb/wiki/%2e%2e/private.md", "kb/wiki/%43%3a/private.md", "kb/wiki/sources/private.md", "kb/wiki/.qmd/index.md", "kb/wiki/local-lessons/index.md"]
+    for target in hostile:
+        result = MODULE.validate({"graph":{"canonical_targets":[target]}}, repo_root=tmp_path)
+        assert result["graph"]["status"] == "FAIL", target
 
 def test_external_source_url_is_allowed_but_internal_escape_fails():
     external_target = MODULE.validate({"graph":{"canonical_targets":["https://public.example/doc"]}})
@@ -135,6 +147,7 @@ def test_target_relations_are_deduplicated_and_validation_is_read_only():
     before = copy.deepcopy(value)
     result = MODULE.validate({"coverage":value})
     assert result["consumer"]["coverage"]["synthesis"] == "1/1"
+    assert "explicit repository root required" in " ".join(result["consumer"]["errors"])
     assert value == before
 
 def test_conflicting_duplicate_states_fail_without_promoting_universal_result():
@@ -178,6 +191,28 @@ def test_malformed_top_level_input_rejected():
         MODULE.validate([])
     with pytest.raises(ValueError):
         MODULE.validate({"unknown":True})
+
+def test_pinned_universal_source_invocation_and_mismatch_fail_closed(tmp_path):
+    import subprocess
+    import sys
+    source = Path("C:/Temp/adv-kb-bootstrap-pin-73277")
+    python = "C:/Temp/adv-kb-bootstrap-73277-venv/Scripts/python.exe"
+    fixture = tmp_path / "fixture.json"
+    fixture.write_text(json.dumps({"cards":[]}), encoding="utf-8")
+    good = subprocess.run([sys.executable,str(SCRIPT),str(fixture),"--kb-bootstrap-source",str(source),"--kb-python",python],capture_output=True,text=True)
+    assert good.returncode == 0, good.stderr + good.stdout
+    report = json.loads(good.stdout)
+    assert report["universal"]["profile"] == f"kb-bootstrap-validate-core:{MODULE.FRAMEWORK_PIN}"
+    assert report["universal"]["exit_code"] == 0
+    assert "ERRORS: 0" in report["universal"]["stdout"]
+    unrelated = subprocess.run([sys.executable,str(SCRIPT),str(fixture),"--kb-python",python],capture_output=True,text=True)
+    assert unrelated.returncode == 2 and "both --kb-bootstrap-source" in json.loads(unrelated.stdout)["error"]
+    bad = subprocess.run([sys.executable,str(SCRIPT),str(fixture),"--kb-bootstrap-source",str(tmp_path),"--kb-python",python],capture_output=True,text=True)
+    assert bad.returncode == 1
+    assert json.loads(bad.stdout)["universal"]["status"] == "FAIL"
+    unavailable = subprocess.run([sys.executable,str(SCRIPT),str(fixture),"--kb-bootstrap-source",str(source),"--kb-python",str(tmp_path / "missing-python.exe")],capture_output=True,text=True)
+    assert unavailable.returncode == 1
+    assert json.loads(unavailable.stdout)["universal"]["status"] == "FAIL"
 
 def test_cli_separates_layers_and_bounds_input(tmp_path):
     import subprocess
