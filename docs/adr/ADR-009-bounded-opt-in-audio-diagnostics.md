@@ -1,6 +1,6 @@
 # ADR-009: Add bounded opt-in microphone and tone diagnostics
 
-**Status**: Proposed
+**Status**: Accepted
 **Date**: 2026-10-08
 **Authors**: Repository owner and coding assistant
 **Supersedes**: None
@@ -8,7 +8,7 @@
 
 ## Context
 
-Issue #2's finite diagnostic runner represents audio as a physical check requiring owner observation; it does not define explicit microphone capture or tone-output operations. Issue #43 records the owner's authorization to prepare a `mic_test` and `tone_test` proposal and confirms headphones are connected. That authorization does not accept this ADR's detailed public contract; owner review is required before acceptance. It does not authorize runtime capture, playback, device/serial access, installation, or flashing.
+Issue #2's finite diagnostic runner represents audio as a physical check requiring owner observation; it does not define explicit microphone capture or tone-output operations. Issue #43 records the owner's authorization to prepare a `mic_test` and `tone_test` proposal and confirms headphones are connected. On 2026-10-09, the repository owner explicitly accepted the detailed ADR-009 source/API contract in the project coordination conversation with the statement “принимаю ADR-009”. This acceptance binds the detailed design decision below; it is recorded as a coordinator-chat owner receipt, not as a GitHub issue comment. It does not authorize runtime capture, playback, device/serial access, installation, or flashing. Native harness and offline build evidence support source-level review only and do not convert the runtime exclusions into permission.
 
 The pinned M5Unified 0.2.25 source configures Cardputer-Adv microphone input on GPIO46/41/43, I2S0, and speaker output on GPIO42/41/43, I2S1. Microphone enable/disable callbacks configure and power the ES8311; `Mic.end()` waits for capture-task quiescence, clears pending requests, invokes the disable callback, and uninstalls its I2S driver. The ES8311 may produce zero samples for about one second after power-up; this is an estimate, not a guaranteed warm-up duration. A completed `record` request writes exactly the requested sample count, while `isRecording()` may drop before a callback is delivered; callback absence is not completion evidence.
 
@@ -35,13 +35,13 @@ The host/device source contract uses fixed bounded JSON fields and reason enums;
 
 The proposed firmware advertises one truthful build marker, `adv-diagnostic-3-audio-proposal`, on all response types, including existing v1-shaped status/SD frames and v2 aggregate-run frames. Existing wire versions, field sets, command semantics, and SD/run result meanings remain unchanged. The separately reviewed host compatibility layer preserves `adv-diagnostic-2` for existing status/SD/run flows; only new audio commands require the new marker before they may be issued. This avoids contradictory firmware identity across frames while maintaining compatibility with the prior diagnostic build. The marker is informational capability evidence, not proof of audio runtime behavior or authorization.
 
-If accepted, this decision will extend the diagnostic operation set without changing the four existing ADR-006 command schemas or semantics. It does not claim that the speaker is safely routed to headphones, that a tone is inaudible with headphones connected, that codec power is restored, that acoustic measurements are calibrated, or that either operation has passed on hardware. It does not authorize runtime execution, serial access, installation, or flashing.
+This decision extends the diagnostic operation set without changing the four existing ADR-006 command schemas or semantics. It does not claim that the speaker is safely routed to headphones, that a tone is inaudible with headphones connected, that codec power is restored, that acoustic measurements are calibrated, or that either operation has passed on hardware. It does not authorize runtime execution, serial access, installation, or flashing.
 
 ### What this IS
 
 - Two explicit, bounded diagnostic commands that reuse already pinned M5Unified APIs.
 - Aggregate-only microphone reporting and a fixed synthesized tone; operation outcomes remain distinct from physical observation.
-- A proposed source/API contract for review; Issue #43 separately authorizes source/build work but does not itself accept this ADR.
+- An accepted source/API contract for implementation; Issue #43 separately authorizes source/build work but does not itself authorize runtime use.
 
 ### What this IS NOT
 
@@ -90,10 +90,10 @@ Rejected because the examined pinned source does not establish a safe supported 
 | Mic callback gates metrics; mic/tone polling waits are bounded but synchronous `Mic.end()`/`Speaker.end()` do not have proven caller-side hard deadlines; mic buffer wipe follows join quiescence | `tests/test_hardware_check_audio_contract.py` lifecycle source checks | Passing source-backed checks; native fake lifecycle harness and device runtime not performed |
 | Tone uses fixed synthesis parameters, bounded volume/duration, and never runs at boot | `tests/test_hardware_check_audio_contract.py` | Passing source-backed checks; no playback test authorized |
 | Mic cached result survives an unknown-ID query and conflicting new ID, and is replayed byte-identically without re-execution | `tests/native_audio_harness.cpp` | Bounded extracted audio-branch native harness passed one mic sequence (`mic_test A1` → `mic_result ZZ` → `mic_test B2` → `mic_result A1`); tone cache, all parser branches, and full firmware state machine remain untested. |
-| Existing ADR-006 command/frame behavior is unchanged; one truthful build marker appears across v1 status/SD and v2 run frames; prior build remains accepted for legacy host flows and audio is gated on the new marker | `tests/test_hardware_check_json_serializer.py`, `tests/test_hardware_check_serial_contract.py`, and `tests/test_adv_diagnostic_cli.py` | Targeted tests and pinned compile to be recorded for candidate; native firmware-emitter execution pending |
-| Codec power/routing uncertainty is not reported as restored or audibly verified | ADR/source review and result-schema tests | Pending implementation; hardware behavior unknown |
+| Existing ADR-006 command/frame behavior is unchanged; one truthful build marker appears across v1 status/SD and v2 run frames; prior build remains accepted for legacy host flows and audio is gated on the new marker | `tests/test_hardware_check_json_serializer.py`, `tests/test_hardware_check_serial_contract.py`, and host audio CLI tests | 65 focused joint Python tests passed; pinned offline firmware compile succeeded; native harness covers selected extracted emitter/command branches only |
+| Codec power/routing uncertainty is not reported as restored or audibly verified | ADR/source review, `tests/test_adv_audio_host_cli.py`, and `tests/native_audio_harness.cpp` | Source/schema and selected native harness checks pass; actual codec/acoustic behavior remains untested and unknown |
 
-Owner acceptance of the detailed bounds, response fields, cache behavior, and cleanup semantics remains pending. Source/build authorization is not acceptance of these design details.
+The owner acceptance receipt applies only to this detailed source/API contract. It does not authorize runtime capture/playback, device or COM/serial access, flashing, installation, or hardware validation. Those exclusions remain in force unless separately authorized.
 
 ## Rollback
 
