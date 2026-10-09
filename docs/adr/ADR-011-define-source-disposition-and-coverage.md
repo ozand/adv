@@ -8,7 +8,7 @@
 
 ## Context
 
-Owner acceptance of this finite disposition and coverage contract was recorded in [Issue #46 comment 6073600131](https://github.com/ozand/adv/issues/46#issuecomment-6073600131) for the published proposal at main commit `15aed78a3dd2038ca0673c5abf3713746aa84ff2`. Acceptance applies to this contract only; it does not authorize migration/backfill, QMD operations, live source acquisition, or device/runtime operations.
+Owner acceptance of this finite disposition and coverage contract was recorded by the coordinator in [Issue #46 comment 6074262030](https://github.com/ozand/adv/issues/46#issuecomment-6074262030), based on the owner's explicit decision: “принимаю ADR-011 Проверенный PR #56 с контрактом”. The accepted proposal was published at main commit `15aed78a3dd2038ca0673c5abf3713746aa84ff2`; ADR-011 blob `75e0c2b1fdb3ddddcecef56a5f9b7dac16f9538f`, companion contract blob `bf3af6c0238ed362216199f141ea27e5e20e63ac`. Acceptance applies to that finite contract only; it does not authorize migration/backfill, QMD operations, live source acquisition, or device/runtime operations.
 Issue #5 owns the local catalog/corpus accounting workflow and distinguishes catalog listing rows, normalized repository candidates, source revisions, clone outcomes, and QMD retrieval. It does not establish which source artifacts were studied, synthesized, deferred, or represented in canonical targets. Issue #46 requests a disposition/coverage contract extending that existing accounting, not a second inventory.
 
 The public `docs/OPERATIONS.md` documents historical local-corpus accounting and cautions that historical counts/manifests are not current-state claims. Its examples include different units (listing rows, URL candidates, source revisions, Markdown documents, indexed files). They must not be added together or reused as current denominators. ADR-010 is accepted at main commit `143c2de99c7b20e1e1879ead19aec139ef57d3bd`; its evidence model keeps claim provenance and applicability distinct from retrieval and editorial status.
@@ -31,7 +31,7 @@ Treat `retrieved` and `indexed` as separate acquisition/retrieval flags, not mut
 
 Coverage uses a named, frozen set of **eligible source-artifact records**. Eligibility, deduplication and exclusions must be declared with the snapshot; counts from different units are never summed. The eligible partition is `N = not_assessed + studied + synthesized + deferred + unresolved_eligible`. Unresolved listing identities whose artifact eligibility is unknown are reported outside `N`; do not claim complete catalog coverage while that scope remains unresolved. Retrieval/index flags and target relations are orthogonal. Reassessment history is append-only; coverage counts current state only.
 
-This Accepted ADR defines disposition semantics for future separately authorized use. Acceptance does not itself implement or enforce the format and does not authorize backfill, live requests, cloning, indexing, QMD updates, private source-corpus inspection, or migration.
+This ADR records the owner's acceptance of the finite contract above. Acceptance does not implement or enforce the format and does not authorize live requests, cloning, indexing, QMD updates, private source-corpus inspection, migration, or backfill.
 
 ## Consequences
 
@@ -69,7 +69,7 @@ Issue #5 remains the source for catalog/corpus acquisition and QMD workflow. ADR
 
 ## Rollback
 
-Any future reversal requires a superseding ADR and, if records are adopted, a separately planned migration; do not silently reinterpret historical counts. No records are migrated by this acceptance.
+Any future reversal requires a superseding ADR and, if records are later adopted, a separately planned migration; do not silently reinterpret historical counts. No records are migrated by this acceptance.
 
 ## References
 
