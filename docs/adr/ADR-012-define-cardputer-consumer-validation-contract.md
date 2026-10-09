@@ -68,7 +68,7 @@ No existing card is migrated, rewritten, or promoted. ADR-010/011 semantics, pub
 | Universal/local checks remain distinct | Fixtures assert separate labels/sections | Not yet written |
 | Required metadata/evidence checks reflect ADR-010 | Positive/negative fixtures for nonempty type, claim/source evidence, applicability, status/evidence separation, and required source revision/locator | Proposed; fixtures await acceptance |
 | Recommended/optional metadata stays compatible | Selected new/revised adv title recommendation warns when unmet; out-of-scope legacy is NOT CHECKED; optional profile is not universal failure; types remain extensible | Proposed; fixtures await acceptance |
-| Disposition/coverage checks reflect ADR-011 | Exact-count cases for distinct artifact IDs, assessed/unresolved/excluded partition, reasoned exclusions, unknown listings, N=0, target/receipt integrity, and partial coverage arithmetic | Proposed; fixtures await acceptance |
+| Disposition/coverage checks reflect ADR-011 | Exact partition: not_assessed=0, studied=1, synthesized=2, deferred=0, unresolved_eligible=2; N=5; assessment (studied+synthesized)/N=3/5; synthesis/target-linked=2/5; 2 reasoned exclusions outside N; unknown non-artifact listing affects completeness only; N=0 is NOT APPLICABLE | Proposed; fixtures await acceptance |
 | Link scope permits citations safely | Positive external source URL; negative canonical target outside approved wiki/root, traversal, private source path, dangling target | Proposed; fixtures await acceptance |
 | QMD declaration does not imply runtime state | Output fixture labels declaration-only | Not yet written |
 | Validation is read-only | Future before/after fixture tree/index comparison | Proposed; implementation awaits acceptance |

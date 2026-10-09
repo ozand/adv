@@ -35,10 +35,10 @@ These are expected outcomes for future fixtures, not implemented tests. Fixture 
 | F06 | Claim lacks valid source-evidence relation | FAIL | Does not imply factual falsity |
 | F07 | Applicability `unknown`, `not-applicable`, `unsupported` distinguished | PASS | No coercion among states |
 | F08 | Status promoted from structural PASS, QMD presence, or unreviewed claim | FAIL | No auto-promotion |
-| F09a | Five distinct eligible artifact IDs: 3 assessed + 2 eligible unresolved; all disposition rows link to valid receipts/targets | PASS; coverage 3/5 (60%) | Count each eligible artifact once; unresolved stays in denominator |
-| F09b | Excluded artifact has explicit exclusion reason | PASS; excluded artifact is outside eligible N | Do not silently omit an eligible artifact |
+| F09a | Five distinct eligible IDs partitioned as not_assessed=0, studied=1, synthesized=2, deferred=0, unresolved_eligible=2; disposition rows link to valid receipts/targets | PASS; assessment coverage (studied+synthesized)/N = 3/5 (60%); synthesis/target-linked = 2/5 (40%) | Unresolved earns zero assessment credit; count each ID once |
+| F09b | Add 2 excluded IDs with explicit reasons | PASS; excluded IDs are outside eligible N=5 | Eligible counts and ratios remain unchanged; never silently omit eligible items |
 | F10a | Eligible unresolved artifact omitted from frozen denominator or counted as assessed | FAIL | Retrieval/indexing alone earns no assessment credit |
-| F10b | Five eligible IDs, 3 assessed, 2 unresolved; unknown listing is not an artifact | PARTIAL, 3/5 (60%); unresolved included in N, unknown listing outside N | N=0 yields NOT APPLICABLE; unknown artifact scope prevents complete coverage claim |
+| F10b | Five eligible IDs retain known partition above; one unknown listing is confirmed not an artifact | PARTIAL scope/completeness only; eligible assessment remains 3/5 (60%), synthesis 2/5 (40%) | The unknown listing remains outside N; N=0 yields NOT APPLICABLE, not 0/0 |
 | F11 | External public source citation URL | PASS | External citations allowed |
 | F12 | Canonical target traversal/outside approved wiki/root, private source path, dangling target | FAIL | Does not ban external citations |
 | F13 | QMD declaration represented as freshness/retrieval/truth proof | FAIL | Declaration-only scope |
