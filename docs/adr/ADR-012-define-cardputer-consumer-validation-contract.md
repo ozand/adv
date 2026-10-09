@@ -35,6 +35,8 @@ A future composed report distinguishes:
 2. **Repository graph:** separate dead-link/orphan/evidence-link results.
 3. **QMD declaration/configuration:** declared configuration only; no runtime registration, refresh, retrieval, embeddings, freshness, or truth claim.
 4. **Cardputer consumer policy:** proposed checks from ADR-010/011; until ADR-012 is accepted and checks are implemented, report **not implemented**, never PASS.
+5. **Recommendation state:** for an explicitly selected new/revised adv card, report whether ADR-010's title recommendation is met; absent legacy records outside the selected scope are `NOT CHECKED`, not failures. No universal title requirement is introduced.
+6. **Provenance state:** for a selected claim, report whether its cited source revision and document locator are present and mapped to that claim. Missing required provenance is a local policy failure, not a factual-falsity finding.
 
 Do not collapse layers into one undifferentiated PASS. A failure in one layer does not redefine another. Record framework source pin and invoked binary version separately; do not claim byte identity without evidence. Existing validation outputs do not retroactively pass future consumer policy.
 
@@ -64,9 +66,9 @@ No existing card is migrated, rewritten, or promoted. ADR-010/011 semantics, pub
 | Claim | Check | Current evidence |
 |---|---|---|
 | Universal/local checks remain distinct | Fixtures assert separate labels/sections | Not yet written |
-| Required metadata/evidence checks reflect ADR-010 | Positive/negative fixtures for nonempty type, claim/source evidence, applicability, status/evidence separation | Proposed; fixtures await acceptance |
-| Recommended/optional metadata stays compatible | Absent title and optional profile are not universal failures; type values remain extensible | Proposed; fixtures await acceptance |
-| Disposition checks reflect ADR-011 | Positive/negative fixtures for receipt, disposition, canonical target relation, frozen eligible denominator, unresolved/excluded accounting | Proposed; fixtures await acceptance |
+| Required metadata/evidence checks reflect ADR-010 | Positive/negative fixtures for nonempty type, claim/source evidence, applicability, status/evidence separation, and required source revision/locator | Proposed; fixtures await acceptance |
+| Recommended/optional metadata stays compatible | Selected new/revised adv title recommendation warns when unmet; out-of-scope legacy is NOT CHECKED; optional profile is not universal failure; types remain extensible | Proposed; fixtures await acceptance |
+| Disposition/coverage checks reflect ADR-011 | Exact-count cases for distinct artifact IDs, assessed/unresolved/excluded partition, reasoned exclusions, unknown listings, N=0, target/receipt integrity, and partial coverage arithmetic | Proposed; fixtures await acceptance |
 | Link scope permits citations safely | Positive external source URL; negative canonical target outside approved wiki/root, traversal, private source path, dangling target | Proposed; fixtures await acceptance |
 | QMD declaration does not imply runtime state | Output fixture labels declaration-only | Not yet written |
 | Validation is read-only | Future before/after fixture tree/index comparison | Proposed; implementation awaits acceptance |

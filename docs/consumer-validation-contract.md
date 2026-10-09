@@ -30,17 +30,21 @@ These are expected outcomes for future fixtures, not implemented tests. Fixture 
 | F01 | Nonempty extensible `type`, valid claim/source evidence, explicit applicability | PASS | Universal profile PASS |
 | F02 | Missing or empty `type` | FAIL | Universal profile FAIL |
 | F03 | Unknown but nonempty `type` | PASS | Extensibility preserved |
-| F04 | Adv card lacks `title` | PASS; recommendation warning only | Not universal failure; no legacy migration |
+| F04 | Selected new/revised adv card lacks recommended `title` | Recommendation not met; report warning, not universal or proposal-wide conformance PASS | Legacy records outside selected scope are NOT CHECKED, not failures; no retroactive migration |
 | F05 | Optional `object_profile` omitted | PASS | Distinct from `type` |
 | F06 | Claim lacks valid source-evidence relation | FAIL | Does not imply factual falsity |
 | F07 | Applicability `unknown`, `not-applicable`, `unsupported` distinguished | PASS | No coercion among states |
 | F08 | Status promoted from structural PASS, QMD presence, or unreviewed claim | FAIL | No auto-promotion |
-| F09 | Disposition has receipt, disposition, canonical target, denominator accounting | PASS | Per accepted ADR-011 |
-| F10 | Eligible unresolved/unassessed artifact omitted from frozen denominator | FAIL | Retrieval/indexing alone earns no assessment credit |
+| F09a | Five distinct eligible artifact IDs: 3 assessed + 2 eligible unresolved; all disposition rows link to valid receipts/targets | PASS; coverage 3/5 (60%) | Count each eligible artifact once; unresolved stays in denominator |
+| F09b | Excluded artifact has explicit exclusion reason | PASS; excluded artifact is outside eligible N | Do not silently omit an eligible artifact |
+| F10a | Eligible unresolved artifact omitted from frozen denominator or counted as assessed | FAIL | Retrieval/indexing alone earns no assessment credit |
+| F10b | Five eligible IDs, 3 assessed, 2 unresolved; unknown listing is not an artifact | PARTIAL, 3/5 (60%); unresolved included in N, unknown listing outside N | N=0 yields NOT APPLICABLE; unknown artifact scope prevents complete coverage claim |
 | F11 | External public source citation URL | PASS | External citations allowed |
 | F12 | Canonical target traversal/outside approved wiki/root, private source path, dangling target | FAIL | Does not ban external citations |
 | F13 | QMD declaration represented as freshness/retrieval/truth proof | FAIL | Declaration-only scope |
 | F14 | Hardware-verified claim lacks required device evidence | FAIL | No device validation performed |
+| F15 | Claim cites exact source revision and document locator mapped to the claim | PASS | Provenance relation is present; does not establish truth |
+| F16 | Claim requires provenance but source revision or locator is missing/mismatched | FAIL | Do not invent a locator or pin |
 
 ## Link and evidence boundaries
 
