@@ -1,4 +1,6 @@
-# Diagnostic scripts
+# Diagnostic and validation scripts
+
+- [`consumer_validate.py`](consumer_validate.py) — read-only, deterministic Cardputer consumer-policy validator for an explicitly supplied JSON fixture/document. It reports an explicitly labelled **structural proxy**, canonical-target graph, and consumer-policy outcomes separately; the proxy is not the framework's universal validator. It does not scan repository data or perform repairs. See the accepted [consumer-validation contract](../docs/consumer-validation-contract.md) and `python -m pytest --confcutdir=tests -q -o addopts='' tests/test_consumer_validate.py`.
 
 Reusable, bounded Cardputer-Adv diagnostics:
 
