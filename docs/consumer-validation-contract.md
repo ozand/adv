@@ -1,29 +1,31 @@
 # Proposed Cardputer consumer-validation contract
 
-**Status:** Proposed under Issue #47 and ADR-012; not adopted or implemented. No migration, enforcement, repair, QMD refresh, or device/runtime operation authorized.
+**Status:** Accepted contract under ADR-012. Acceptance authorizes the bounded consumer-check implementation described here; it does not claim implementation or current-corpus conformance, nor authorize migration, repair, QMD operations, framework upgrade, or device/runtime operation.
 
 ## Scope and compatibility
 
 Compose local consumer policy with universal `kb-bootstrap`; do not replace it or claim current corpus conformance. Universal validation requires nonempty extensible `type`; `title` remains universally optional. ADR-010 recommends `title` for adv canonical cards, but this proposal creates no mandatory title rule or retroactive legacy migration. Optional `object_profile` remains distinct from `type`.
 
+The repository owner accepted ADR-012 and this contract as published at merge `5cc32431e10b32a40fbde6b160524e369ab58277`; the coordinating session relayed the exact response “принят” on 2026-10-09. Accepted artifacts: ADR blob `3d7597e99c1d18288e6a9500b4f1c011fa259f6d`; contract blob `2f6797672107891e16ca4d0ff698be328214d679`. See [acceptance record](https://github.com/ozand/adv/issues/47#issuecomment-6086379078). This records relayed decision provenance; it is not a separate claim of GitHub verification of the human statement. Implementation starts only after this acceptance-record increment is reviewed and published.
+
 Framework source reference pin: `73277fdb3e54184901f67268bc676a562b0a677a`. Installed `kb-bootstrap` v0.4.0 receipt is associated with source commit `db18df399ee2e7e236b4df6699b5d4892fc9c04e`; matching version text does not prove binary/source identity.
 
 ## Report layers
 
-A future report distinguishes:
+The composed report distinguishes:
 
 | Layer | Reports | Does not establish |
 |---|---|---|
 | Universal structural/profile | Named framework invocation/version and supported OKF profile | Local policy, truth, privacy, rights, device behavior |
 | Repository graph | Dead links, orphans, evidence links | Semantic correctness or publication permission |
 | QMD declaration/configuration | Declared configuration only | Runtime registration, freshness, retrieval, embeddings, truth |
-| Cardputer consumer policy | Proposed ADR-010/011 checks | Source truth or device verification |
+| Cardputer consumer policy | Accepted ADR-010/011 checks | Source truth or device verification |
 
-Until ADR-012 is accepted and checks are implemented, report consumer policy **not implemented**, never PASS. A failure in one layer does not redefine another; prior validation does not retroactively pass future policy.
+ADR-012 is accepted, but checks remain **not implemented** until separately delivered. Report consumer policy **not implemented**, never PASS. A failure in one layer does not redefine another; prior validation does not retroactively pass future policy.
 
-## Proposed deterministic fixture contract
+## Deterministic fixture contract
 
-These are expected outcomes for future fixtures, not implemented tests. Fixture PASS means only rule behavior, never factual truth.
+The following are implementation acceptance cases, not evidence that tests have already run. Fixture PASS means rule behavior only, never factual truth.
 
 | ID | Input | Expected local outcome | Universal result/notes |
 |---|---|---|---|
@@ -52,8 +54,8 @@ External public source citations are valid. Canonical target links must resolve 
 
 ## Safety and non-actions
 
-- Proposal only; no validator/fixture implementation, automatic repair, rewrite, migration, backfill, or status/evidence promotion.
+- Acceptance authorizes implementation of read-only consumer checks and deterministic fixtures only; no automatic repair, rewrite, migration, backfill, or status/evidence promotion.
 - No live source requests/cloning, private inventory, QMD registration/update/embed/search, device or hardware operation.
 - Structural PASS proves neither factual correctness, applicability, privacy, rights, publication eligibility, freshness, retrieval, nor device behavior.
-- No current corpus content is claimed to pass proposed policy.
-- ADR-012 acceptance is required before implementation or enforcement. Migration or framework upgrade requires separate authorization.
+- No current corpus content is claimed to pass the accepted policy.
+- ADR-012 acceptance is recorded; implementation must stay within this contract. Migration or framework upgrade requires separate authorization.
