@@ -79,8 +79,16 @@ def test_operations_are_explicit_cached_and_not_boot_or_aggregate_side_effects()
     assert "Mic." not in aggregate and "Speaker." not in aggregate
     assert "if (strcmp(micResultId, id) == 0)" in source
     assert "if (strcmp(toneResultId, id) == 0)" in source
-    assert "toneResultReady || audioLifecycleUncertain" in source
-    assert "micResultReady || audioLifecycleUncertain" in source
+    command_block = source[source.index('memcmp(commandBuffer, "mic_test ", 9)') : source.index('memcmp(commandBuffer, "mic_result ", 11)')]
+    assert "else if (micResultReady)" in command_block
+    assert "else if (toneResultReady)" in command_block
+    assert 'strcmp(micResultId, id) == 0' in command_block
+    assert 'strcmp(toneResultId, id) == 0' in command_block
+    assert '"run_id_busy"' in command_block
+    assert "audioLifecycleUncertain || M5.Mic.isRunning() || M5.Mic.isRecording() != 0 || M5.Speaker.isRunning() || M5.Speaker.isPlaying()) emitAudioJson(\"error\", \"mic_test\"" in command_block
+    assert "audioLifecycleUncertain || M5.Mic.isRunning() || M5.Mic.isRecording() != 0 || M5.Speaker.isRunning() || M5.Speaker.isPlaying()) emitAudioJson(\"error\", \"tone_test\"" in command_block
+    assert "toneResultReady || audioLifecycleUncertain" not in command_block
+    assert "micResultReady || audioLifecycleUncertain" not in command_block
 
 
 def test_mic_lifecycle_source_guards():

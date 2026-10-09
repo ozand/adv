@@ -394,7 +394,7 @@ static void handleCommandLine() {
     else if (micResultReady) {
       if (strcmp(micResultId, id) == 0) emitAudioJson("mic_test", "mic_test", id, true, nullptr, nullptr);
       else emitAudioJson("error", "mic_test", id, true, "run_id_busy", "not_attempted");
-    } else if (toneResultReady || audioLifecycleUncertain) emitAudioJson("error", "mic_test", id, true, "audio_busy", "not_attempted");
+    } else if (audioLifecycleUncertain || M5.Mic.isRunning() || M5.Mic.isRecording() != 0 || M5.Speaker.isRunning() || M5.Speaker.isPlaying()) emitAudioJson("error", "mic_test", id, true, "audio_busy", "not_attempted");
     else if (!ready || !M5.Mic.isEnabled()) emitAudioJson("error", "mic_test", id, true, "not_ready", "not_attempted");
     else { strlcpy(micResultId, id, sizeof(micResultId)); micResultReady = true; executeMicTest(); if (micResultReady) emitAudioJson("mic_test", "mic_test", id, true, nullptr, nullptr); else { strlcpy(micResultId, "", sizeof(micResultId)); emitAudioJson("error", "mic_test", id, true, micResultReason, micCleanupState); } }
   } else if (commandLength > 10 && memcmp(commandBuffer, "tone_test ", 10) == 0) {
@@ -403,7 +403,7 @@ static void handleCommandLine() {
     else if (toneResultReady) {
       if (strcmp(toneResultId, id) == 0) emitAudioJson("tone_test", "tone_test", id, false, nullptr, nullptr);
       else emitAudioJson("error", "tone_test", id, false, "run_id_busy", "not_attempted");
-    } else if (micResultReady || audioLifecycleUncertain) emitAudioJson("error", "tone_test", id, false, "audio_busy", "not_attempted");
+    } else if (audioLifecycleUncertain || M5.Mic.isRunning() || M5.Mic.isRecording() != 0 || M5.Speaker.isRunning() || M5.Speaker.isPlaying()) emitAudioJson("error", "tone_test", id, false, "audio_busy", "not_attempted");
     else if (!ready || !M5.Speaker.isEnabled()) emitAudioJson("error", "tone_test", id, false, "not_ready", "not_attempted");
     else { strlcpy(toneResultId, id, sizeof(toneResultId)); toneResultReady = true; executeToneTest(); if (toneResultReady) emitAudioJson("tone_test", "tone_test", id, false, nullptr, nullptr); else { strlcpy(toneResultId, "", sizeof(toneResultId)); emitAudioJson("error", "tone_test", id, false, toneResultReason, toneCleanupState); } }
   } else if (commandLength > 11 && memcmp(commandBuffer, "mic_result ", 11) == 0) {

@@ -15,13 +15,15 @@ static const char *toneResultReason="run_not_found", *toneCleanupState="not_atte
 static bool micResultReady=false, toneResultReady=false, audioLifecycleUncertain=false, ready=true;
 static char micResultId[13]="", toneResultId[13]="";
 static int micExecutions=0, toneExecutions=0;
-struct DeviceStub { bool isEnabled() const { return true; } };
-struct M5Stub { DeviceStub Mic, Speaker; };
+static bool micRunning=false, speakerRunning=false;
+struct DeviceStub { bool *running; bool isEnabled() const { return true; } bool isRunning() const { return *running; } int isRecording() const { return *running ? 1 : 0; } bool isPlaying() const { return *running; } };
+
+struct M5Stub { DeviceStub Mic{&micRunning}, Speaker{&speakerRunning}; };
 static M5Stub M5;
 static void strlcpy(char*d,const char*s,size_t n){if(n){std::strncpy(d,s,n-1);d[n-1]=0;}}
 static void emitJson(const char*,const char*){}
-static void executeMicTest(){++micExecutions;micResultReason="owner_observation_required";micCleanupState="quiescent";micRms=321;micPeak=654;}
-static void executeToneTest(){++toneExecutions;toneResultReason="owner_observation_required";toneCleanupState="software_stopped_codec_unknown";}
+static void executeMicTest(){++micExecutions;micRunning=true;micResultReason="owner_observation_required";micCleanupState="quiescent";micRms=321;micPeak=654;micRunning=false;}
+static void executeToneTest(){++toneExecutions;speakerRunning=true;toneResultReason="owner_observation_required";toneCleanupState="software_stopped_codec_unknown";speakerRunning=false;}
 static const char *const kAudioReasons[] = {"none", "invalid_command", "not_ready", "audio_busy", "run_id_busy", "run_not_found", "unsupported_board", "begin_failed", "record_failed", "capture_timeout", "cleanup_unknown", "zero_signal", "play_failed", "playback_timeout", "owner_observation_required"};
 static bool audioReasonAllowed(const char *reason) {
   for (const char *allowed : kAudioReasons) if (strcmp(reason, allowed) == 0) return true;
@@ -83,7 +85,7 @@ static void handleAudioCommandLine(){
     else if (micResultReady) {
       if (strcmp(micResultId, id) == 0) emitAudioJson("mic_test", "mic_test", id, true, nullptr, nullptr);
       else emitAudioJson("error", "mic_test", id, true, "run_id_busy", "not_attempted");
-    } else if (toneResultReady || audioLifecycleUncertain) emitAudioJson("error", "mic_test", id, true, "audio_busy", "not_attempted");
+    } else if (audioLifecycleUncertain || M5.Mic.isRunning() || M5.Mic.isRecording() != 0 || M5.Speaker.isRunning() || M5.Speaker.isPlaying()) emitAudioJson("error", "mic_test", id, true, "audio_busy", "not_attempted");
     else if (!ready || !M5.Mic.isEnabled()) emitAudioJson("error", "mic_test", id, true, "not_ready", "not_attempted");
     else { strlcpy(micResultId, id, sizeof(micResultId)); micResultReady = true; executeMicTest(); if (micResultReady) emitAudioJson("mic_test", "mic_test", id, true, nullptr, nullptr); else { strlcpy(micResultId, "", sizeof(micResultId)); emitAudioJson("error", "mic_test", id, true, micResultReason, micCleanupState); } }
   } else if (commandLength > 10 && memcmp(commandBuffer, "tone_test ", 10) == 0) {
@@ -92,7 +94,7 @@ static void handleAudioCommandLine(){
     else if (toneResultReady) {
       if (strcmp(toneResultId, id) == 0) emitAudioJson("tone_test", "tone_test", id, false, nullptr, nullptr);
       else emitAudioJson("error", "tone_test", id, false, "run_id_busy", "not_attempted");
-    } else if (micResultReady || audioLifecycleUncertain) emitAudioJson("error", "tone_test", id, false, "audio_busy", "not_attempted");
+    } else if (audioLifecycleUncertain || M5.Mic.isRunning() || M5.Mic.isRecording() != 0 || M5.Speaker.isRunning() || M5.Speaker.isPlaying()) emitAudioJson("error", "tone_test", id, false, "audio_busy", "not_attempted");
     else if (!ready || !M5.Speaker.isEnabled()) emitAudioJson("error", "tone_test", id, false, "not_ready", "not_attempted");
     else { strlcpy(toneResultId, id, sizeof(toneResultId)); toneResultReady = true; executeToneTest(); if (toneResultReady) emitAudioJson("tone_test", "tone_test", id, false, nullptr, nullptr); else { strlcpy(toneResultId, "", sizeof(toneResultId)); emitAudioJson("error", "tone_test", id, false, toneResultReason, toneCleanupState); } }
   } else if (commandLength > 11 && memcmp(commandBuffer, "mic_result ", 11) == 0) {
@@ -108,6 +110,12 @@ static void handleAudioCommandLine(){
   } else { emitJson("error","invalid_command"); }
  }
  commandLength=0; commandOverflow=false;
+}
+static void resetHarnessState(){
+ Serial=SerialStub{}; micResultReady=false; toneResultReady=false; audioLifecycleUncertain=false; ready=true;
+ micResultId[0]='\0'; toneResultId[0]='\0'; micExecutions=0; toneExecutions=0;
+ micRms=0; micPeak=0; micResultReason="run_not_found"; micCleanupState="not_attempted";
+ toneResultReason="run_not_found"; toneCleanupState="not_attempted"; micRunning=false; speakerRunning=false;
 }
 int main(){
  const std::string expectedMic = "{\"v\":1,\"type\":\"mic_test\",\"firmware_build\":\"adv-diagnostic-3-audio-proposal\",\"operation_id\":\"ABCDEFGHIJKL\",\"state\":\"INCONCLUSIVE\",\"reason\":\"owner_observation_required\",\"cleanup\":\"quiescent\",\"mic_rms\":32768,\"mic_peak\":32768}\r\n";
@@ -131,5 +139,13 @@ int main(){
  Serial.bytes.clear(); send("mic_result ZZ"); if(micExecutions!=1) return 6;
  Serial.bytes.clear(); send("mic_test B2"); if(micExecutions!=1) return 7;
  Serial.bytes.clear(); send("mic_result A1"); if(Serial.bytes!=original || micExecutions!=1) return 8;
+ Serial.bytes.clear(); send("tone_test T1"); if(toneExecutions!=1 || Serial.bytes.empty()) return 9;
+ Serial.bytes.clear(); send("mic_test M3"); if(micExecutions!=1 || Serial.bytes.find("run_id_busy")==std::string::npos) return 10;
+ Serial.bytes.clear(); send("tone_test T2"); if(toneExecutions!=1 || Serial.bytes.find("run_id_busy")==std::string::npos) return 11;
+ resetHarnessState();
+ Serial.bytes.clear(); send("tone_test T1"); if(toneExecutions!=1 || Serial.bytes.empty()) return 12;
+ Serial.bytes.clear(); send("mic_test M1"); if(micExecutions!=1 || Serial.bytes.empty()) return 13;
+ Serial.bytes.clear(); send("tone_test T2"); if(toneExecutions!=1 || Serial.bytes.find("run_id_busy")==std::string::npos) return 14;
+ Serial.bytes.clear(); send("mic_test M2"); if(micExecutions!=1 || Serial.bytes.find("run_id_busy")==std::string::npos) return 15;
  return 0;
 }
