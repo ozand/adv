@@ -58,6 +58,8 @@ def test_capture_callback_is_the_only_metrics_gate_and_end_is_join_boundary():
     assert "if (recordQueued) micResultReason = \"capture_timeout\"" in mic
     assert "overrideReason ? overrideReason" in source
     assert "responseRms" in source and "responsePeak" in source
+    assert "Serial.write(reinterpret_cast<const uint8_t *>(frame), static_cast<size_t>(n)) != static_cast<size_t>(n)" in source
+    assert "Serial.end();  // Never append another frame after a partial audio response." in source
     assert "emitAudioJson(\"error\", \"mic_test\", id, true, \"run_not_found\", \"not_attempted\")" in source
     assert "emitAudioJson(\"error\", \"tone_test\", id, false, \"run_not_found\", \"not_attempted\")" in source
 

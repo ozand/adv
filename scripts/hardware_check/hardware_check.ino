@@ -117,7 +117,10 @@ static void emitAudioJson(const char *type, const char *operation, const char *o
     n = snprintf(frame, sizeof(frame), "{\"v\":1,\"type\":\"mic_test\",\"firmware_build\":\"adv-diagnostic-3-audio-proposal\",\"operation_id\":\"%s\",\"state\":\"INCONCLUSIVE\",\"reason\":\"%s\",\"cleanup\":\"%s\",\"mic_rms\":%lu,\"mic_peak\":%u}\r\n", id, reason, cleanup, static_cast<unsigned long>(responseRms), static_cast<unsigned>(responsePeak));
   else
     n = snprintf(frame, sizeof(frame), "{\"v\":1,\"type\":\"tone_test\",\"firmware_build\":\"adv-diagnostic-3-audio-proposal\",\"operation_id\":\"%s\",\"state\":\"INCONCLUSIVE\",\"reason\":\"%s\",\"cleanup\":\"%s\"}\r\n", id, reason, cleanup);
-  if (n > 0 && static_cast<size_t>(n) < sizeof(frame)) Serial.write(reinterpret_cast<const uint8_t *>(frame), static_cast<size_t>(n));
+  if (n > 0 && static_cast<size_t>(n) < sizeof(frame) &&
+      Serial.write(reinterpret_cast<const uint8_t *>(frame), static_cast<size_t>(n)) != static_cast<size_t>(n)) {
+    Serial.end();  // Never append another frame after a partial audio response.
+  }
 }
 
 static void emitJson(const char *type, const char *reason) {
