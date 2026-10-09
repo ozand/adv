@@ -7,4 +7,4 @@
 | [ADR-006](ADR-006-hardware-diagnostic-serial-json.md) | Expose hardware diagnostic status through bounded serial JSON | Accepted |
 | [ADR-007](ADR-007-publish-reviewed-research-captures-exclude-local-source-originals.md) | Publish reviewed research captures while excluding local source originals | Accepted |
 | [ADR-009](ADR-009-bounded-opt-in-audio-diagnostics.md) | Add bounded opt-in microphone and tone diagnostics | Proposed |
-| [ADR-010](ADR-010-define-extensible-knowledge-evidence-contract.md) | Define an extensible knowledge and evidence contract | Proposed |
+| [ADR-010](ADR-010-define-extensible-knowledge-evidence-contract.md) | Define an extensible knowledge and evidence contract | Accepted |
