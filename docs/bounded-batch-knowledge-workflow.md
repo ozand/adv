@@ -1,0 +1,100 @@
+# Bounded batch knowledge workflow (Proposed)
+
+**Status:** Proposed under Issue #48 / ADR-013; not accepted or enforced. This document is a workflow contract proposal, not a service, schema mandate, or authorization to acquire sources, migrate corpus data, operate QMD, or publish automatically.
+
+## Purpose and boundaries
+
+Make batch research/synthesis reproducible and independently reviewable while keeping source identity, claim evidence, disposition, consumer conformance, retrieval state, and publication permission separate. Apply accepted ADR-007/010/011/012; do not redefine their fields or infer truth from retrieval/status/validation.
+
+## Batch record
+
+For each proposed batch, retain these fields in its Issue/PR record or an explicitly scoped companion artifact:
+
+| Field | Required meaning |
+|---|---|
+| `batch_id` | Stable human-readable identifier scoped to the governing Issue |
+| `issue` | Open governing Issue URL and acceptance criteria |
+| `owner` | Decision/release owner and one candidate writer |
+| `objective` | Bounded outcome and explicit non-goals |
+| `base` | Full consumer-repository commit on which the candidate is based |
+| `inputs` | Per artifact: canonical source/repository identity, locator, immutable revision/hash when available, representation, provenance |
+| `eligibility` | Eligible, excluded-with-reason, or unresolved eligibility; use ADR-011 artifact unit and frozen snapshot |
+| `exclusions` | Unique artifact IDs and explicit reason, outside N |
+| `limits` | Time/size/attempt limits, stop conditions, unresolved scope |
+| `candidate` | Full candidate commit and content hashes for reviewed outputs |
+| `results` | Per-artifact disposition/receipt/target relations under ADR-010/011 |
+| `validation` | Separate universal, consumer-policy, and optional retrieval results with command/tool/version, input snapshot, exit, limitations |
+| `reviewers` | Read-only review roles, exact candidate SHA, findings, verdict |
+| `release` | Owner release decision and sanitized durable Issue/PR receipt linking snapshots, candidate/reviewed/delivered identities and risks |
+
+Do not place private absolute paths, credentials, raw logs, source payloads, or sensitive corpus contents in public records. A source locator/hash is not proof of rights or truth.
+
+## Single-writer lifecycle and exact review
+
+1. **Scope and freeze:** confirm the open Issue, objective, exclusions, limits, and stop conditions. Freeze base commit and source-artifact snapshot identities. Moving/unavailable source identity remains unresolved; do not silently substitute it.
+2. **One writer:** one writer owns the candidate tree/branch. Parallel contributors may inspect immutable inputs read-only and return findings, but do not edit that candidate. The writer serializes and integrates changes explicitly.
+3. **Record results:** each artifact has one current disposition per ADR-011. `studied` requires an assessment receipt; `synthesized` requires a source-to-canonical-target relation. Unknown evidence remains unknown; excluded items require unique IDs/reasons; unresolved eligible artifacts stay in N without credit.
+4. **Separate validation layers:** report (a) universal `kb-bootstrap`, (b) repository consumer policy, and (c) retrieval/index only if separately authorized and run. `NOT RUN` is never PASS. Structural/profile checks do not establish local policy, truth, rights/privacy, retrieval freshness, or device behavior.
+5. **Independent exact-content review:** reviewers are read-only and record the exact candidate commit and relevant content hashes. A changed candidate invalidates review for changed bytes; review the new exact SHA. A branch name alone is not review identity.
+6. **Deterministic gate:** each required layer yields PASS/FAIL/PARTIAL/NOT RUN/NOT APPLICABLE with evidence. FAIL blocks release. PARTIAL names unresolved scope and cannot silently become PASS. NOT APPLICABLE is valid only when declared preconditions do not apply. Overall status cannot hide a layer.
+7. **Release receipt:** after owner decision, record batch ID, Issue/PR, base/source snapshot, candidate/reviewed/delivered commits, file hashes as needed, separate layer results, release decision, and residual risks. Keep it sanitized and durable in the governing Issue/PR; terminal logs alone are not durable evidence.
+
+No step implies automatic publication, evidence/status promotion, reciprocal-link generation, repair, migration, QMD mutation, or source acquisition.
+
+## Worked synthetic example (specification only)
+
+This example illustrates fields and arithmetic only. It is not an actual source review, corpus inventory, or executed workflow test.
+
+```text
+batch_id: issue48-example-01
+issue: https://github.com/ozand/adv/issues/48
+base: 1e7bc44f0ff00d8504ad929898e43f3127e27f9c
+inputs:
+  - id: artifact-a
+    source: https://github.com/example/public-docs
+    revision: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    locator: README.md#feature-a
+    eligibility: eligible
+  - id: artifact-b
+    source: https://github.com/example/public-docs
+    revision: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+    locator: docs/feature-b.md
+    eligibility: eligible
+  - id: artifact-x
+    source: https://github.com/example/third-party
+    revision: cccccccccccccccccccccccccccccccccccccccc
+    locator: LICENSE
+    eligibility: excluded
+    reason: outside declared rights scope
+snapshot: frozen; distinct source+revision+locator IDs
+N: 2
+partition: not_assessed=0, studied=1, synthesized=0, deferred=0, unresolved_eligible=1
+assessment coverage: 1/2
+synthesis coverage: 0/2
+unresolved scope: none
+```
+
+The partition is `N=0+1+0+0+1=2`. If complete assessment is required, the gate is PARTIAL because an eligible artifact is unresolved. The excluded artifact is visible separately and outside N. If a listing's artifact eligibility is unknown, report it outside N and mark catalog scope PARTIAL/unknown; do not claim complete catalog coverage. If N=0, ratios are NOT APPLICABLE, not zero percent.
+
+A sanitized receipt can summarize the separate checks, for example:
+
+```text
+universal: PASS | owner=kb-bootstrap | source pin=73277fdb... | exit=0
+consumer: PARTIAL | owner=adv | candidate=<exact SHA> | exit=1
+retrieval: NOT RUN | reason=not required/authorized
+review: PASS | reviewer role=<role> | exact candidate=<full SHA>
+release: NOT AUTHORIZED | reason=consumer layer partial
+```
+
+These placeholders are not execution evidence. Never claim binary/source identity without verifying the module import path/version. A planned fixture or worked example is not an executed test.
+
+## Owner acceptance and implementation boundary
+
+This workflow is Proposed under ADR-013. Proposal review may assess clarity, finite scope, consistency with ADR-007/010/011/012, example arithmetic, and privacy boundaries. It does not authorize code, automation, enforcement, source acquisition, QMD updates, corpus migration, or publication. Owner acceptance of the exact ADR and workflow contract is required before an implementation increment begins.
+
+## Verification status
+
+- Example manifest/result arithmetic is specification-only; no source artifacts were retrieved or assessed.
+- No executable gate, batch engine, schema validator, or review enforcement is implemented.
+- No QMD runtime state, private corpus, or device/hardware state was inspected.
+- Proposal review/acceptance does not assert operational performance or production readiness.
