@@ -1,6 +1,6 @@
-# Proposed source-to-knowledge disposition contract
+# Source-to-knowledge disposition and coverage contract
 
-**Status:** Proposed under Issue #46/ADR-011; not adopted. No backfill/current-corpus claim is authorized.
+**Status:** Accepted as the finite contract in ADR-011; owner decision recorded at [Issue #46 comment 6074262030](https://github.com/ozand/adv/issues/46#issuecomment-6074262030). Acceptance does not authorize implementation, migration/backfill, QMD/index operations, live source acquisition, private-corpus inspection, or device/runtime operations. No current-corpus claim is made.
 
 ## Purpose and boundaries
 
@@ -52,4 +52,4 @@ Example C: one synthesized artifact linked to two targets counts once in synthes
 
 Extend existing Issue #5 catalog/candidate/manifest/QMD identities; do not duplicate them. Historical Issue #5 totals are historical receipts, not current counts. No private manifest or local corpus was inspected.
 
-This finite contract is proposed for owner review; ADR-011 acceptance is required before adoption/backfill. No serialization, manifest change, companion-file choice, live scan, cloning, source acquisition, QMD/index operation, or migration is authorized by this proposal.
+ADR-011 accepts this finite source-to-knowledge disposition and coverage contract for Issue #46. It defines semantics only; it does not select serialization or mandate a manifest/companion-file change. No live scan, cloning, source acquisition, QMD/index operation, migration/backfill, runtime enforcement, or device operation is authorized. Any implementation or future change requires separate scope and authorization.
