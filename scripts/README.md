@@ -12,7 +12,7 @@ Reusable, bounded Cardputer-Adv diagnostics:
   output, bounded I/O, no automatic retry. `sd_test` writes up to 64 KiB to the
   reserved test path. Proposed Issue #43 builds add explicit `mic_test`,
   `mic_result`, `tone_test`, and `tone_result`; these require the exact audio
-  proposal build marker and remain source/build-only until owner acceptance.
+  proposal build marker; the detailed source/API contract is accepted in ADR-009, but runtime remains separately unauthorized.
   Audio commands are never part of `run`; no device/runtime audio test is authorized.
 
 See [Issue #2 diagnostic report](../docs/diagnostics/ISSUE-2-CARDPUTER-ADV.md) for
