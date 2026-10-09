@@ -21,7 +21,7 @@ def test_emitter_fragments_form_parseable_v1_and_v2_responses():
     assert v1["v"] == 1 and v1["type"] == "status"
     assert v1["sd"]["bytes_verified"] == 0
 
-    emitter = source[source.index("static void emitRunJson") : source.index("static bool validRunId")]
+    emitter = source[source.index("static void emitRunJson") : source.index("static uint8_t patternByte")]
     prefix_line = next(line for line in emitter.splitlines() if "check_names" in line)
     suffix_line = next(line for line in emitter.splitlines() if "free_heap_bytes" in line)
     prefix_literal = prefix_line.split("snprintf(json, sizeof(json), ", 1)[1].split(", safeType", 1)[0]

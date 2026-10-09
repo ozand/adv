@@ -1,5 +1,7 @@
 #include <M5Cardputer.h>
 #include <SD.h>
+#include <atomic>
+#include <math.h>
 
 static constexpr char kSdTestPath[] = "/ADV_DIAGNOSTIC_SD_TEST.BIN";
 static constexpr size_t kSdTestBytes = 64 * 1024;
@@ -17,6 +19,19 @@ static uint32_t runHeapBytes = 0;
 static uint16_t runRamBytesVerified = 0;
 static uint8_t runImuSamples = 0;
 static const char *const kCheckNames[12] = {"mcu", "ram_scratch", "imu_data", "motion", "display", "keyboard", "audio", "ir", "radio", "battery", "connectors", "sd"};
+static constexpr size_t kMicSamples = 256;
+static constexpr uint32_t kMicSampleRate = 16000, kMicWarmupMs = 1000, kMicWaitMs = 1000;
+static constexpr size_t kToneSamples = 1600;
+static constexpr uint32_t kToneSampleRate = 16000, kToneWaitMs = 500;
+static constexpr size_t kAudioFrameMaxBytes = 256;
+static int16_t micSamples[kMicSamples], toneSamples[kToneSamples];
+static std::atomic<bool> micCaptureComplete{false};
+static bool micResultReady = false, toneResultReady = false, audioLifecycleUncertain = false;
+static char micResultId[13] = "", toneResultId[13] = "";
+static uint32_t micRms = 0;
+static uint16_t micPeak = 0;
+static const char *micResultReason = "run_not_found", *micCleanupState = "not_attempted";
+static const char *toneResultReason = "run_not_found", *toneCleanupState = "not_attempted";
 enum class SdState { NotRun, Running, Pass, Fail };
 enum class SdStage { Idle, Mount, Write, Read, Cleanup, Complete, Error };
 enum class SdCleanup { NotAttempted, Removed, Failed, Retained };
@@ -60,6 +75,54 @@ static const char *cleanupName() {
   return "failed";
 }
 
+static void executeMicTest();
+static void executeToneTest();
+static void emitAudioJson(const char *, const char *, const char *, bool, const char *, const char *);
+static const char kAudioFirmwareBuild[] = "adv-diagnostic-3-audio-proposal";
+static void micReleaseCallback(void *, void *data, size_t length) {
+  if (data == micSamples && length == kMicSamples) micCaptureComplete.store(true, std::memory_order_release);
+}
+static const char *const kAudioReasons[] = {"none", "invalid_command", "not_ready", "audio_busy", "run_id_busy", "run_not_found", "unsupported_board", "begin_failed", "record_failed", "capture_timeout", "cleanup_unknown", "zero_signal", "play_failed", "playback_timeout", "owner_observation_required"};
+static bool audioReasonAllowed(const char *reason) {
+  for (const char *allowed : kAudioReasons) if (strcmp(reason, allowed) == 0) return true;
+  return false;
+}
+static bool audioResultPairValid(const char *operation, const char *reason, const char *cleanup) {
+  if (strcmp(operation, "mic_test") == 0) {
+    if (strcmp(cleanup, "not_attempted") == 0) return strcmp(reason, "not_ready") == 0 || strcmp(reason, "unsupported_board") == 0 || strcmp(reason, "audio_busy") == 0 || strcmp(reason, "run_id_busy") == 0 || strcmp(reason, "run_not_found") == 0 || strcmp(reason, "invalid_command") == 0;
+    if (strcmp(reason, "cleanup_unknown") == 0) return strcmp(cleanup, "unknown") == 0;
+    if (strcmp(cleanup, "quiescent") != 0) return false;
+    if (strcmp(reason, "owner_observation_required") == 0) return micRms <= micPeak && micPeak <= 32768;
+    if (strcmp(reason, "zero_signal") == 0) return micRms == 0 && micPeak == 0;
+    return (strcmp(reason, "begin_failed") == 0 || strcmp(reason, "record_failed") == 0 || strcmp(reason, "capture_timeout") == 0) && micRms == 0 && micPeak == 0;
+  }
+  if (strcmp(cleanup, "not_attempted") == 0) return strcmp(reason, "not_ready") == 0 || strcmp(reason, "audio_busy") == 0 || strcmp(reason, "run_id_busy") == 0 || strcmp(reason, "run_not_found") == 0 || strcmp(reason, "invalid_command") == 0;
+  if (strcmp(reason, "cleanup_unknown") == 0) return strcmp(cleanup, "unknown") == 0;
+  return strcmp(cleanup, "software_stopped_codec_unknown") == 0 && (strcmp(reason, "owner_observation_required") == 0 || strcmp(reason, "play_failed") == 0 || strcmp(reason, "playback_timeout") == 0);
+}
+static bool validRunId(const char *value, size_t length);
+static void emitAudioJson(const char *type, const char *operation, const char *operationId, bool mic,
+                          const char *overrideReason, const char *overrideCleanup) {
+  char frame[kAudioFrameMaxBytes];
+  const char *reason = overrideReason ? overrideReason : mic ? micResultReason : toneResultReason;
+  const char *cleanup = overrideCleanup ? overrideCleanup : mic ? micCleanupState : toneCleanupState;
+  const char *id = operationId && validRunId(operationId, strlen(operationId)) ? operationId : "";
+  if (!audioReasonAllowed(reason) || !audioResultPairValid(operation, reason, cleanup)) { reason = "cleanup_unknown"; cleanup = "unknown"; }
+  const uint32_t responseRms = mic && !overrideReason ? micRms : 0;
+  const uint16_t responsePeak = mic && !overrideReason ? micPeak : 0;
+  int n;
+  if (strcmp(type, "error") == 0)
+    n = snprintf(frame, sizeof(frame), "{\"v\":1,\"type\":\"error\",\"firmware_build\":\"adv-diagnostic-3-audio-proposal\",\"operation\":\"%s\",\"operation_id\":\"%s\",\"state\":\"INCONCLUSIVE\",\"reason\":\"%s\",\"cleanup\":\"%s\"}\r\n", operation, id, reason, cleanup);
+  else if (mic)
+    n = snprintf(frame, sizeof(frame), "{\"v\":1,\"type\":\"mic_test\",\"firmware_build\":\"adv-diagnostic-3-audio-proposal\",\"operation_id\":\"%s\",\"state\":\"INCONCLUSIVE\",\"reason\":\"%s\",\"cleanup\":\"%s\",\"mic_rms\":%lu,\"mic_peak\":%u}\r\n", id, reason, cleanup, static_cast<unsigned long>(responseRms), static_cast<unsigned>(responsePeak));
+  else
+    n = snprintf(frame, sizeof(frame), "{\"v\":1,\"type\":\"tone_test\",\"firmware_build\":\"adv-diagnostic-3-audio-proposal\",\"operation_id\":\"%s\",\"state\":\"INCONCLUSIVE\",\"reason\":\"%s\",\"cleanup\":\"%s\"}\r\n", id, reason, cleanup);
+  if (n > 0 && static_cast<size_t>(n) < sizeof(frame) &&
+      Serial.write(reinterpret_cast<const uint8_t *>(frame), static_cast<size_t>(n)) != static_cast<size_t>(n)) {
+    Serial.end();  // Never append another frame after a partial audio response.
+  }
+}
+
 static void emitJson(const char *type, const char *reason) {
   char json[384];
   const char *safeType = (strcmp(type, "status") == 0 || strcmp(type, "sd_test") == 0 ||
@@ -76,7 +139,7 @@ static void emitJson(const char *type, const char *reason) {
   }
   const char *safeReason = reasonAllowed ? reason : "invalid_command";
   const int length = snprintf(json, sizeof(json),
-      "{\"v\":1,\"type\":\"%s\",\"firmware_build\":\"adv-diagnostic-2\",\"board_ready\":%s,\"imu_ready\":%s,\"sd\":{\"state\":\"%s\",\"stage\":\"%s\",\"reason\":\"%s\",\"bytes_verified\":%u,\"cleanup\":\"%s\"}}\r\n",
+      "{\"v\":1,\"type\":\"%s\",\"firmware_build\":\"adv-diagnostic-3-audio-proposal\",\"board_ready\":%s,\"imu_ready\":%s,\"sd\":{\"state\":\"%s\",\"stage\":\"%s\",\"reason\":\"%s\",\"bytes_verified\":%u,\"cleanup\":\"%s\"}}\r\n",
       safeType, boardReady ? "true" : "false", imuReady ? "true" : "false",
       stateName(), stageName(), safeReason, static_cast<unsigned>(sdBytesVerified), cleanupName());
   if (length > 0 && static_cast<size_t>(length) < sizeof(json)) {
@@ -85,6 +148,7 @@ static void emitJson(const char *type, const char *reason) {
 }
 
 static constexpr size_t kRunFrameMaxBytes = 1024;
+static bool validRunId(const char *value, size_t length);
 static const char *responseRunId(const char *requestedId) {
   if (runRecordValid && strcmp(lastRunId, requestedId) == 0) return lastRunId;
   return requestedId;
@@ -95,7 +159,7 @@ static void emitRunJson(const char *type, const char *errorReason, const char *r
   const char *safeType = (strcmp(type, "run_ack") == 0 || strcmp(type, "run_result") == 0 ||
                           strcmp(type, "result") == 0 || strcmp(type, "error") == 0) ? type : "error";
   size_t used = 0;
-  int n = snprintf(json, sizeof(json), "{\"v\":2,\"type\":\"%s\",\"firmware_build\":\"adv-diagnostic-2\",\"run_id\":\"%s\",\"overall\":\"%s\",\"check_names\":[", safeType, responseId, runOverall);
+  int n = snprintf(json, sizeof(json), "{\"v\":2,\"type\":\"%s\",\"firmware_build\":\"adv-diagnostic-3-audio-proposal\",\"run_id\":\"%s\",\"overall\":\"%s\",\"check_names\":[", safeType, responseId, runOverall);
   if (n < 0 || static_cast<size_t>(n) >= sizeof(json)) return;
   used = static_cast<size_t>(n);
   for (size_t i = 0; i < 12; ++i) {
@@ -269,8 +333,8 @@ static void runSdSelfTest() {
 void setup() {
   auto cfg = M5.config();
   cfg.output_power = false;
-  cfg.internal_mic = false;
-  cfg.internal_spk = false;
+  cfg.internal_mic = true;
+  cfg.internal_spk = true;
   cfg.internal_rtc = false;
   cfg.external_imu = false;
   cfg.internal_imu = false;
@@ -324,6 +388,34 @@ static void handleCommandLine() {
     } else {
       emitJson("sd_test_result", sdReason);
     }
+  } else if (commandLength > 9 && memcmp(commandBuffer, "mic_test ", 9) == 0) {
+    const size_t idLength = commandLength - 9; const char *id = commandBuffer + 9;
+    if (!validRunId(id, idLength)) emitAudioJson("error", "mic_test", "", true, "invalid_command", "not_attempted");
+    else if (micResultReady) {
+      if (strcmp(micResultId, id) == 0) emitAudioJson("mic_test", "mic_test", id, true, nullptr, nullptr);
+      else emitAudioJson("error", "mic_test", id, true, "run_id_busy", "not_attempted");
+    } else if (audioLifecycleUncertain || M5.Mic.isRunning() || M5.Mic.isRecording() != 0 || M5.Speaker.isRunning() || M5.Speaker.isPlaying()) emitAudioJson("error", "mic_test", id, true, "audio_busy", "not_attempted");
+    else if (!ready || !M5.Mic.isEnabled()) emitAudioJson("error", "mic_test", id, true, "not_ready", "not_attempted");
+    else { strlcpy(micResultId, id, sizeof(micResultId)); micResultReady = true; executeMicTest(); if (micResultReady) emitAudioJson("mic_test", "mic_test", id, true, nullptr, nullptr); else { strlcpy(micResultId, "", sizeof(micResultId)); emitAudioJson("error", "mic_test", id, true, micResultReason, micCleanupState); } }
+  } else if (commandLength > 10 && memcmp(commandBuffer, "tone_test ", 10) == 0) {
+    const size_t idLength = commandLength - 10; const char *id = commandBuffer + 10;
+    if (!validRunId(id, idLength)) emitAudioJson("error", "tone_test", "", false, "invalid_command", "not_attempted");
+    else if (toneResultReady) {
+      if (strcmp(toneResultId, id) == 0) emitAudioJson("tone_test", "tone_test", id, false, nullptr, nullptr);
+      else emitAudioJson("error", "tone_test", id, false, "run_id_busy", "not_attempted");
+    } else if (audioLifecycleUncertain || M5.Mic.isRunning() || M5.Mic.isRecording() != 0 || M5.Speaker.isRunning() || M5.Speaker.isPlaying()) emitAudioJson("error", "tone_test", id, false, "audio_busy", "not_attempted");
+    else if (!ready || !M5.Speaker.isEnabled()) emitAudioJson("error", "tone_test", id, false, "not_ready", "not_attempted");
+    else { strlcpy(toneResultId, id, sizeof(toneResultId)); toneResultReady = true; executeToneTest(); if (toneResultReady) emitAudioJson("tone_test", "tone_test", id, false, nullptr, nullptr); else { strlcpy(toneResultId, "", sizeof(toneResultId)); emitAudioJson("error", "tone_test", id, false, toneResultReason, toneCleanupState); } }
+  } else if (commandLength > 11 && memcmp(commandBuffer, "mic_result ", 11) == 0) {
+    const size_t idLength = commandLength - 11; const char *id = commandBuffer + 11;
+    if (!validRunId(id, idLength)) emitAudioJson("error", "mic_test", "", true, "invalid_command", "not_attempted");
+    else if (!micResultReady || strcmp(micResultId, id) != 0) emitAudioJson("error", "mic_test", id, true, "run_not_found", "not_attempted");
+    else emitAudioJson("mic_test", "mic_test", id, true, nullptr, nullptr);
+  } else if (commandLength > 12 && memcmp(commandBuffer, "tone_result ", 12) == 0) {
+    const size_t idLength = commandLength - 12; const char *id = commandBuffer + 12;
+    if (!validRunId(id, idLength)) emitAudioJson("error", "tone_test", "", false, "invalid_command", "not_attempted");
+    else if (!toneResultReady || strcmp(toneResultId, id) != 0) emitAudioJson("error", "tone_test", id, false, "run_not_found", "not_attempted");
+    else emitAudioJson("tone_test", "tone_test", id, false, nullptr, nullptr);
   } else if (commandLength > 4 && memcmp(commandBuffer, "run ", 4) == 0) {
     const size_t idLength = commandLength - 4;
     if (!validRunId(commandBuffer + 4, idLength)) {
@@ -432,6 +524,57 @@ static void executeRun(const char *runId) {
     if (strcmp(runChecks[i], "NOT_TESTED") == 0 || strcmp(runChecks[i], "INCONCLUSIVE") == 0) incomplete = true;
   }
   strlcpy(runOverall, failed ? "FAIL" : incomplete ? "INCONCLUSIVE" : "PASS", sizeof(runOverall));
+}
+
+static void executeMicTest() {
+  micResultReason = "begin_failed"; micCleanupState = "unknown"; micRms = 0; micPeak = 0;
+  if (M5.Mic.isRunning() || M5.Mic.isRecording() != 0 || M5.Speaker.isRunning() || M5.Speaker.isPlaying()) { micResultReason = "audio_busy"; micCleanupState = "not_attempted"; micResultReady = false; return; }
+  const uint8_t priorVolume = M5.Speaker.getVolume(); M5.Speaker.setVolume(0);
+  M5.Mic.setBufferReleaseCallback(nullptr, micReleaseCallback);
+  bool recordQueued = false;
+  if (M5.Mic.begin()) {
+    delay(kMicWarmupMs); micCaptureComplete.store(false, std::memory_order_release);
+    if (M5.Mic.record(micSamples, kMicSamples, kMicSampleRate, false)) {
+      recordQueued = true;
+      const uint32_t started = millis();
+      while (!micCaptureComplete.load(std::memory_order_acquire) && static_cast<uint32_t>(millis() - started) < kMicWaitMs) delay(1);
+      if (!micCaptureComplete.load(std::memory_order_acquire)) micResultReason = "capture_timeout";
+      else {
+        uint64_t squares = 0;
+        for (size_t i = 0; i < kMicSamples; ++i) {
+          const int32_t sample = micSamples[i]; const uint32_t magnitude = static_cast<uint32_t>(sample < 0 ? -sample : sample);
+          if (magnitude > micPeak) micPeak = static_cast<uint16_t>(magnitude);
+          squares += static_cast<uint64_t>(static_cast<int64_t>(sample) * sample);
+        }
+        micRms = static_cast<uint32_t>(sqrt(static_cast<double>(squares) / kMicSamples));
+        micResultReason = micPeak == 0 ? "zero_signal" : "owner_observation_required";
+      }
+    } else micResultReason = "record_failed";
+  }
+  M5.Mic.end();
+  if (!M5.Mic.isRunning() && M5.Mic.isRecording() == 0) {
+    if (micCaptureComplete.load(std::memory_order_acquire)) { memset(micSamples, 0, sizeof(micSamples)); M5.Mic.setBufferReleaseCallback(nullptr, nullptr); micCleanupState = "quiescent"; }
+    else {
+      memset(micSamples, 0, sizeof(micSamples)); M5.Mic.setBufferReleaseCallback(nullptr, nullptr); micCleanupState = "quiescent";
+      if (recordQueued) micResultReason = "capture_timeout";
+      micRms = micPeak = 0;
+    }
+  } else { audioLifecycleUncertain = true; micResultReason = "cleanup_unknown"; micCleanupState = "unknown"; }
+  M5.Speaker.setVolume(priorVolume);
+}
+
+static void executeToneTest() {
+  toneResultReason = "play_failed"; toneCleanupState = "unknown";
+  if (audioLifecycleUncertain || M5.Mic.isRunning() || M5.Mic.isRecording() != 0 || M5.Speaker.isRunning() || M5.Speaker.isPlaying()) { toneResultReason = "audio_busy"; toneCleanupState = "not_attempted"; toneResultReady = false; return; }
+  const uint8_t priorVolume = M5.Speaker.getVolume();
+  for (size_t i = 0; i < kToneSamples; ++i) toneSamples[i] = (i < 32 || i >= kToneSamples - 32) ? 0 : static_cast<int16_t>(1600.0 * sin(2.0 * PI * 440.0 * i / kToneSampleRate));
+  M5.Speaker.setVolume(8);
+  const bool queued = M5.Speaker.playRaw(toneSamples, kToneSamples, kToneSampleRate, false, 1, 0, true);
+  if (queued) { const uint32_t started = millis(); while (M5.Speaker.isPlaying(0) && static_cast<uint32_t>(millis() - started) < kToneWaitMs) delay(1); toneResultReason = M5.Speaker.isPlaying(0) ? "playback_timeout" : "owner_observation_required"; }
+  M5.Speaker.end();
+  if (!M5.Speaker.isRunning() && !M5.Speaker.isPlaying()) { memset(toneSamples, 0, sizeof(toneSamples)); toneCleanupState = "software_stopped_codec_unknown"; }
+  else { audioLifecycleUncertain = true; toneResultReason = "cleanup_unknown"; toneCleanupState = "unknown"; }
+  M5.Speaker.setVolume(priorVolume);
 }
 
 void loop() {
