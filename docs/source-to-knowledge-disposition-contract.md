@@ -12,7 +12,7 @@ Primary unit: a source-artifact record = canonical source/repository identity + 
 
 ## Acquisition versus disposition
 
-`retrieved` and `indexed` are separate acquisition/retrieval flags, not disposition states. Retrieved/indexed artifacts can remain unassessed; indexing does not prove study. Each eligible artifact has exactly one current primary disposition:
+`retrieved` and `indexed` are separate acquisition/retrieval flags, not disposition states. Retrieved/indexed artifacts can remain unassessed; indexing does not prove study. First determine eligibility for the frozen snapshot. Explicitly excluded records are outside the eligible denominator and require an exclusion reason; they are not a disposition state. Every eligible artifact has exactly one current primary disposition:
 
 | State | Meaning | Required evidence |
 |---|---|---|
@@ -20,29 +20,29 @@ Primary unit: a source-artifact record = canonical source/repository identity + 
 | `studied` | Bounded source scope substantively reviewed | Receipt records scope/date/reviewer, claims or no-claims outcome, limitations and relevant review decisions |
 | `synthesized` | Source claim represented in canonical knowledge | Assessment receipt plus at least one explicit target relation and claim/source provenance |
 | `deferred` | Assessment intentionally postponed | Reason; optional revisit trigger/date |
-| `excluded` | Explicitly outside eligible set or removed from review | Required reason; report outside eligible denominator |
-| `unresolved` | Identity, revision, access, rights, or disposition unknown | Required reason; report separately |
+| `unresolved` | Eligible artifact identity/revision/access/rights/assessment outcome remains unknown | Required reason; included in denominator and disposition partition; no assessment coverage credit |
 
 A `studied` state requires an assessment receipt; opening/indexing is insufficient. Review with no reusable claims remains `studied`, not `synthesized`. Synthesis does not prove truth, completeness, applicability, or device verification. Targets are zero-to-many per artifact; multiple artifacts may support a target. Do not infer reciprocal links. Reassessment appends dated history and requires a new receipt; coverage counts current state only. No automatic promotion from QMD, stable status, links, or validator success.
 
 ## Coverage denominator and arithmetic
 
-Each report declares frozen snapshot, eligibility/deduplication rules, unit, exclusions, and unresolved count. `N` is the number of distinct eligible source-artifact records (source identity + revision + document locator), not catalog rows, repository candidates, clone folders, Markdown documents, or QMD hits. If eligibility/identity is undetermined, coverage is unknown.
+Each report declares a frozen snapshot, eligibility/deduplication rules, unit, explicit exclusions, and unresolved count. `N` is the number of distinct eligible source-artifact records (source identity + revision + document locator), not catalog rows, repository candidates, clone folders, Markdown documents, or QMD hits. An artifact known to be eligible but lacking assessment/access evidence is `unresolved`, included in `N`, and earns no assessment/synthesis credit. A listing/candidate whose identity or eligibility cannot be resolved is reported outside `N` as unresolved scope; the report must mark coverage partial/unknown rather than imply complete catalog coverage.
 
-Eligible artifacts partition once by current primary disposition:
+Eligible artifacts partition exactly once by current disposition:
 
-`N = not_assessed + studied + synthesized + deferred`.
+`N = not_assessed + studied + synthesized + deferred + unresolved_eligible`.
 
-Excluded and unresolved are reported separately, not silently included in `N`. Never mix units or snapshots. Report counts, numerator, denominator, exclusions, unresolved count, and snapshot reference together.
+Explicitly excluded records and unresolved listing/candidate identities are reported separately from this eligible-artifact partition. Never mix units or snapshots. Report counts, numerator, denominator, exclusions, unresolved scope and snapshot reference together.
 
 - Assessment coverage = (`studied` + `synthesized`) / `N`.
 - Synthesis coverage = `synthesized` / `N`.
 - Target-linked synthesis coverage = distinct eligible synthesized artifacts with at least one target link / `N`; count artifacts, not links.
 - If `N = 0`, ratios are not-applicable, not 0%.
+- Unresolved eligible artifacts stay in `N` with zero assessment/synthesis credit; unresolved identities outside the artifact unit are separately reported as unresolved scope and make catalog-wide coverage partial/unknown.
 
 ## Worked examples (specification arithmetic only)
 
-Example A: a frozen set has 10 eligible artifacts: 2 `not-assessed`, 3 `studied`, 2 `synthesized`, and 3 `deferred`. Separately report one unresolved identity and two excluded records. Assessment coverage is (3+2)/10 = 50%; synthesis coverage is 2/10 = 20%. If one synthesized artifact has a target link, target-linked coverage is 1/10 = 10%. These are illustrative values, not current corpus facts.
+Example A: a frozen set has 12 eligible artifacts: 2 `not-assessed`, 3 `studied`, 2 `synthesized`, 3 `deferred`, and 2 `unresolved`. Separately report one unresolved listing identity and two explicitly excluded records outside `N`. Assessment coverage is (3+2)/12 = 41.7%; synthesis coverage is 2/12 = 16.7%. If one synthesized artifact has a target link, target-linked coverage is 1/12 = 8.3%. These are illustrative values, not current corpus facts.
 
 Example B: an artifact that is retrieved and indexed but has no assessment receipt remains `not-assessed`; it enters `N` only if the declared eligibility rule includes it and counts in neither study nor synthesis numerator.
 
