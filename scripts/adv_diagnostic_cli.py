@@ -16,6 +16,9 @@ except ImportError:  # Allows protocol tests without installing host dependencie
 
 LEGACY_BUILD = "adv-diagnostic-1"
 CURRENT_BUILD = "adv-diagnostic-2"
+AUDIO_BUILD = "adv-diagnostic-3-audio-proposal"
+MAX_AUDIO_FRAME_BYTES = 256
+AUDIO_TIMEOUT_SECONDS = 20
 PROTOCOL_BUILD = LEGACY_BUILD
 RUN_CHECKS = (
     "mcu", "ram_scratch", "imu_data", "motion", "display", "keyboard",
@@ -89,7 +92,10 @@ def validate_response(
         raise ValueError("invalid_response")
     if obj.get("v") != 1 or obj.get("type") not in {expected_type, "error"}:
         raise ValueError("protocol_mismatch")
-    if obj.get("firmware_build") not in (allowed_builds or {LEGACY_BUILD, CURRENT_BUILD}):
+    default_builds = {LEGACY_BUILD, CURRENT_BUILD}
+    if expected_type == "status":
+        default_builds.add(AUDIO_BUILD)
+    if obj.get("firmware_build") not in (allowed_builds or default_builds):
         raise ValueError("firmware_mismatch")
     if set(obj) != {"v", "type", "firmware_build", "board_ready", "imu_ready", "sd"}:
         raise ValueError("unexpected_fields")
@@ -425,15 +431,242 @@ def build_error_report(
     return report
 
 
+AUDIO_REASONS = {
+    "none", "not_ready", "audio_busy", "run_id_busy", "run_not_found",
+    "unsupported_board", "begin_failed", "record_failed", "capture_timeout",
+    "cleanup_unknown", "zero_signal", "owner_observation_required", "invalid_command",
+    "play_failed", "playback_timeout",
+}
+AUDIO_STATES = {"NOT_TESTED", "PASS", "FAIL", "INCONCLUSIVE"}
+AUDIO_CLEANUP = {
+    "mic_test": {"not_attempted", "quiescent", "unknown"},
+    "tone_test": {"not_attempted", "software_stopped_codec_unknown", "unknown"},
+}
+AUDIO_RESULT_PAIRS = {
+    "mic_test": {
+        ("unsupported_board", "not_attempted"), ("not_ready", "not_attempted"),
+        ("audio_busy", "not_attempted"), ("begin_failed", "quiescent"),
+        ("record_failed", "quiescent"), ("capture_timeout", "quiescent"),
+        ("cleanup_unknown", "unknown"), ("zero_signal", "quiescent"),
+        ("owner_observation_required", "quiescent"),
+    },
+    "tone_test": {
+        ("unsupported_board", "not_attempted"), ("not_ready", "not_attempted"),
+        ("audio_busy", "not_attempted"),
+        ("play_failed", "software_stopped_codec_unknown"),
+        ("playback_timeout", "software_stopped_codec_unknown"),
+        ("cleanup_unknown", "unknown"),
+        ("owner_observation_required", "software_stopped_codec_unknown"),
+    },
+}
+AUDIO_ERROR_PAIRS = {
+    "mic_test": {
+        ("invalid_command", "not_attempted"), ("not_ready", "not_attempted"),
+        ("audio_busy", "not_attempted"), ("run_id_busy", "not_attempted"),
+        ("run_not_found", "not_attempted"), ("unsupported_board", "not_attempted"),
+    },
+    "tone_test": {
+        ("invalid_command", "not_attempted"), ("not_ready", "not_attempted"),
+        ("audio_busy", "not_attempted"), ("run_id_busy", "not_attempted"),
+        ("run_not_found", "not_attempted"), ("unsupported_board", "not_attempted"),
+    },
+    "unknown": {("invalid_command", "not_attempted")},
+}
+AUDIO_COMMANDS = {"mic_test", "mic_result", "tone_test", "tone_result"}
+
+
+def _reject_duplicate_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    parsed: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in parsed:
+            raise ValueError("duplicate_json_key")
+        parsed[key] = value
+    return parsed
+
+
+def _reject_nonfinite_json_number(value: str) -> None:
+    raise ValueError("invalid_json_number")
+
+
+def _audio_family(command: str) -> str:
+    return "mic_test" if command.startswith("mic_") else "tone_test"
+
+
+def validate_audio_status(raw: bytes) -> dict[str, Any]:
+    """Strictly validate read-only status before any audio command write."""
+    if len(raw) > MAX_V1_RESPONSE_BYTES:
+        raise ValueError("response_too_large")
+    try:
+        status = json.loads(
+            raw.decode("ascii"), object_pairs_hook=_reject_duplicate_pairs,
+            parse_constant=_reject_nonfinite_json_number,
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+        if str(exc) in {"duplicate_json_key", "invalid_json_number"}:
+            raise ValueError(str(exc)) from exc
+        raise ValueError("invalid_json") from exc
+    if not isinstance(status, dict) or set(status) != {
+        "v", "type", "firmware_build", "board_ready", "imu_ready", "sd"
+    }:
+        raise ValueError("invalid_audio_status")
+    if type(status["v"]) is not int or status["v"] != 1:
+        raise ValueError("invalid_audio_status")
+    if status["type"] not in {"status", "error"}:
+        raise ValueError("invalid_audio_status")
+    if status["firmware_build"] != AUDIO_BUILD:
+        raise ValueError("firmware_mismatch")
+    if status["type"] != "status":
+        raise ValueError("invalid_audio_status")
+    if type(status["board_ready"]) is not bool or type(status["imu_ready"]) is not bool:
+        raise ValueError("invalid_status")
+    sd = status["sd"]
+    if not isinstance(sd, dict) or set(sd) != {
+        "state", "stage", "reason", "bytes_verified", "cleanup"
+    }:
+        raise ValueError("invalid_sd_status")
+    if any(type(sd[key]) is not str for key in ("state", "stage", "reason", "cleanup")):
+        raise ValueError("invalid_sd_status")
+    if type(sd["bytes_verified"]) is not int or not 0 <= sd["bytes_verified"] <= 65536:
+        raise ValueError("invalid_sd_status")
+    status = validate_response(raw, "status", allowed_builds={AUDIO_BUILD})
+    if not status["board_ready"] or not status["imu_ready"]:
+        raise ValueError("firmware_not_ready")
+    return status
+
+
+def validate_audio_response(
+    raw: bytes, command: str, operation_id: str
+) -> dict[str, Any]:
+    """Validate one bounded, operation-specific audio result without raw samples."""
+    if command not in AUDIO_COMMANDS:
+        raise ValueError("invalid_audio_command")
+    if not RUN_ID_PATTERN.fullmatch(operation_id):
+        raise ValueError("invalid_run_id")
+    if len(raw) + 2 > MAX_AUDIO_FRAME_BYTES:
+        raise ValueError("response_too_large")
+    try:
+        obj = json.loads(
+            raw.decode("ascii"), object_pairs_hook=_reject_duplicate_pairs,
+            parse_constant=_reject_nonfinite_json_number,
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+        if str(exc) in {"duplicate_json_key", "invalid_json_number"}:
+            raise ValueError(str(exc)) from exc
+        raise ValueError("invalid_json") from exc
+    if (
+        not isinstance(obj, dict)
+        or type(obj.get("v")) is not int
+        or obj["v"] != 1
+        or obj.get("firmware_build") != AUDIO_BUILD
+    ):
+        raise ValueError("audio_protocol_mismatch")
+    family = _audio_family(command)
+    if obj.get("type") == "error":
+        fields = {
+            "v", "type", "firmware_build", "operation", "operation_id",
+            "state", "reason", "cleanup",
+        }
+        if set(obj) != fields or obj["operation"] not in {"mic_test", "tone_test", "unknown"}:
+            raise ValueError("unexpected_audio_fields")
+        if obj["operation_id"] != ("" if obj["reason"] == "invalid_command" else operation_id):
+            raise ValueError("audio_id_mismatch")
+    else:
+        fields = {
+            "v", "type", "firmware_build", "operation_id", "state", "reason",
+            "cleanup",
+        }
+        if family == "mic_test":
+            fields.update({"mic_rms", "mic_peak"})
+        if set(obj) != fields or obj["type"] != family:
+            raise ValueError("unexpected_audio_fields")
+        if obj["operation_id"] != operation_id:
+            raise ValueError("audio_id_mismatch")
+    if obj.get("state") not in AUDIO_STATES:
+        raise ValueError("invalid_audio_state")
+    if obj.get("reason") not in AUDIO_REASONS:
+        raise ValueError("invalid_audio_reason")
+    cleanup_operation = obj.get("operation", family)
+    cleanup_family = cleanup_operation if cleanup_operation in AUDIO_CLEANUP else family
+    if obj.get("cleanup") not in AUDIO_CLEANUP[cleanup_family]:
+        raise ValueError("invalid_audio_cleanup")
+    if obj["state"] != "INCONCLUSIVE":
+        raise ValueError("invalid_audio_state")
+    result_family = obj.get("operation", family) if obj["type"] == "error" else family
+    if obj["type"] == "error":
+        if (obj["reason"], obj["cleanup"]) not in AUDIO_ERROR_PAIRS[result_family]:
+            raise ValueError("invalid_audio_reason")
+    elif (obj["reason"], obj["cleanup"]) not in AUDIO_RESULT_PAIRS[family]:
+        raise ValueError("invalid_audio_reason")
+    if obj["type"] != "error" and family == "mic_test":
+        if obj["reason"] in {"unsupported_board", "not_ready", "audio_busy",
+                              "begin_failed", "record_failed", "capture_timeout",
+                              "cleanup_unknown", "zero_signal"} and (
+            obj["mic_rms"] != 0 or obj["mic_peak"] != 0
+        ):
+            raise ValueError("invalid_audio_metrics")
+        if type(obj["mic_rms"]) is not int or not 0 <= obj["mic_rms"] <= 32768:
+            raise ValueError("invalid_audio_metrics")
+        if type(obj["mic_peak"]) is not int or not 0 <= obj["mic_peak"] <= 32768:
+            raise ValueError("invalid_audio_metrics")
+        if obj["mic_rms"] > obj["mic_peak"]:
+            raise ValueError("invalid_audio_metrics")
+    return obj
+
+
+def run_audio_port(
+    port: Any, command: str, operation_id: str,
+    trace: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Handshake read-only, then send one explicit audio request at most once."""
+    if command not in AUDIO_COMMANDS:
+        raise ValueError("invalid_audio_command")
+    if not RUN_ID_PATTERN.fullmatch(operation_id):
+        raise ValueError("invalid_run_id")
+    if trace is not None:
+        trace["phase"] = "status_write"
+        trace["status_write_attempted"] = True
+    if port.write(b"status\n") != len(b"status\n"):
+        raise OSError("incomplete_command_write")
+    if trace is not None:
+        trace["status_write_returned_full_length"] = True
+        trace["phase"] = "status_response"
+    validate_audio_status(read_line(port, time.monotonic() + IDLE_REPLY_SECONDS))
+    frame = f"{command} {operation_id}\n".encode("ascii")
+    if len(frame) > MAX_LINE_BYTES:
+        raise ValueError("command_too_large")
+    if trace is not None:
+        trace["phase"] = f"{command}_write"
+        trace["audio_write_attempted"] = True
+    if port.write(frame) != len(frame):
+        raise OSError("audio_command_write_failed")
+    if trace is not None:
+        trace["audio_write_returned_full_length"] = True
+        trace["phase"] = f"{command}_response"
+    raw = read_line(
+        port, time.monotonic() + AUDIO_TIMEOUT_SECONDS,
+        max_bytes=MAX_AUDIO_FRAME_BYTES - 2,
+    )
+    return validate_audio_response(raw, command, operation_id)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", required=True)
-    parser.add_argument("--command", choices=("status", "sd_test", "run", "result"), required=True)
+    parser.add_argument(
+        "--command",
+        choices=(
+            "status", "sd_test", "run", "result", "mic_test", "mic_result",
+            "tone_test", "tone_result",
+        ),
+        required=True,
+    )
     parser.add_argument("--run-id")
     parser.add_argument("--with-sd", action="store_true")
     args = parser.parse_args()
     if args.with_sd and args.command != "run":
         parser.error("--with-sd is valid only with --command run")
+    if args.command in AUDIO_COMMANDS and args.with_sd:
+        parser.error("--with-sd cannot be combined with audio commands")
     try:
         trace = {
             "phase": "validation",
@@ -445,6 +678,8 @@ def main() -> int:
             "result_write_returned_full_length": False,
             "sd_test_write_attempted": False,
             "sd_test_write_returned_full_length": False,
+            "audio_write_attempted": False,
+            "audio_write_returned_full_length": False,
         }
         if args.command in {"run", "result"}:
             if not args.run_id or not RUN_ID_PATTERN.fullmatch(args.run_id):
@@ -455,6 +690,14 @@ def main() -> int:
                     result = build_report(run_v2(port, "result", args.run_id, trace=trace), None)
                 else:
                     result = run_full_port(port, args.run_id, with_sd=args.with_sd, trace=trace)
+            finally:
+                port.close()
+        elif args.command in AUDIO_COMMANDS:
+            if not args.run_id or not RUN_ID_PATTERN.fullmatch(args.run_id):
+                raise ValueError("invalid_run_id")
+            port = open_port(args.port)
+            try:
+                result = run_audio_port(port, args.command, args.run_id, trace=trace)
             finally:
                 port.close()
         else:
@@ -470,9 +713,15 @@ def main() -> int:
             "unexpected_run_fields", "run_id_mismatch", "invalid_run_overall",
             "invalid_run_checks", "invalid_run_reasons", "invalid_run_metrics",
             "invalid_run_reason", "invalid_run_error", "invalid_run_ack",
-            "inconsistent_run_overall", "run_id_busy",
+            "inconsistent_run_overall", "run_id_busy", "invalid_audio_command",
+            "invalid_audio_status", "audio_protocol_mismatch", "unexpected_audio_fields",
+            "audio_id_mismatch", "invalid_audio_state", "invalid_audio_reason",
+            "invalid_audio_cleanup", "invalid_audio_metrics", "audio_command_write_failed",
         } else "serial_error_or_indeterminate"
         print(json.dumps(build_error_report(code, args.run_id, trace), separators=(",", ":")))
+        return 2
+    if isinstance(result, dict) and result.get("type") in {"mic_test", "tone_test", "error"}:
+        print(json.dumps({"ok": False, "result": result}, separators=(",", ":")))
         return 2
     if isinstance(result, dict) and "checks" in result and "coverage" in result:
         overall_ok = result["overall"] == "PASS"
