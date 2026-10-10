@@ -23,7 +23,7 @@ def valid_record():
         "inputs": [
             {"id": "a", "source": "https://example.test/source", "revision": "synthetic revision", "locator": "a.md", "eligibility": "eligible", "sha256": "a" * 64},
             {"id": "b", "source": "synthetic source", "revision": "synthetic revision", "locator": "b.md", "eligibility": "eligible"},
-            {"id": "c", "source": "synthetic source", "revision": "synthetic revision", "locator": "c.md", "eligibility": "eligible"},
+            {"id": "c", "source": "https://example.test/source", "revision": "synthetic revision", "locator": "c.md", "eligibility": "eligible"},
             {"id": "d", "source": "synthetic source", "revision": "synthetic revision", "locator": "d.md", "eligibility": "eligible"},
             {"id": "e", "source": "synthetic source", "revision": "synthetic revision", "locator": "e.md", "eligibility": "eligible"},
             {"id": "x", "source": "synthetic source", "revision": "synthetic revision", "locator": "x.md", "eligibility": "excluded", "reason": "synthetic exclusion"},
@@ -59,6 +59,12 @@ def valid_record():
     }
 
 
+def test_pr_receipt_pointer_is_allowed_for_same_repository():
+    record = valid_record()
+    record["receipt"]["url"] = "https://github.com/example/repo/pull/77#issuecomment-8"
+    assert MODULE.validate(record) == []
+
+
 def test_receipt_issue_url_rejects_owner_delimiter():
     record = valid_record()
     record["issue"] = "https://github.com/acme?x/repo/issues/1"
@@ -89,6 +95,17 @@ def test_malformed_enum_types_return_structural_errors():
         else:
             record[section][index][field] = value
         assert MODULE.validate(record), (section, field, value)
+
+
+def test_cli_invalid_utf8_is_bounded_error_without_traceback(tmp_path):
+    path = tmp_path / "invalid-utf8.json"
+    path.write_bytes(bytes([0xFF]))
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), str(path)], capture_output=True, text=True, check=False,
+    )
+    assert proc.returncode == 2
+    assert "ERROR: cannot read JSON record" in proc.stderr
+    assert "Traceback" not in proc.stderr
 
 
 def test_cli_malformed_enum_types_fail_deterministically(tmp_path):
@@ -184,8 +201,40 @@ def test_synthesized_target_must_be_internal_canonical_path():
         row = next(item for item in record["results"] if item["input_id"] == "c")
         row["disposition"] = "synthesized"
         row["targets"] = [target]
-        row["claim_provenance"] = [{"source": "public citation", "revision": "r1", "locator": "source.md#claim", "claim": "claim-a"}]
+        row["claim_provenance"] = [{"source": "https://example.test/source", "revision": "synthetic revision", "locator": "c.md#claim", "claim": "claim-a"}]
         assert any("canonical internal target" in error for error in MODULE.validate(record)), target
+
+
+def test_provenance_for_different_source_and_revision_does_not_count_for_input():
+    record = valid_record()
+    row = next(item for item in record["results"] if item["input_id"] == "c")
+    row["claim_provenance"] = [{"source": "https://foreign.example/source", "revision": "other", "locator": "c.md#claim", "claim": "claim"}]
+    assert any("provenance must reference its source artifact" in error for error in MODULE.validate(record))
+
+
+def test_provenance_for_matching_source_revision_and_locator_is_accepted():
+    record = valid_record()
+    row = next(item for item in record["results"] if item["input_id"] == "c")
+    row["claim_provenance"] = [{"source": "https://example.test/source", "revision": "synthetic revision", "locator": "c.md#claim", "claim": "claim"}]
+    assert MODULE.validate(record) == []
+
+
+def test_provenance_with_compatible_exact_document_anchor_is_accepted():
+    record = valid_record()
+    row = next(item for item in record["results"] if item["input_id"] == "c")
+    row["claim_provenance"] = [{"source": "https://example.test/source", "revision": "synthetic revision", "locator": "c.md#claim", "claim": "claim"}]
+    assert MODULE.validate(record) == []
+
+
+def test_claim_provenance_must_bind_current_source_revision_and_locator():
+    record = valid_record()
+    row = next(item for item in record["results"] if item["input_id"] == "c")
+    row["claim_provenance"] = [{"source": "https://foreign.example/source", "revision": "other", "locator": "c.md#claim", "claim": "claim"}]
+    assert any("provenance must reference its source artifact" in error for error in MODULE.validate(record))
+    row["claim_provenance"] = [{"source": "https://example.test/source", "revision": "synthetic revision", "locator": "other.md#claim", "claim": "claim"}]
+    assert any("provenance must reference its source artifact" in error for error in MODULE.validate(record))
+    row["claim_provenance"].append({"source": "https://example.test/source", "revision": "synthetic revision", "locator": "c.md#claim", "claim": "claim"})
+    assert MODULE.validate(record) == []
 
 
 def test_malformed_claim_provenance_relation_is_rejected():

@@ -16,7 +16,8 @@ from urllib.parse import urlsplit
 SHA1 = re.compile(r"^[0-9a-f]{40}$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 ISSUE_PATH = re.compile(r"^/([^/]+)/([^/]+)/issues/([1-9][0-9]*)$")
-ISSUE_COMMENT = re.compile(r"^issuecomment-[1-9][0-9]*$")
+PR_PATH = re.compile(r"^/([^/]+)/([^/]+)/pull/([1-9][0-9]*)$")
+ISSUE_COMMENT = re.compile(r"^(?:issuecomment|discussion_r|pullrequestreview|pullrequestreviewcomment)-[1-9][0-9]*$")
 
 
 def has_reason(value: Any) -> bool:
@@ -42,12 +43,24 @@ def valid_claim_relation(value: Any) -> bool:
     )
 
 
-def issue_identity(value: Any, *, allow_comment: bool = False) -> tuple[str, str, str] | None:
+def locator_compatible(artifact: Any, evidence: Any) -> bool:
+    if not isinstance(artifact, str) or not isinstance(evidence, str):
+        return False
+    artifact_path, _, artifact_anchor = artifact.partition("#")
+    evidence_path, _, evidence_anchor = evidence.partition("#")
+    return artifact_path == evidence_path and (not artifact_anchor or artifact_anchor == evidence_anchor)
+
+
+def github_pointer(value: Any, *, allow_comment: bool = False) -> tuple[str, str, str, str] | None:
     if not isinstance(value, str):
         return None
     try:
         parsed = urlsplit(value)
         match = ISSUE_PATH.fullmatch(parsed.path)
+        kind = "issue"
+        if match is None:
+            match = PR_PATH.fullmatch(parsed.path)
+            kind = "pull"
         if (
             parsed.scheme != "https" or parsed.netloc.casefold() != "github.com"
             or parsed.username is not None or parsed.password is not None
@@ -59,7 +72,7 @@ def issue_identity(value: Any, *, allow_comment: bool = False) -> tuple[str, str
             return None
         if parsed.fragment and (not allow_comment or not ISSUE_COMMENT.fullmatch(parsed.fragment)):
             return None
-        return owner.casefold(), repo.casefold(), number
+        return owner.casefold(), repo.casefold(), kind, number
     except ValueError:
         return None
 
@@ -86,7 +99,7 @@ def validate(record: Any) -> list[str]:
 
     if not isinstance(record["batch_id"], str) or not record["batch_id"].strip():
         errors.append("batch_id must be a non-empty identifier")
-    batch_issue = issue_identity(record["issue"])
+    batch_issue = github_pointer(record["issue"])
     if batch_issue is None:
         errors.append("issue must be a canonical GitHub Issue HTTPS URL")
     if not isinstance(record["writer"], str) or not record["writer"].strip():
@@ -191,10 +204,18 @@ def validate(record: Any) -> list[str]:
                 ):
                     errors.append(f"results[{i}] synthesized disposition requires canonical internal target relations")
                 provenance = item.get("claim_provenance")
+                artifact = valid_inputs.get(input_id)
                 if not isinstance(provenance, list) or not provenance or any(
                     not valid_claim_relation(relation) for relation in provenance
                 ):
                     errors.append(f"results[{i}] synthesized disposition requires claim/source provenance relations")
+                elif artifact is None or not any(
+                    relation["source"] == artifact["source"]
+                    and relation["revision"] == artifact["revision"]
+                    and locator_compatible(artifact["locator"], relation["locator"])
+                    for relation in provenance
+                ):
+                    errors.append(f"results[{i}] synthesized provenance must reference its source artifact")
     incomplete_result = any(
         isinstance(item, dict)
         and isinstance(item.get("input_id"), str)
@@ -299,19 +320,19 @@ def validate(record: Any) -> list[str]:
     if not isinstance(receipt, dict):
         errors.append("receipt must be an object")
     else:
-        receipt_issue = issue_identity(receipt.get("url"), allow_comment=True)
-        if receipt_issue is None:
-            errors.append("receipt requires a canonical GitHub Issue or issue-comment URL")
-        elif batch_issue is not None and receipt_issue != batch_issue:
-            errors.append("receipt URL must belong to the governing Issue")
+        receipt_pointer = github_pointer(receipt.get("url"), allow_comment=True)
+        if receipt_pointer is None or receipt_pointer[2] not in {"issue", "pull"}:
+            errors.append("receipt requires a canonical GitHub Issue or pull-request URL")
+        elif batch_issue is not None and receipt_pointer[:2] != batch_issue[:2]:
+            errors.append("receipt URL must belong to the governing repository")
         if not isinstance(receipt.get("retention"), str) or not receipt["retention"].strip():
             errors.append("receipt requires a retention statement")
         if receipt.get("sanitized") is not True:
             errors.append("receipt must assert sanitized public-safe content")
-        receipt_issue_base = issue_identity(receipt.get("issue"))
-        if receipt_issue_base is None:
+        receipt_issue = github_pointer(receipt.get("issue"))
+        if receipt_issue is None or receipt_issue[2] != "issue":
             errors.append("receipt must link its governing GitHub Issue")
-        elif batch_issue is not None and receipt_issue_base != batch_issue:
+        elif batch_issue is not None and receipt_issue != batch_issue:
             errors.append("receipt Issue does not match batch Issue")
 
     release = record["release"]
@@ -333,7 +354,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         record = json.loads(args.record.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         print(f"ERROR: cannot read JSON record: {exc}", file=sys.stderr)
         return 2
     errors = validate(record)
