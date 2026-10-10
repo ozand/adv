@@ -104,11 +104,15 @@ def test_manual_audio_ui_is_edge_triggered_confirmed_and_uses_existing_slots():
     assert "const bool toneEdge = tPressed && !toneKeyLatched" in loop
     assert "if (sdEdge) { if (!sdDone) { markSdTestStarted(); runSdSelfTest(); } }" in loop
     assert "const bool wasAudioUiBlocked = audioUiBlockKeysUntilRelease" in loop
-    assert "if (!wasAudioUiBlocked && yEdge && toneConsentPending && toneConsentReady)" in loop
-    assert "else if (micEdge) micUiPending = true" in loop
+    assert "if (!wasAudioUiBlocked && yEdge && toneConsentPending && toneConsentReady && !tPressed)" in loop
+    assert "else if (micEdge) { micUiPending = true; toneConsentPending = false; toneConsentReady = false; }" in loop
     assert "else if (toneEdge && !toneConsentPending)" in loop
     assert "if (toneConsentPending && !audioUiBlockKeysUntilRelease)" in loop
-    assert "if (!wasAudioUiBlocked && yEdge && toneConsentPending && toneConsentReady)" in loop
+    assert 'if (tPressed) {' in loop and 'toneConsentReady = false;' in loop
+    assert 'toneConsentReady = true;' in loop
+    assert '"RELEASE T; EAR OUT; Y"' in loop
+    assert "if (toneUiPending && toneConsentPending && millis() - toneConsentStarted >= kToneConsentMs)" in loop
+    assert "if (toneUiPending && audioUiBlockKeysUntilRelease)" in loop
     tone_executor = source[source.index("static void executeToneTest() {") : source.index("void loop()")]
     assert tone_executor.index('"Tone: checking"') < tone_executor.index('if (audioLifecycleUncertain')
     assert tone_executor.index('if (audioLifecycleUncertain') < tone_executor.index('"Tone: request <=100ms"')
@@ -121,7 +125,7 @@ def test_manual_audio_ui_is_edge_triggered_confirmed_and_uses_existing_slots():
     assert "micUiId[0] != '\\0'" in loop
     assert "toneUiId[0] != '\\0'" in loop
     assert "S:SD M:MIC T:TONE Y:EAR OUT" in loop
-    assert 'M5.Display.printf("A:%-8s %.21s"' in loop
+    assert 'M5.Display.printf("A:%-8s %.27s"' in loop
     assert "showAudioUiStage();" in source[source.index("static void executeMicTest()") : source.index("void loop()")]
     assert "showAudioUiStage();" in source[source.index("static void executeToneTest()") : source.index("void loop()")]
     assert "executeMicTest" not in setup and "executeToneTest" not in setup

@@ -108,6 +108,7 @@ static const char *audioUiStageName() {
 }
 static void showAudioUiStage() {
   M5.Display.setCursor(0, 108);
+  M5.Display.fillRect(0, 108, 240, 12, TFT_BLACK);
   M5.Display.printf("A:%-8s %.27s", audioUiStageName(), audioUiResult);
   M5.Display.display();
 }
@@ -642,11 +643,6 @@ void loop() {
   const bool mPressed = M5Cardputer.Keyboard.isKeyPressed('m') || M5Cardputer.Keyboard.isKeyPressed('M');
   const bool tPressed = M5Cardputer.Keyboard.isKeyPressed('t') || M5Cardputer.Keyboard.isKeyPressed('T');
   const bool yPressed = M5Cardputer.Keyboard.isKeyPressed('y') || M5Cardputer.Keyboard.isKeyPressed('Y');
-  if (audioUiBlockKeysUntilRelease) {
-    sdKeyLatched = sPressed; micKeyLatched = mPressed; toneKeyLatched = tPressed; yKeyLatched = yPressed;
-    toneConsentPending = false; toneConsentReady = false; micUiPending = false; toneUiPending = false;
-    if (!sPressed && !mPressed && !tPressed && !yPressed) audioUiBlockKeysUntilRelease = false;
-  }
   const bool wasAudioUiBlocked = audioUiBlockKeysUntilRelease;
   const bool sdEdge = sPressed && !sdKeyLatched;
   const bool micEdge = mPressed && !micKeyLatched;
@@ -654,7 +650,7 @@ void loop() {
   if (!audioUiBlockKeysUntilRelease) {
     sdKeyLatched = sPressed; micKeyLatched = mPressed; toneKeyLatched = tPressed;
     if (sdEdge) { if (!sdDone) { markSdTestStarted(); runSdSelfTest(); } }
-    else if (micEdge) micUiPending = true;
+    else if (micEdge) { micUiPending = true; toneConsentPending = false; toneConsentReady = false; }
     else if (toneEdge && !toneConsentPending) {
       toneConsentPending = true; toneConsentReady = false; toneConsentStarted = millis();
       audioUiStage = AudioUiStage::Starting; snprintf(audioUiResult, sizeof(audioUiResult), "EAR OUT THEN PRESS Y");
@@ -664,16 +660,29 @@ void loop() {
     toneConsentPending = false; toneConsentReady = false; audioUiStage = AudioUiStage::Idle; snprintf(audioUiResult, sizeof(audioUiResult), "Tone: cancelled");
   }
   if (toneConsentPending && !audioUiBlockKeysUntilRelease) {
-    if (!yPressed) toneConsentReady = true;
-    audioUiStage = AudioUiStage::Starting; snprintf(audioUiResult, sizeof(audioUiResult), "EAR OUT THEN PRESS Y");
+    if (tPressed) {
+      toneConsentReady = false;
+      audioUiStage = AudioUiStage::Starting;
+      snprintf(audioUiResult, sizeof(audioUiResult), "RELEASE T; EAR OUT; Y");
+    } else {
+      toneConsentReady = true;
+      audioUiStage = AudioUiStage::Starting;
+      snprintf(audioUiResult, sizeof(audioUiResult), "EAR OUT THEN PRESS Y");
+    }
+  }
+  if (audioUiBlockKeysUntilRelease) {
+    sdKeyLatched = sPressed; micKeyLatched = mPressed; toneKeyLatched = tPressed; yKeyLatched = yPressed;
+    toneConsentPending = false; toneConsentReady = false; micUiPending = false; toneUiPending = false;
+    if (!sPressed && !mPressed && !tPressed && !yPressed) audioUiBlockKeysUntilRelease = false;
   }
   const bool yEdge = yPressed && !yKeyLatched;
   yKeyLatched = yPressed;
-  if (!wasAudioUiBlocked && yEdge && toneConsentPending && toneConsentReady) {
+  if (!wasAudioUiBlocked && yEdge && toneConsentPending && toneConsentReady && !tPressed) {
     toneConsentPending = false; toneConsentReady = false; toneUiPending = true;
   }
   if (micUiPending) {
     micUiPending = false;
+    toneUiPending = false; toneConsentPending = false; toneConsentReady = false;
     if (!ready || !M5.Mic.isEnabled()) { audioUiStage = AudioUiStage::Unavailable; snprintf(audioUiResult, sizeof(audioUiResult), "Mic: not ready"); }
     else if (audioLifecycleUncertain || M5.Mic.isRunning() || M5.Mic.isRecording() != 0 || M5.Speaker.isRunning() || M5.Speaker.isPlaying()) { micUiId[0] = '\0'; audioUiStage = AudioUiStage::Unknown; snprintf(audioUiResult, sizeof(audioUiResult), "Mic: audio busy/unknown"); }
     else if (!micResultReady) {
@@ -684,6 +693,9 @@ void loop() {
     else if (micResultReady && micUiId[0] != '\0' && strcmp(micUiId, micResultId) == 0) { audioUiStage = micCleanupState && strcmp(micCleanupState, "unknown") == 0 ? AudioUiStage::Unknown : AudioUiStage::Complete; const char *shortReason = strcmp(micResultReason, "owner_observation_required") == 0 ? "observe" : strcmp(micResultReason, "zero_signal") == 0 ? "zero" : micResultReason; snprintf(audioUiResult, sizeof(audioUiResult), "MIC INC %s R%lu P%u", shortReason, static_cast<unsigned long>(micRms), static_cast<unsigned>(micPeak)); }
     else { audioUiStage = AudioUiStage::Unavailable; snprintf(audioUiResult, sizeof(audioUiResult), "Mic: slot busy"); }
   }
+  if (toneUiPending && toneConsentPending && !toneConsentReady) { toneUiPending = false; audioUiStage = AudioUiStage::Starting; snprintf(audioUiResult, sizeof(audioUiResult), "RELEASE T; EAR OUT; Y"); }
+  if (toneUiPending && toneConsentPending && millis() - toneConsentStarted >= kToneConsentMs) { toneUiPending = false; toneConsentPending = false; toneConsentReady = false; audioUiStage = AudioUiStage::Idle; snprintf(audioUiResult, sizeof(audioUiResult), "Tone: cancelled"); }
+  if (toneUiPending && audioUiBlockKeysUntilRelease) { toneUiPending = false; audioUiStage = AudioUiStage::Unknown; snprintf(audioUiResult, sizeof(audioUiResult), "Tone: action blocked"); }
   if (toneUiPending) {
     toneUiPending = false;
     if (!ready || !M5.Speaker.isEnabled()) { audioUiStage = AudioUiStage::Unavailable; snprintf(audioUiResult, sizeof(audioUiResult), "Tone: not ready"); }
@@ -706,7 +718,8 @@ void loop() {
   M5.Display.setCursor(0, 96);
   M5.Display.print(sdStatus);
   M5.Display.setCursor(0, 108);
-  M5.Display.printf("A:%-8s %.21s", audioUiStageName(), audioUiResult);
+  M5.Display.fillRect(0, 108, 240, 12, TFT_BLACK);
+  M5.Display.printf("A:%-8s %.27s", audioUiStageName(), audioUiResult);
   M5.Display.setCursor(0, 120);
   M5.Display.print("S:SD M:MIC T:TONE Y:EAR OUT");
   delay(100);
