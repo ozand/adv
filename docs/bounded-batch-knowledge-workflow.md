@@ -25,7 +25,7 @@ For each batch, retain these fields in its Issue/PR record or an explicitly scop
 | `limits` | Time/size/attempt limits, stop conditions, unresolved scope |
 | `candidate` | Full candidate commit and content hashes for reviewed outputs |
 | `results` | Per-artifact disposition/receipt/target relations under ADR-010/011 |
-| `validation` | Separate universal, consumer-policy, and optional retrieval results with command/tool/version, input snapshot, exit, limitations |
+| `validation` | Separate universal, consumer-policy, and optional retrieval results with command/tool/version, input snapshot, exit, limitations; a PASS layer structurally requires these execution-receipt fields |
 | `reviewers` | Read-only review roles, exact candidate SHA, findings, verdict |
 | `release` | Owner release decision and sanitized durable Issue/PR receipt linking snapshots, candidate/reviewed/delivered identities and risks |
 
@@ -88,7 +88,7 @@ review: PASS | reviewer role=<role> | exact candidate=<full SHA>
 release: NOT AUTHORIZED | reason=consumer layer partial
 ```
 
-These placeholders are not execution evidence. Never claim binary/source identity without verifying the module import path/version. A planned fixture or worked example is not an executed test.
+These placeholders are not execution evidence. Never claim binary/source identity without verifying the module import path/version. A planned fixture or worked example is not an executed test. The checker requires each required PASS layer to declare non-empty command, tool, version, input snapshot, limitations, and integer `exit_code: 0`; these are structural receipt fields and do not verify execution or its truth.
 
 ## Owner acceptance and implementation boundary
 
@@ -98,6 +98,6 @@ Owner acceptance is recorded on [Issue #48](https://github.com/ozand/adv/issues/
 
 - Example manifest/result arithmetic is specification-only; no source artifacts were retrieved or assessed.
 - The local read-only structural receipt checker is implemented; it requires explicit applicability for every layer, rejects NOT APPLICABLE without a concrete precondition/reason, and does not permit a PASS gate when all layers are unrequired. Unknown-eligibility artifacts cannot be assessed under that unresolved record; scope remains PARTIAL.
-- The checker requires PARTIAL for eligible `not_assessed`, `deferred`, or `unresolved` dispositions and rejects non-string reasons and malformed input IDs. It rejects duplicate source-artifact tuples, validates lexical internal `kb/wiki/` targets, and parses governing Issue and same-repository Issue/PR receipt pointers without network access. Synthesized provenance must structurally match the input source/revision and document locator; this is not source verification. Invalid UTF-8 produces a bounded input error. It does not verify target existence or whether receipts, preconditions, provenance, or hashes correspond to source bytes. Reviewer/release identity and sanitization are not authenticated.
+- The checker requires PARTIAL for eligible `not_assessed`, `deferred`, or `unresolved` dispositions and rejects non-string reasons and malformed input IDs. It rejects duplicate source-artifact tuples (canonicalizing GitHub owner/repository case and optional `.git` suffix only), validates lexical internal `kb/wiki/` targets, and parses governing Issue and same-repository Issue/PR receipt pointers without network access. Synthesized provenance must structurally match the input source/revision and document locator using the same narrow source-identity normalization; this is not source verification. Duplicate JSON object keys and invalid UTF-8 produce bounded input errors. Required PASS layers need structural execution-receipt fields, not proof of execution. It does not verify target existence or whether receipts, preconditions, provenance, and hashes correspond to source bytes. Reviewer/release identity and sanitization are not authenticated.
 - No QMD runtime state, private corpus, or device/hardware state was inspected.
 - Contract acceptance does not assert operational performance or production readiness.

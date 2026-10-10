@@ -37,8 +37,8 @@ def valid_record():
             {"input_id": "e", "disposition": "not_assessed"},
         ],
         "validation": {
-            "source": {"status": "PASS", "required": True},
-            "content": {"status": "PASS", "required": True},
+            "source": {"status": "PASS", "required": True, "command": "synthetic command", "tool": "synthetic tool", "version": "1", "input_snapshot": "synthetic snapshot", "exit_code": 0, "limitations": "synthetic only"},
+            "content": {"status": "PASS", "required": True, "command": "synthetic command", "tool": "synthetic tool", "version": "1", "input_snapshot": "synthetic snapshot", "exit_code": 0, "limitations": "synthetic only"},
             "retrieval": {"status": "NOT APPLICABLE", "required": False, "precondition": "No retrieval requested", "reason": "Outside batch scope"},
         },
         "gate": "PARTIAL",
@@ -62,6 +62,12 @@ def valid_record():
 def test_pr_receipt_pointer_is_allowed_for_same_repository():
     record = valid_record()
     record["receipt"]["url"] = "https://github.com/example/repo/pull/77#issuecomment-8"
+    assert MODULE.validate(record) == []
+
+
+def test_actual_github_discussion_anchor_is_allowed():
+    record = valid_record()
+    record["receipt"]["url"] = "https://github.com/example/repo/pull/77#discussion_r123"
     assert MODULE.validate(record) == []
 
 
@@ -95,6 +101,39 @@ def test_malformed_enum_types_return_structural_errors():
         else:
             record[section][index][field] = value
         assert MODULE.validate(record), (section, field, value)
+
+
+def test_duplicate_github_repo_source_identity_is_rejected():
+    record = valid_record()
+    record["inputs"][1].update(source="https://github.com/Example/Repo.git", revision="r1", locator="README.md")
+    record["inputs"][2].update(source="https://github.com/example/repo", revision="r1", locator="README.md")
+    assert any("duplicates source-artifact identity" in error for error in MODULE.validate(record))
+
+
+def test_github_forks_remain_distinct_source_identities():
+    record = valid_record()
+    record["inputs"][1].update(source="https://github.com/owner-a/repo", revision="r1", locator="README.md")
+    record["inputs"][2].update(source="https://github.com/owner-b/repo", revision="r1", locator="README.md")
+    assert not any("duplicates source-artifact identity" in error for error in MODULE.validate(record))
+
+
+def test_provenance_source_identity_uses_same_github_canonicalization():
+    record = valid_record()
+    row = next(item for item in record["results"] if item["input_id"] == "c")
+    row["claim_provenance"][0]["source"] = "https://GitHub.com/Example/Repo.git"
+    record["inputs"][2]["source"] = "https://github.com/example/repo"
+    assert not any("provenance must reference its source artifact" in error for error in MODULE.validate(record))
+
+
+def test_cli_duplicate_json_keys_are_bounded_error_without_traceback(tmp_path):
+    path = tmp_path / "duplicate-key.json"
+    path.write_text('{"candidate_sha":"' + "2" * 40 + '","candidate_sha":"' + "3" * 40 + '"}', encoding="utf-8")
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), str(path)], capture_output=True, text=True, check=False,
+    )
+    assert proc.returncode == 2
+    assert "duplicate JSON key: candidate_sha" in proc.stderr
+    assert "Traceback" not in proc.stderr
 
 
 def test_cli_invalid_utf8_is_bounded_error_without_traceback(tmp_path):
@@ -349,6 +388,17 @@ def test_eligible_incomplete_results_force_partial_gate_and_block_release():
         errors = MODULE.validate(record)
         assert any("gate must be PARTIAL" in error for error in errors)
         assert record["gate"] == "PASS" and record["release"]["authorized"] is True
+
+
+def test_required_pass_layer_requires_structural_execution_receipt():
+    record = valid_record()
+    layer = record["validation"]["source"]
+    for field in ("command", "tool", "version", "input_snapshot", "limitations", "exit_code"):
+        layer.pop(field)
+    errors = MODULE.validate(record)
+    assert any("PASS requires command, tool, version, input_snapshot, and limitations" in error for error in errors)
+    layer.update(command="synthetic command", tool="synthetic", version="1", input_snapshot="snapshot", limitations="synthetic", exit_code="0")
+    assert any("PASS requires exit_code=0" in error for error in MODULE.validate(record))
 
 
 def test_all_layers_not_applicable_cannot_be_a_pass_or_authorize_release():

@@ -17,7 +17,7 @@ SHA1 = re.compile(r"^[0-9a-f]{40}$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 ISSUE_PATH = re.compile(r"^/([^/]+)/([^/]+)/issues/([1-9][0-9]*)$")
 PR_PATH = re.compile(r"^/([^/]+)/([^/]+)/pull/([1-9][0-9]*)$")
-ISSUE_COMMENT = re.compile(r"^(?:issuecomment|discussion_r|pullrequestreview|pullrequestreviewcomment)-[1-9][0-9]*$")
+ISSUE_COMMENT = re.compile(r"^(?:issuecomment-[1-9][0-9]*|discussion_r[1-9][0-9]*|pullrequestreview-[1-9][0-9]*|pullrequestreviewcomment-[1-9][0-9]*)$")
 
 
 def has_reason(value: Any) -> bool:
@@ -41,6 +41,25 @@ def valid_claim_relation(value: Any) -> bool:
         has_reason(value.get(field))
         for field in ("source", "revision", "locator", "claim")
     )
+
+
+def canonical_source_identity(value: Any) -> Any:
+    if not isinstance(value, str):
+        return value
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        return value
+    if parsed.scheme.casefold() == "https" and parsed.netloc.casefold() == "github.com":
+        path = parsed.path.rstrip("/")
+        if path.endswith(".git"):
+            path = path[:-4]
+        parts = path.split("/")
+        if len(parts) == 3 and all(parts[1:]):
+            owner, repository = parts[1:]
+            if re.fullmatch(r"[A-Za-z0-9-]+", owner) and re.fullmatch(r"[A-Za-z0-9_.-]+", repository):
+                return f"github.com/{owner.casefold()}/{repository.casefold()}"
+    return value
 
 
 def locator_compatible(artifact: Any, evidence: Any) -> bool:
@@ -136,6 +155,7 @@ def validate(record: Any) -> list[str]:
         if not all(isinstance(part, str) and part.strip() for part in source_identity):
             errors.append(f"inputs[{i}] source/revision/locator identity must be non-empty strings")
             continue
+        source_identity = (canonical_source_identity(source_identity[0]), *source_identity[1:])
         if source_identity in source_identities:
             errors.append(f"inputs[{i}] duplicates source-artifact identity")
             continue
@@ -210,7 +230,7 @@ def validate(record: Any) -> list[str]:
                 ):
                     errors.append(f"results[{i}] synthesized disposition requires claim/source provenance relations")
                 elif artifact is None or not any(
-                    relation["source"] == artifact["source"]
+                    canonical_source_identity(relation["source"]) == canonical_source_identity(artifact["source"])
                     and relation["revision"] == artifact["revision"]
                     and locator_compatible(artifact["locator"], relation["locator"])
                     for relation in provenance
@@ -267,6 +287,13 @@ def validate(record: Any) -> list[str]:
                     errors.append(f"validation.{name} NOT APPLICABLE requires required=false")
             elif layer.get("required") is True:
                 required_layers.append(layer)
+                if status == "PASS":
+                    evidence_fields = ("command", "tool", "version", "input_snapshot", "limitations")
+                    if any(not has_reason(layer.get(field)) for field in evidence_fields):
+                        errors.append(f"validation.{name} PASS requires command, tool, version, input_snapshot, and limitations")
+                    exit_code = layer.get("exit_code")
+                    if isinstance(exit_code, bool) or not isinstance(exit_code, int) or exit_code != 0:
+                        errors.append(f"validation.{name} PASS requires exit_code=0")
             elif status != "NOT APPLICABLE":
                 errors.append(f"validation.{name} required=false must be reported NOT APPLICABLE")
         all_not_applicable = not required_layers
@@ -348,13 +375,26 @@ def validate(record: Any) -> list[str]:
     return errors
 
 
+class DuplicateJSONKeyError(ValueError):
+    """Raised when a JSON object repeats a member name."""
+
+
+def reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise DuplicateJSONKeyError(f"duplicate JSON key: {key}")
+        result[key] = value
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("record", type=Path, help="path to a batch JSON record")
     args = parser.parse_args()
     try:
-        record = json.loads(args.record.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        record = json.loads(args.record.read_text(encoding="utf-8"), object_pairs_hook=reject_duplicate_json_keys)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, DuplicateJSONKeyError) as exc:
         print(f"ERROR: cannot read JSON record: {exc}", file=sys.stderr)
         return 2
     errors = validate(record)
