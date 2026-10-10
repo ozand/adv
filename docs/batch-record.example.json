@@ -11,10 +11,13 @@
     {"id":"artifact-b","source":"https://github.com/example/public-docs","revision":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","locator":"docs/feature-b.md","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","eligibility":"eligible"},
     {"id":"artifact-excluded","source":"https://github.com/example/public-docs","revision":"cccccccccccccccccccccccccccccccccccccccc","locator":"LICENSE","eligibility":"excluded","reason":"synthetic scope example"}
   ],
-  "results":[{"input_id":"artifact-a","disposition":"studied"},{"input_id":"artifact-b","disposition":"unresolved"}],
+  "results":[
+    {"input_id":"artifact-a","disposition":"studied","assessment":{"scope":"Synthetic excerpt only","date":"2026-01-01","reviewer":"fixture role","outcome":"Synthetic claims reviewed","limitations":"Not a real source review"}},
+    {"input_id":"artifact-b","disposition":"unresolved","reason":"Synthetic unknown identity/access; not assessed"}
+  ],
   "validation":{"source":{"status":"PASS","required":true},"content":{"status":"PARTIAL","required":true},"retrieval":{"status":"NOT APPLICABLE","required":false,"precondition":"No retrieval/index objective in this synthetic batch","reason":"Retrieval is out of scope"}},
   "gate":"PARTIAL",
-  "review":{"reviewer":"independent-review-role","reviewer_role":"independent-review-role","mode":"read-only","candidate_sha":"2222222222222222222222222222222222222222","status":"PASS"},
+  "review":{"reviewer":"independent-reviewer","reviewer_role":"independent-review-role","mode":"read-only","candidate_sha":"2222222222222222222222222222222222222222","status":"PASS"},
   "receipt":{"url":"https://github.com/example/repo/issues/1#issuecomment-123","issue":"https://github.com/example/repo/issues/1","retention":"retained with governing issue record","sanitized":true},
   "release":{"authorized":false}
 }

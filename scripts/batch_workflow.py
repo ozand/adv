@@ -18,7 +18,7 @@ ISSUE_URL = re.compile(r"https://github\.com/[^/\s]+/[^/\s]+/issues/[1-9][0-9]*"
 RECEIPT_URL = re.compile(r"https://github\.com/[^/\s]+/[^/\s]+/issues/[1-9][0-9]*(?:#issuecomment-[1-9][0-9]*)?")
 LAYERS = {"source", "content", "retrieval"}
 OUTCOMES = {"PASS", "FAIL", "PARTIAL", "NOT RUN", "NOT APPLICABLE"}
-DISPOSITIONS = {"not_assessed", "studied", "synthesized", "deferred", "unresolved", "excluded"}
+DISPOSITIONS = {"not_assessed", "studied", "synthesized", "deferred", "unresolved"}
 
 
 def validate(record: Any) -> list[str]:
@@ -90,15 +90,45 @@ def validate(record: Any) -> list[str]:
         errors.append("results must be an array")
         result_rows = []
     for i, item in enumerate(result_rows):
-        if not isinstance(item, dict) or item.get("input_id") not in ids:
-            errors.append(f"results[{i}] must reference a declared input_id")
+        if not isinstance(item, dict):
+            errors.append(f"results[{i}] must be an object")
             continue
-        input_id = item["input_id"]
+        input_id = item.get("input_id")
+        if not isinstance(input_id, str) or not input_id.strip() or input_id not in ids:
+            errors.append(f"results[{i}].input_id must be a declared non-empty string")
+            continue
         if input_id in result_ids:
             errors.append(f"duplicate result ownership for input: {input_id}")
         result_ids.add(input_id)
         if item.get("disposition") not in DISPOSITIONS:
             errors.append(f"results[{i}] has invalid disposition")
+        elif item.get("disposition") == "excluded":
+            errors.append(f"results[{i}] cannot use excluded; exclusions are outside the eligible partition")
+        elif item["disposition"] == "deferred" and not str(item.get("reason", "")).strip():
+            errors.append(f"results[{i}] deferred disposition requires a reason")
+        elif item["disposition"] == "unresolved" and not str(item.get("reason", "")).strip():
+            errors.append(f"results[{i}] unresolved disposition requires a reason")
+        elif item["disposition"] in {"studied", "synthesized"}:
+            assessment = item.get("assessment")
+            if not isinstance(assessment, dict) or any(
+                not isinstance(assessment.get(field), str) or not assessment[field].strip()
+                for field in ("scope", "date", "reviewer", "outcome", "limitations")
+            ):
+                errors.append(f"results[{i}] {item['disposition']} requires a complete assessment receipt")
+            if item["disposition"] == "synthesized":
+                targets = item.get("targets")
+                if not isinstance(targets, list) or not targets or any(
+                    not isinstance(target, str) or not target.strip()
+                    for target in targets
+                ):
+                    errors.append(f"results[{i}] synthesized disposition requires target relations")
+                if not isinstance(item.get("claim_provenance"), list) or not item["claim_provenance"]:
+                    errors.append(f"results[{i}] synthesized disposition requires claim/source provenance")
+    unresolved_result = any(
+        isinstance(item, dict) and item.get("disposition") == "unresolved"
+        for item in result_rows
+    )
+    scope_partial = scope_partial or unresolved_result
     for item in inputs:
         if isinstance(item, dict) and item.get("eligibility") == "eligible" and item.get("id") not in result_ids:
             errors.append(f"eligible input missing result: {item.get('id')}")
@@ -114,12 +144,7 @@ def validate(record: Any) -> list[str]:
             if disposition == "unresolved" and not str(item.get("reason", "")).strip():
                 errors.append(f"unresolved artifact requires a reason: {item.get('id')}")
         if isinstance(item, dict) and item.get("eligibility") == "excluded" and item.get("id") in result_ids:
-            disposition = next(
-                row.get("disposition") for row in result_rows
-                if isinstance(row, dict) and row.get("input_id") == item.get("id")
-            )
-            if disposition != "excluded":
-                errors.append(f"excluded input must have excluded disposition: {item.get('id')}")
+            errors.append(f"excluded input must remain outside results: {item.get('id')}")
 
     layers = record["validation"]
     if not isinstance(layers, dict) or set(layers) != LAYERS:
@@ -175,6 +200,11 @@ def validate(record: Any) -> list[str]:
             errors.append("reviewer_role must be explicit and distinct from writer")
         if not isinstance(review.get("reviewer"), str) or not review["reviewer"].strip():
             errors.append("review requires reviewer identifier")
+        elif (
+            not isinstance(record["writer"], str)
+            or review["reviewer"].strip().casefold() == record["writer"].strip().casefold()
+        ):
+            errors.append("reviewer identity must differ from writer identity")
         if review.get("status") not in {"PASS", "FAIL", "PARTIAL"}:
             errors.append("review status must be PASS, FAIL, or PARTIAL")
         elif review["status"] != "PASS" and record["gate"] == "PASS":
@@ -186,6 +216,8 @@ def validate(record: Any) -> list[str]:
     else:
         if not isinstance(receipt.get("url"), str) or not RECEIPT_URL.fullmatch(receipt["url"]):
             errors.append("receipt requires a canonical GitHub Issue or issue-comment URL")
+        elif receipt["url"].split("#", 1)[0].rstrip("/").casefold() != record["issue"].rstrip("/").casefold():
+            errors.append("receipt URL must belong to the governing Issue")
         if not isinstance(receipt.get("retention"), str) or not receipt["retention"].strip():
             errors.append("receipt requires a retention statement")
         if receipt.get("sanitized") is not True:
