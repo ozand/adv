@@ -37,8 +37,8 @@ def valid_record():
             {"input_id": "e", "disposition": "not_assessed"},
         ],
         "validation": {
-            "source": {"status": "PASS", "required": True, "command": "synthetic command", "tool": "synthetic tool", "version": "1", "input_snapshot": "synthetic snapshot", "exit_code": 0, "limitations": "synthetic only"},
-            "content": {"status": "PASS", "required": True, "command": "synthetic command", "tool": "synthetic tool", "version": "1", "input_snapshot": "synthetic snapshot", "exit_code": 0, "limitations": "synthetic only"},
+            "universal": {"status": "PASS", "required": True, "command": "synthetic command", "tool": "synthetic tool", "version": "1", "input_snapshot": "synthetic snapshot", "exit_code": 0, "limitations": "synthetic only"},
+            "consumer-policy": {"status": "PASS", "required": True, "command": "synthetic command", "tool": "synthetic tool", "version": "1", "input_snapshot": "synthetic snapshot", "exit_code": 0, "limitations": "synthetic only"},
             "retrieval": {"status": "NOT APPLICABLE", "required": False, "precondition": "No retrieval requested", "reason": "Outside batch scope"},
         },
         "gate": "PARTIAL",
@@ -65,6 +65,14 @@ def test_pr_receipt_pointer_is_allowed_for_same_repository():
     assert MODULE.validate(record) == []
 
 
+def test_issue_receipt_pointer_must_match_governing_issue_number():
+    record = valid_record()
+    record["receipt"]["url"] = "https://github.com/example/repo/issues/999#issuecomment-8"
+    assert any("governing Issue" in error for error in MODULE.validate(record))
+    record["receipt"]["url"] = "https://github.com/example/repo/pull/999#issuecomment-8"
+    assert MODULE.validate(record) == []
+
+
 def test_actual_github_discussion_anchor_is_allowed():
     record = valid_record()
     record["receipt"]["url"] = "https://github.com/example/repo/pull/77#discussion_r123"
@@ -87,9 +95,9 @@ def test_malformed_enum_types_return_structural_errors():
         ("results", 0, "disposition", []),
         ("results", 0, "disposition", {}),
         ("results", 0, "disposition", None),
-        ("validation", "source", "status", []),
-        ("validation", "source", "status", {}),
-        ("validation", "source", "status", None),
+        ("validation", "universal", "status", []),
+        ("validation", "universal", "status", {}),
+        ("validation", "universal", "status", None),
         ("review", None, "status", []),
         ("review", None, "status", {}),
         ("review", None, "status", None),
@@ -104,10 +112,16 @@ def test_malformed_enum_types_return_structural_errors():
 
 
 def test_duplicate_github_repo_source_identity_is_rejected():
-    record = valid_record()
-    record["inputs"][1].update(source="https://github.com/Example/Repo.git", revision="r1", locator="README.md")
-    record["inputs"][2].update(source="https://github.com/example/repo", revision="r1", locator="README.md")
-    assert any("duplicates source-artifact identity" in error for error in MODULE.validate(record))
+    variants = (
+        "https://github.com/Example/Repo.git",
+        "http://www.github.com/example/repo.GIT",
+        "https://www.github.com/EXAMPLE/REPO",
+    )
+    for variant in variants:
+        record = valid_record()
+        record["inputs"][1].update(source=variant, revision="r1", locator="README.md")
+        record["inputs"][2].update(source="https://github.com/example/repo", revision="r1", locator="README.md")
+        assert any("duplicates source-artifact identity" in error for error in MODULE.validate(record)), variant
 
 
 def test_github_forks_remain_distinct_source_identities():
@@ -157,7 +171,7 @@ def test_cli_malformed_enum_types_fail_deterministically(tmp_path):
     for section, field, value in cases:
         record = valid_record()
         if section == "validation":
-            record[section]["source"][field] = value
+            record[section]["universal"][field] = value
         elif section in {"inputs", "results"}:
             record[section][0][field] = value
         else:
@@ -301,7 +315,7 @@ def test_all_contract_dispositions_have_minimal_valid_evidence():
 def test_candidate_sha_change_invalidates_review_and_gate_does_not_mask_partial():
     record = valid_record()
     record["candidate_sha"] = "3" * 40
-    record["validation"]["content"]["status"] = "PARTIAL"
+    record["validation"]["consumer-policy"]["status"] = "PARTIAL"
     record["gate"] = "PASS"
     errors = MODULE.validate(record)
     assert any("does not match" in error for error in errors)
@@ -399,7 +413,7 @@ def test_eligible_incomplete_results_force_partial_gate_and_block_release():
 
 def test_required_pass_layer_requires_structural_execution_receipt():
     record = valid_record()
-    layer = record["validation"]["source"]
+    layer = record["validation"]["universal"]
     for field in ("command", "tool", "version", "input_snapshot", "limitations", "exit_code"):
         layer.pop(field)
     errors = MODULE.validate(record)
@@ -410,7 +424,7 @@ def test_required_pass_layer_requires_structural_execution_receipt():
 
 def test_all_layers_not_applicable_cannot_be_a_pass_or_authorize_release():
     record = valid_record()
-    for name in ("source", "content", "retrieval"):
+    for name in ("universal", "consumer-policy", "retrieval"):
         record["validation"][name] = {
             "status": "NOT APPLICABLE", "required": False,
             "precondition": f"Synthetic exclusion for {name}", "reason": "Not required",
@@ -425,7 +439,7 @@ def test_all_layers_not_applicable_cannot_be_a_pass_or_authorize_release():
 
 def test_required_layer_cannot_be_not_applicable():
     record = valid_record()
-    record["validation"]["content"] = {
+    record["validation"]["consumer-policy"] = {
         "status": "NOT APPLICABLE", "required": True,
         "precondition": "Claimed exclusion", "reason": "Synthetic",
     }
@@ -483,16 +497,23 @@ def test_explicit_release_decision_reference_and_sanitized_receipt_required():
 def test_release_requires_all_gates_and_review_to_pass():
     record = valid_record()
     record["release"] = {"authorized": True, "decision_ref": "https://github.com/example/repo/issues/1#issuecomment-9"}
-    record["validation"]["content"]["status"] = "PARTIAL"
+    record["validation"]["consumer-policy"]["status"] = "PARTIAL"
     record["gate"] = "PARTIAL"
     errors = MODULE.validate(record)
     assert any("aggregate gate" in error for error in errors)
 
 
+def test_validation_layers_use_accepted_names_only():
+    record = valid_record()
+    record["validation"]["source"] = {"status": "PASS", "required": True}
+    errors = MODULE.validate(record)
+    assert any("exactly universal, consumer-policy, retrieval" in error for error in errors)
+
+
 def test_invalid_hash_or_unknown_layer_is_rejected():
     record = valid_record()
     record["inputs"][0]["sha256"] = "not-a-hash"
-    record["validation"]["mystery"] = {"status": "PASS"}
+    record["validation"]["source"] = {"status": "PASS", "required": True}
     errors = MODULE.validate(record)
     assert any("sha256" in error for error in errors)
-    assert any("exactly source, content, retrieval" in error for error in errors)
+    assert any("exactly universal, consumer-policy, retrieval" in error for error in errors)

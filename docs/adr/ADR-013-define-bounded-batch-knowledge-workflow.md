@@ -62,9 +62,9 @@ Issue #5 remains the acquisition/accounting owner. ADR-007/010/011/012 semantics
 |---|---|---|
 | Inputs and exclusions are reproducible | Synthetic JSON record includes base, candidate, source locator/revision/hash, and eligibility/exclusion | Checker fixture validates field shapes; no live inputs examined |
 | One writer and read-only reviewers are explicit | Companion workflow states the role and exact-candidate SHA rule; checker rejects mismatched review SHA | Contract and synthetic structural tests; human role/identity is not authenticated |
-| Validation layers cannot mask each other | Checker enforces aggregate consistency across declared source/content/retrieval layers | Eight synthetic tests; no live validation performed |
+| Validation layers cannot mask each other | Checker enforces aggregate consistency across declared universal, consumer-policy, and retrieval layers | Synthetic structural tests; no live validation performed |
 | Coverage accounting follows ADR-011 | Companion example shows N=2 partition and partial result; checker requires one result per eligible input | Arithmetic is illustrative; checker does not recompute disposition coverage ratios |
-| Delivery receipt is sanitized and durable | Checker requires a canonical Issue/comment URL, matching Issue, retention statement, and sanitized flag | Synthetic structural test; human sanitation/retention is not independently proven |
+| Delivery receipt is sanitized and durable | Checker requires a canonical Issue/comment URL for the governing Issue or a same-repository PR/comment URL, a matching governing Issue field, retention statement, and sanitized flag | Synthetic structural test; human sanitation/retention is not independently proven |
 
 ## Rollback
 

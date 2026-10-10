@@ -16,8 +16,8 @@
     {"input_id":"artifact-b","disposition":"unresolved","reason":"Synthetic unknown identity/access; not assessed"}
   ],
   "validation":{
-    "source":{"status":"PARTIAL","required":true},
-    "content":{"status":"PARTIAL","required":true},
+    "universal":{"status":"PARTIAL","required":true},
+    "consumer-policy":{"status":"PARTIAL","required":true},
     "retrieval":{"status":"NOT APPLICABLE","required":false,"precondition":"No retrieval/index objective in this synthetic batch","reason":"Retrieval is out of scope"}
   },
   "gate":"PARTIAL",

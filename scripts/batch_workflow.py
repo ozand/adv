@@ -18,6 +18,7 @@ SHA256 = re.compile(r"^[0-9a-f]{64}$")
 ISSUE_PATH = re.compile(r"^/([^/]+)/([^/]+)/issues/([1-9][0-9]*)$")
 PR_PATH = re.compile(r"^/([^/]+)/([^/]+)/pull/([1-9][0-9]*)$")
 ISSUE_COMMENT = re.compile(r"^(?:issuecomment-[1-9][0-9]*|discussion_r[1-9][0-9]*|pullrequestreview-[1-9][0-9]*|pullrequestreviewcomment-[1-9][0-9]*)$")
+LAYERS = {"universal", "consumer-policy", "retrieval"}
 
 
 def has_reason(value: Any) -> bool:
@@ -50,14 +51,12 @@ def canonical_source_identity(value: Any) -> Any:
         parsed = urlsplit(value)
     except ValueError:
         return value
-    if parsed.scheme.casefold() == "https" and parsed.netloc.casefold() == "github.com":
-        path = parsed.path.rstrip("/")
-        if path.endswith(".git"):
-            path = path[:-4]
-        parts = path.split("/")
-        if len(parts) == 3 and all(parts[1:]):
-            owner, repository = parts[1:]
-            if re.fullmatch(r"[A-Za-z0-9-]+", owner) and re.fullmatch(r"[A-Za-z0-9_.-]+", repository):
+    if parsed.scheme.casefold() in {"http", "https"} and parsed.hostname and parsed.hostname.casefold() in {"github.com", "www.github.com"}:
+        parts = [part for part in parsed.path.split("/") if part]
+        if len(parts) == 2 and all(part not in {".", ".."} for part in parts):
+            owner, repository = parts
+            repository = re.sub(r"\.git$", "", repository, flags=re.IGNORECASE)
+            if repository:
                 return f"github.com/{owner.casefold()}/{repository.casefold()}"
     return value
 
@@ -96,7 +95,6 @@ def github_pointer(value: Any, *, allow_comment: bool = False) -> tuple[str, str
         return None
 
 
-LAYERS = {"source", "content", "retrieval"}
 OUTCOMES = {"PASS", "FAIL", "PARTIAL", "NOT RUN", "NOT APPLICABLE"}
 DISPOSITIONS = {"not_assessed", "studied", "synthesized", "deferred", "unresolved"}
 
@@ -274,7 +272,7 @@ def validate(record: Any) -> list[str]:
 
     layers = record["validation"]
     if not isinstance(layers, dict) or set(layers) != LAYERS:
-        errors.append("validation must contain exactly source, content, retrieval layers")
+        errors.append("validation must contain exactly universal, consumer-policy, retrieval layers")
     elif all(
         isinstance(layer, dict)
         and isinstance(layer.get("status"), str)
@@ -360,8 +358,11 @@ def validate(record: Any) -> list[str]:
         receipt_pointer = github_pointer(receipt.get("url"), allow_comment=True)
         if receipt_pointer is None or receipt_pointer[2] not in {"issue", "pull"}:
             errors.append("receipt requires a canonical GitHub Issue or pull-request URL")
-        elif batch_issue is not None and receipt_pointer[:2] != batch_issue[:2]:
-            errors.append("receipt URL must belong to the governing repository")
+        elif batch_issue is not None and (
+            receipt_pointer[:2] != batch_issue[:2]
+            or (receipt_pointer[2] == "issue" and receipt_pointer[3] != batch_issue[3])
+        ):
+            errors.append("receipt URL must belong to the governing Issue or a same-repository pull request")
         if not isinstance(receipt.get("retention"), str) or not receipt["retention"].strip():
             errors.append("receipt requires a retention statement")
         if receipt.get("sanitized") is not True:
