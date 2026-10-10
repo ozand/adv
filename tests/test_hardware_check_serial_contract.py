@@ -30,7 +30,9 @@ class SerialContractTests(unittest.TestCase):
         self.assertIn("if (!sdDone) {", command)
         self.assertIn('emitJson("sd_test", "none");', command)
         self.assertLess(command.index('emitJson("sd_test", "none");'), command.index("runSdSelfTest();"))
-        self.assertIn("if ((key == 's' || key == 'S') && !sdDone)", self.source)
+        self.assertIn("const bool sdEdge = sPressed && !sdKeyLatched", self.source)
+        self.assertIn("if (sdEdge) { if (!sdDone) { markSdTestStarted(); runSdSelfTest(); } }", self.source)
+        self.assertIn("if (!sdDone) { markSdTestStarted(); runSdSelfTest(); }", self.source)
         self.assertIn("runSdSelfTest();", self.source)
         self.assertIn("sdDone = true;", self.source)
 

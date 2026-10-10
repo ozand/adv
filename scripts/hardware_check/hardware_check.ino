@@ -32,6 +32,16 @@ static uint32_t micRms = 0;
 static uint16_t micPeak = 0;
 static const char *micResultReason = "run_not_found", *micCleanupState = "not_attempted";
 static const char *toneResultReason = "run_not_found", *toneCleanupState = "not_attempted";
+enum class AudioUiStage { Idle, Starting, Warmup, Capture, Cleanup, Playback, Complete, Unavailable, Unknown };
+static AudioUiStage audioUiStage = AudioUiStage::Idle;
+static char audioUiResult[48] = "Audio: idle";
+static char micUiId[13] = "", toneUiId[13] = "";
+static bool micKeyLatched = false, toneKeyLatched = false, sdKeyLatched = false, yKeyLatched = false;
+static bool micUiPending = false, toneUiPending = false;
+static constexpr uint32_t kToneConsentMs = 5000;
+static uint32_t toneConsentStarted = 0;
+static bool toneConsentPending = false, toneConsentReady = false;
+static bool audioUiBlockKeysUntilRelease = false;
 enum class SdState { NotRun, Running, Pass, Fail };
 enum class SdStage { Idle, Mount, Write, Read, Cleanup, Complete, Error };
 enum class SdCleanup { NotAttempted, Removed, Failed, Retained };
@@ -81,6 +91,25 @@ static void emitAudioJson(const char *, const char *, const char *, bool, const 
 static const char kAudioFirmwareBuild[] = "adv-diagnostic-3-audio-proposal";
 static void micReleaseCallback(void *, void *data, size_t length) {
   if (data == micSamples && length == kMicSamples) micCaptureComplete.store(true, std::memory_order_release);
+}
+static const char *audioUiStageName() {
+  switch (audioUiStage) {
+    case AudioUiStage::Idle: return "IDLE";
+    case AudioUiStage::Starting: return "STARTING";
+    case AudioUiStage::Warmup: return "WARMUP";
+    case AudioUiStage::Capture: return "CAPTURE";
+    case AudioUiStage::Cleanup: return "CLEANUP";
+    case AudioUiStage::Playback: return "PLAYBACK";
+    case AudioUiStage::Complete: return "DONE";
+    case AudioUiStage::Unavailable: return "UNAVAILABLE";
+    case AudioUiStage::Unknown: return "UNKNOWN";
+  }
+  return "UNKNOWN";
+}
+static void showAudioUiStage() {
+  M5.Display.setCursor(0, 108);
+  M5.Display.printf("A:%-8s %.27s", audioUiStageName(), audioUiResult);
+  M5.Display.display();
 }
 static const char *const kAudioReasons[] = {"none", "invalid_command", "not_ready", "audio_busy", "run_id_busy", "run_not_found", "unsupported_board", "begin_failed", "record_failed", "capture_timeout", "cleanup_unknown", "zero_signal", "play_failed", "playback_timeout", "owner_observation_required"};
 static bool audioReasonAllowed(const char *reason) {
@@ -362,7 +391,8 @@ void setup() {
   M5.Display.fillRect(90, 0, 40, 18, TFT_BLUE);
   M5.Display.setCursor(0, 24);
   M5.Display.println("ADV OK / BMI270 OK");
-  M5.Display.println("Press S to run bounded SD test");
+  M5.Display.println("S:SD M:MIC T:TONE");
+  M5.Display.println("T then Y after earphones out");
   ready = true;
 }
 
@@ -528,12 +558,15 @@ static void executeRun(const char *runId) {
 
 static void executeMicTest() {
   micResultReason = "begin_failed"; micCleanupState = "unknown"; micRms = 0; micPeak = 0;
-  if (M5.Mic.isRunning() || M5.Mic.isRecording() != 0 || M5.Speaker.isRunning() || M5.Speaker.isPlaying()) { micResultReason = "audio_busy"; micCleanupState = "not_attempted"; micResultReady = false; return; }
+  audioUiStage = AudioUiStage::Starting; snprintf(audioUiResult, sizeof(audioUiResult), "Mic: starting"); showAudioUiStage();
+  if (M5.Mic.isRunning() || M5.Mic.isRecording() != 0 || M5.Speaker.isRunning() || M5.Speaker.isPlaying()) { micResultReason = "audio_busy"; micCleanupState = "not_attempted"; micResultReady = false; audioUiStage = AudioUiStage::Unknown; snprintf(audioUiResult, sizeof(audioUiResult), "Mic: audio busy/unknown"); audioUiBlockKeysUntilRelease = true; return; }
   const uint8_t priorVolume = M5.Speaker.getVolume(); M5.Speaker.setVolume(0);
   M5.Mic.setBufferReleaseCallback(nullptr, micReleaseCallback);
   bool recordQueued = false;
   if (M5.Mic.begin()) {
-    delay(kMicWarmupMs); micCaptureComplete.store(false, std::memory_order_release);
+    audioUiStage = AudioUiStage::Warmup; snprintf(audioUiResult, sizeof(audioUiResult), "Mic: warmup"); showAudioUiStage();
+    delay(kMicWarmupMs); audioUiStage = AudioUiStage::Capture; snprintf(audioUiResult, sizeof(audioUiResult), "Mic: capture"); showAudioUiStage();
+    micCaptureComplete.store(false, std::memory_order_release);
     if (M5.Mic.record(micSamples, kMicSamples, kMicSampleRate, false)) {
       recordQueued = true;
       const uint32_t started = millis();
@@ -551,6 +584,7 @@ static void executeMicTest() {
       }
     } else micResultReason = "record_failed";
   }
+  audioUiStage = AudioUiStage::Cleanup; snprintf(audioUiResult, sizeof(audioUiResult), "Mic: cleanup"); showAudioUiStage();
   M5.Mic.end();
   if (!M5.Mic.isRunning() && M5.Mic.isRecording() == 0) {
     if (micCaptureComplete.load(std::memory_order_acquire)) { memset(micSamples, 0, sizeof(micSamples)); M5.Mic.setBufferReleaseCallback(nullptr, nullptr); micCleanupState = "quiescent"; }
@@ -561,20 +595,37 @@ static void executeMicTest() {
     }
   } else { audioLifecycleUncertain = true; micResultReason = "cleanup_unknown"; micCleanupState = "unknown"; }
   M5.Speaker.setVolume(priorVolume);
+  audioUiStage = micCleanupState && strcmp(micCleanupState, "unknown") == 0 ? AudioUiStage::Unknown : AudioUiStage::Complete;
+  const char *shortReason = strcmp(micResultReason, "owner_observation_required") == 0 ? "observe" :
+                            strcmp(micResultReason, "zero_signal") == 0 ? "zero" :
+                            strcmp(micResultReason, "capture_timeout") == 0 ? "timeout" :
+                            strcmp(micResultReason, "begin_failed") == 0 ? "begin_fail" :
+                            strcmp(micResultReason, "record_failed") == 0 ? "record_fail" : micResultReason;
+  snprintf(audioUiResult, sizeof(audioUiResult), "MIC INC %s R%lu P%u", shortReason, static_cast<unsigned long>(micRms), static_cast<unsigned>(micPeak));
+  audioUiBlockKeysUntilRelease = true;
 }
 
 static void executeToneTest() {
   toneResultReason = "play_failed"; toneCleanupState = "unknown";
-  if (audioLifecycleUncertain || M5.Mic.isRunning() || M5.Mic.isRecording() != 0 || M5.Speaker.isRunning() || M5.Speaker.isPlaying()) { toneResultReason = "audio_busy"; toneCleanupState = "not_attempted"; toneResultReady = false; return; }
+  audioUiStage = AudioUiStage::Starting; snprintf(audioUiResult, sizeof(audioUiResult), "Tone: checking"); showAudioUiStage();
+  if (audioLifecycleUncertain || M5.Mic.isRunning() || M5.Mic.isRecording() != 0 || M5.Speaker.isRunning() || M5.Speaker.isPlaying()) { toneResultReason = "audio_busy"; toneCleanupState = "not_attempted"; toneResultReady = false; audioUiStage = AudioUiStage::Unknown; snprintf(audioUiResult, sizeof(audioUiResult), "Tone: audio busy/unknown"); audioUiBlockKeysUntilRelease = true; return; }
   const uint8_t priorVolume = M5.Speaker.getVolume();
   for (size_t i = 0; i < kToneSamples; ++i) toneSamples[i] = (i < 32 || i >= kToneSamples - 32) ? 0 : static_cast<int16_t>(1600.0 * sin(2.0 * PI * 440.0 * i / kToneSampleRate));
   M5.Speaker.setVolume(8);
+  audioUiStage = AudioUiStage::Playback; snprintf(audioUiResult, sizeof(audioUiResult), "Tone: request <=100ms"); showAudioUiStage();
   const bool queued = M5.Speaker.playRaw(toneSamples, kToneSamples, kToneSampleRate, false, 1, 0, true);
   if (queued) { const uint32_t started = millis(); while (M5.Speaker.isPlaying(0) && static_cast<uint32_t>(millis() - started) < kToneWaitMs) delay(1); toneResultReason = M5.Speaker.isPlaying(0) ? "playback_timeout" : "owner_observation_required"; }
+  audioUiStage = AudioUiStage::Cleanup; snprintf(audioUiResult, sizeof(audioUiResult), "Tone: cleanup"); showAudioUiStage();
   M5.Speaker.end();
   if (!M5.Speaker.isRunning() && !M5.Speaker.isPlaying()) { memset(toneSamples, 0, sizeof(toneSamples)); toneCleanupState = "software_stopped_codec_unknown"; }
   else { audioLifecycleUncertain = true; toneResultReason = "cleanup_unknown"; toneCleanupState = "unknown"; }
   M5.Speaker.setVolume(priorVolume);
+  audioUiStage = toneCleanupState && strcmp(toneCleanupState, "unknown") == 0 ? AudioUiStage::Unknown : AudioUiStage::Complete;
+  const char *shortReason = strcmp(toneResultReason, "owner_observation_required") == 0 ? "observe" :
+                            strcmp(toneResultReason, "playback_timeout") == 0 ? "timeout" :
+                            strcmp(toneResultReason, "play_failed") == 0 ? "play_fail" : toneResultReason;
+  snprintf(audioUiResult, sizeof(audioUiResult), "TONE INC %s", shortReason);
+  audioUiBlockKeysUntilRelease = true;
 }
 
 void loop() {
@@ -587,26 +638,76 @@ void loop() {
   M5.update();
   M5Cardputer.Keyboard.updateKeyList();
   M5Cardputer.Keyboard.updateKeysState();
-  for (char key : M5Cardputer.Keyboard.keysState().word) {
-    if ((key == 's' || key == 'S') && !sdDone) {
-      markSdTestStarted();
-      runSdSelfTest();
+  const bool sPressed = M5Cardputer.Keyboard.isKeyPressed('s') || M5Cardputer.Keyboard.isKeyPressed('S');
+  const bool mPressed = M5Cardputer.Keyboard.isKeyPressed('m') || M5Cardputer.Keyboard.isKeyPressed('M');
+  const bool tPressed = M5Cardputer.Keyboard.isKeyPressed('t') || M5Cardputer.Keyboard.isKeyPressed('T');
+  const bool yPressed = M5Cardputer.Keyboard.isKeyPressed('y') || M5Cardputer.Keyboard.isKeyPressed('Y');
+  if (audioUiBlockKeysUntilRelease) {
+    sdKeyLatched = sPressed; micKeyLatched = mPressed; toneKeyLatched = tPressed; yKeyLatched = yPressed;
+    toneConsentPending = false; toneConsentReady = false; micUiPending = false; toneUiPending = false;
+    if (!sPressed && !mPressed && !tPressed && !yPressed) audioUiBlockKeysUntilRelease = false;
+  }
+  const bool wasAudioUiBlocked = audioUiBlockKeysUntilRelease;
+  const bool sdEdge = sPressed && !sdKeyLatched;
+  const bool micEdge = mPressed && !micKeyLatched;
+  const bool toneEdge = tPressed && !toneKeyLatched;
+  if (!audioUiBlockKeysUntilRelease) {
+    sdKeyLatched = sPressed; micKeyLatched = mPressed; toneKeyLatched = tPressed;
+    if (sdEdge) { if (!sdDone) { markSdTestStarted(); runSdSelfTest(); } }
+    else if (micEdge) micUiPending = true;
+    else if (toneEdge && !toneConsentPending) {
+      toneConsentPending = true; toneConsentReady = false; toneConsentStarted = millis();
+      audioUiStage = AudioUiStage::Starting; snprintf(audioUiResult, sizeof(audioUiResult), "EAR OUT THEN PRESS Y");
     }
+  }
+  if (toneConsentPending && static_cast<uint32_t>(millis() - toneConsentStarted) >= kToneConsentMs) {
+    toneConsentPending = false; toneConsentReady = false; audioUiStage = AudioUiStage::Idle; snprintf(audioUiResult, sizeof(audioUiResult), "Tone: cancelled");
+  }
+  if (toneConsentPending && !audioUiBlockKeysUntilRelease) {
+    if (!yPressed) toneConsentReady = true;
+    audioUiStage = AudioUiStage::Starting; snprintf(audioUiResult, sizeof(audioUiResult), "EAR OUT THEN PRESS Y");
+  }
+  const bool yEdge = yPressed && !yKeyLatched;
+  yKeyLatched = yPressed;
+  if (!wasAudioUiBlocked && yEdge && toneConsentPending && toneConsentReady) {
+    toneConsentPending = false; toneConsentReady = false; toneUiPending = true;
+  }
+  if (micUiPending) {
+    micUiPending = false;
+    if (!ready || !M5.Mic.isEnabled()) { audioUiStage = AudioUiStage::Unavailable; snprintf(audioUiResult, sizeof(audioUiResult), "Mic: not ready"); }
+    else if (audioLifecycleUncertain || M5.Mic.isRunning() || M5.Mic.isRecording() != 0 || M5.Speaker.isRunning() || M5.Speaker.isPlaying()) { micUiId[0] = '\0'; audioUiStage = AudioUiStage::Unknown; snprintf(audioUiResult, sizeof(audioUiResult), "Mic: audio busy/unknown"); }
+    else if (!micResultReady) {
+      strlcpy(micUiId, "UI1", sizeof(micUiId)); strlcpy(micResultId, micUiId, sizeof(micResultId)); micResultReady = true;
+      audioUiStage = AudioUiStage::Starting; snprintf(audioUiResult, sizeof(audioUiResult), "Mic: starting"); showAudioUiStage();
+      executeMicTest();
+    }
+    else if (micResultReady && micUiId[0] != '\0' && strcmp(micUiId, micResultId) == 0) { audioUiStage = micCleanupState && strcmp(micCleanupState, "unknown") == 0 ? AudioUiStage::Unknown : AudioUiStage::Complete; const char *shortReason = strcmp(micResultReason, "owner_observation_required") == 0 ? "observe" : strcmp(micResultReason, "zero_signal") == 0 ? "zero" : micResultReason; snprintf(audioUiResult, sizeof(audioUiResult), "MIC INC %s R%lu P%u", shortReason, static_cast<unsigned long>(micRms), static_cast<unsigned>(micPeak)); }
+    else { audioUiStage = AudioUiStage::Unavailable; snprintf(audioUiResult, sizeof(audioUiResult), "Mic: slot busy"); }
+  }
+  if (toneUiPending) {
+    toneUiPending = false;
+    if (!ready || !M5.Speaker.isEnabled()) { audioUiStage = AudioUiStage::Unavailable; snprintf(audioUiResult, sizeof(audioUiResult), "Tone: not ready"); }
+    else if (audioLifecycleUncertain || M5.Mic.isRunning() || M5.Mic.isRecording() != 0 || M5.Speaker.isRunning() || M5.Speaker.isPlaying()) { toneUiId[0] = '\0'; audioUiStage = AudioUiStage::Unknown; snprintf(audioUiResult, sizeof(audioUiResult), "Tone: audio busy/unknown"); }
+    else if (!toneResultReady) {
+      strlcpy(toneUiId, "UI1", sizeof(toneUiId)); strlcpy(toneResultId, toneUiId, sizeof(toneResultId)); toneResultReady = true;
+      audioUiStage = AudioUiStage::Playback; snprintf(audioUiResult, sizeof(audioUiResult), "Tone: playing <=100ms"); showAudioUiStage();
+      executeToneTest();
+    }
+    else if (toneResultReady && toneUiId[0] != '\0' && strcmp(toneUiId, toneResultId) == 0) { audioUiStage = toneCleanupState && strcmp(toneCleanupState, "unknown") == 0 ? AudioUiStage::Unknown : AudioUiStage::Complete; const char *shortReason = strcmp(toneResultReason, "owner_observation_required") == 0 ? "observe" : toneResultReason; snprintf(audioUiResult, sizeof(audioUiResult), "TONE INC %s", shortReason); }
+    else { audioUiStage = AudioUiStage::Unavailable; snprintf(audioUiResult, sizeof(audioUiResult), "Tone: slot busy"); }
   }
   M5.Imu.update();
   const auto data = M5.Imu.getImuData();
 
-  M5.Display.fillRect(0, 42, 240, 95, TFT_BLACK);
+  M5.Display.fillRect(0, 42, 240, 55, TFT_BLACK);
   M5.Display.setCursor(0, 42);
   M5.Display.printf("G: %.2f %.2f %.2f\n", data.gyro.x, data.gyro.y, data.gyro.z);
   M5.Display.printf("A: %.2f %.2f %.2f\n", data.accel.x, data.accel.y, data.accel.z);
-  M5.Display.setCursor(0, 103);
+  M5.Display.setCursor(0, 96);
   M5.Display.print(sdStatus);
-  M5.Display.setCursor(0, 119);
-  M5.Display.print("Keys: ");
-  for (char key : M5Cardputer.Keyboard.keysState().word) {
-    M5.Display.write(static_cast<uint8_t>(key));
-  }
-  M5.Display.println();
+  M5.Display.setCursor(0, 108);
+  M5.Display.printf("A:%-8s %.21s", audioUiStageName(), audioUiResult);
+  M5.Display.setCursor(0, 120);
+  M5.Display.print("S:SD M:MIC T:TONE Y:EAR OUT");
   delay(100);
 }
