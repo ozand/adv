@@ -110,7 +110,9 @@ def test_manual_audio_ui_is_edge_triggered_confirmed_and_uses_existing_slots():
     assert "if (toneConsentPending && !audioUiBlockKeysUntilRelease)" in loop
     assert 'if (tPressed) {' in loop and 'toneConsentReady = false;' in loop
     assert 'toneConsentReady = true;' in loop
+    assert "if (!wasAudioUiBlocked && yEdge && toneConsentPending && toneConsentReady && !tPressed)" in loop
     assert '"RELEASE T; EAR OUT; Y"' in loop
+    assert "if (micEdge) { micUiPending = true; toneConsentPending = false; toneConsentReady = false; }" in loop
     assert "if (toneUiPending && toneConsentPending && millis() - toneConsentStarted >= kToneConsentMs)" in loop
     assert "if (toneUiPending && audioUiBlockKeysUntilRelease)" in loop
     tone_executor = source[source.index("static void executeToneTest() {") : source.index("void loop()")]
