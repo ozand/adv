@@ -91,6 +91,50 @@ def test_operations_are_explicit_cached_and_not_boot_or_aggregate_side_effects()
     assert "micResultReady || audioLifecycleUncertain" not in command_block
 
 
+def test_manual_audio_ui_is_edge_triggered_confirmed_and_uses_existing_slots():
+    source = SKETCH.read_text(encoding="utf-8")
+    setup = source[source.index("void setup()") : source.index("static constexpr size_t kCommandMaxBytes")]
+    loop = source[source.index("void loop()") :]
+    assert 'M5Cardputer.Keyboard.isKeyPressed(\'m\')' in loop
+    assert 'M5Cardputer.Keyboard.isKeyPressed(\'t\')' in loop
+    assert 'M5Cardputer.Keyboard.isKeyPressed(\'y\')' in loop
+    assert 'M5Cardputer.Keyboard.isKeyPressed(\'s\')' in loop
+    assert "const bool sdEdge = sPressed && !sdKeyLatched" in loop
+    assert "const bool micEdge = mPressed && !micKeyLatched" in loop
+    assert "const bool toneEdge = tPressed && !toneKeyLatched" in loop
+    assert "if (sdEdge) { if (!sdDone) { markSdTestStarted(); runSdSelfTest(); } }" in loop
+    assert "const bool wasAudioUiBlocked = audioUiBlockKeysUntilRelease" in loop
+    assert "if (!wasAudioUiBlocked && yEdge && toneConsentPending && toneConsentReady && !tPressed)" in loop
+    assert "else if (micEdge) { micUiPending = true; toneConsentPending = false; toneConsentReady = false; }" in loop
+    assert "else if (toneEdge && !toneConsentPending)" in loop
+    assert "if (toneConsentPending && !audioUiBlockKeysUntilRelease)" in loop
+    assert 'if (tPressed) {' in loop and 'toneConsentReady = false;' in loop
+    assert 'toneConsentReady = true;' in loop
+    assert "if (!wasAudioUiBlocked && yEdge && toneConsentPending && toneConsentReady && !tPressed)" in loop
+    assert '"RELEASE T; EAR OUT; Y"' in loop
+    assert "if (micEdge) { micUiPending = true; toneConsentPending = false; toneConsentReady = false; }" in loop
+    assert "if (toneUiPending && toneConsentPending && millis() - toneConsentStarted >= kToneConsentMs)" in loop
+    assert "if (toneUiPending && audioUiBlockKeysUntilRelease)" in loop
+    tone_executor = source[source.index("static void executeToneTest() {") : source.index("void loop()")]
+    assert tone_executor.index('"Tone: checking"') < tone_executor.index('if (audioLifecycleUncertain')
+    assert tone_executor.index('if (audioLifecycleUncertain') < tone_executor.index('"Tone: request <=100ms"')
+    assert tone_executor.index('"Tone: request <=100ms"') < tone_executor.index("M5.Speaker.playRaw")
+    assert "kToneConsentMs = 5000" in source
+    assert "audioUiBlockKeysUntilRelease = true" in source
+    assert "if (!sPressed && !mPressed && !tPressed && !yPressed) audioUiBlockKeysUntilRelease = false" in loop
+    assert 'strlcpy(micResultId, micUiId, sizeof(micResultId))' in loop
+    assert 'strlcpy(toneResultId, toneUiId, sizeof(toneResultId))' in loop
+    assert "micUiId[0] != '\\0'" in loop
+    assert "toneUiId[0] != '\\0'" in loop
+    assert "S:SD M:MIC T:TONE Y:EAR OUT" in loop
+    assert 'M5.Display.printf("A:%-8s %.27s"' in loop
+    assert "showAudioUiStage();" in source[source.index("static void executeMicTest()") : source.index("void loop()")]
+    assert "showAudioUiStage();" in source[source.index("static void executeToneTest()") : source.index("void loop()")]
+    assert "executeMicTest" not in setup and "executeToneTest" not in setup
+    assert 'memcmp(commandBuffer, "mic_test ", 9)' in source
+    assert 'memcmp(commandBuffer, "tone_test ", 10)' in source
+
+
 def test_mic_lifecycle_source_guards():
     source = SKETCH.read_text(encoding="utf-8")
     mic = source[source.index("static void executeMicTest() {") : source.index("static void executeToneTest() {")]
