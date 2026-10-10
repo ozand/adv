@@ -12,7 +12,7 @@
     {"id":"artifact-excluded","source":"https://github.com/example/public-docs","revision":"cccccccccccccccccccccccccccccccccccccccc","locator":"LICENSE","eligibility":"excluded","reason":"synthetic scope example"}
   ],
   "results":[{"input_id":"artifact-a","disposition":"studied"},{"input_id":"artifact-b","disposition":"unresolved"}],
-  "validation":{"source":{"status":"PASS"},"content":{"status":"PARTIAL"},"retrieval":{"status":"NOT RUN","reason":"not required for this synthetic example"}},
+  "validation":{"source":{"status":"PASS","required":true},"content":{"status":"PARTIAL","required":true},"retrieval":{"status":"NOT APPLICABLE","required":false,"precondition":"No retrieval/index objective in this synthetic batch","reason":"Retrieval is out of scope"}},
   "gate":"PARTIAL",
   "review":{"reviewer":"independent-review-role","reviewer_role":"independent-review-role","mode":"read-only","candidate_sha":"2222222222222222222222222222222222222222","status":"PASS"},
   "receipt":{"url":"https://github.com/example/repo/issues/1#issuecomment-123","issue":"https://github.com/example/repo/issues/1","retention":"retained with governing issue record","sanitized":true},

@@ -23,9 +23,9 @@ def valid_record():
         ],
         "results": [{"input_id": "a", "disposition": "studied"}],
         "validation": {
-            "source": {"status": "PASS"},
-            "content": {"status": "PASS"},
-            "retrieval": {"status": "NOT APPLICABLE"},
+            "source": {"status": "PASS", "required": True},
+            "content": {"status": "PASS", "required": True},
+            "retrieval": {"status": "NOT APPLICABLE", "required": False, "precondition": "No retrieval requested", "reason": "Outside batch scope"},
         },
         "gate": "PASS",
         "review": {
@@ -68,6 +68,27 @@ def test_duplicate_artifact_ids_and_double_ownership_fail():
     assert any("duplicate result ownership" in error for error in errors)
 
 
+def test_unresolved_eligibility_cannot_be_assessed_without_new_resolved_record():
+    record = valid_record()
+    record["inputs"].append({"id": "unknown", "source": "synthetic", "revision": "unknown", "locator": "?", "eligibility": "unresolved", "reason": "identity not frozen"})
+    record["results"].append({"input_id": "unknown", "disposition": "studied"})
+    errors = MODULE.validate(record)
+    assert any("cannot receive assessed disposition" in error for error in errors)
+
+
+def test_unresolved_eligibility_requires_a_result_and_reason():
+    record = valid_record()
+    record["inputs"].append({"id": "unknown", "source": "synthetic", "revision": "unknown", "locator": "?", "eligibility": "unresolved", "reason": "identity not frozen"})
+    record["results"].append({"input_id": "unknown", "disposition": "unresolved"})
+    record["gate"] = "PARTIAL"
+    assert MODULE.validate(record) == []
+    record["results"].pop()
+    assert any("remain visible as unresolved" in error for error in MODULE.validate(record))
+    record["results"].append({"input_id": "unknown", "disposition": "unresolved"})
+    record["gate"] = "PASS"
+    assert any("gate must be PARTIAL" in error for error in MODULE.validate(record))
+
+
 def test_eligible_missing_result_and_unresolved_coverage_fail_closed():
     record = valid_record()
     record["inputs"].append({"id": "b", "source": "synthetic", "revision": "unknown", "locator": "b.md", "eligibility": "eligible"})
@@ -75,9 +96,50 @@ def test_eligible_missing_result_and_unresolved_coverage_fail_closed():
     assert any("eligible input missing result" in error for error in errors)
 
 
+def test_not_applicable_requires_declared_exclusion_precondition():
+    record = valid_record()
+    record["validation"]["retrieval"] = {"status": "NOT APPLICABLE", "required": False}
+    assert any("precondition" in error for error in MODULE.validate(record))
+    record["validation"]["retrieval"] = {
+        "status": "NOT APPLICABLE", "required": False,
+        "precondition": "Batch has no retrieval/index objective",
+        "reason": "No retrieval operation is in scope",
+    }
+    assert MODULE.validate(record) == []
+    record["validation"]["retrieval"]["precondition"] = ""
+    assert any("precondition" in error for error in MODULE.validate(record))
+
+
+def test_all_layers_not_applicable_cannot_be_a_pass_or_authorize_release():
+    record = valid_record()
+    for name in ("source", "content", "retrieval"):
+        record["validation"][name] = {
+            "status": "NOT APPLICABLE", "required": False,
+            "precondition": f"Synthetic exclusion for {name}", "reason": "Not required",
+        }
+    record["gate"] = "PASS"
+    assert any("NOT CHECKED" in error for error in MODULE.validate(record))
+    record["gate"] = "NOT CHECKED"
+    record["release"] = {"authorized": True, "decision_ref": "https://github.com/example/repo/issues/1#issuecomment-123"}
+    errors = MODULE.validate(record)
+    assert any("no validation layer is required" in error for error in errors)
+
+
+def test_required_layer_cannot_be_not_applicable():
+    record = valid_record()
+    record["validation"]["content"] = {
+        "status": "NOT APPLICABLE", "required": True,
+        "precondition": "Claimed exclusion", "reason": "Synthetic",
+    }
+    record["gate"] = "PARTIAL"
+    assert any("required=false" in error for error in MODULE.validate(record))
+
+
 def test_unrun_required_layer_is_not_pass():
     record = valid_record()
     record["validation"]["retrieval"]["status"] = "NOT RUN"
+    record["validation"]["retrieval"]["required"] = True
+    record["validation"]["retrieval"].pop("precondition")
     record["validation"]["retrieval"]["reason"] = "synthetic unrun layer"
     record["gate"] = "PARTIAL"
     assert MODULE.validate(record) == []

@@ -38,8 +38,6 @@ def validate(record: Any) -> list[str]:
 
     if not isinstance(record["batch_id"], str) or not record["batch_id"].strip():
         errors.append("batch_id must be a non-empty identifier")
-    if not isinstance(record.get("objective"), str) or not record["objective"].strip():
-        errors.append("objective must be explicit in the batch record")
     if not isinstance(record["issue"], str) or not ISSUE_URL.fullmatch(record["issue"]):
         errors.append("issue must be a canonical GitHub Issue HTTPS URL")
     if not isinstance(record["writer"], str) or not record["writer"].strip():
@@ -47,7 +45,7 @@ def validate(record: Any) -> list[str]:
     if not isinstance(record.get("owner"), str) or not record["owner"].strip():
         errors.append("owner must be a non-empty identifier")
     if not isinstance(record.get("objective"), str) or not record["objective"].strip():
-        errors.append("objective must be explicit in the batch record or governing issue")
+        errors.append("objective must be explicit in the batch record")
     for field in ("base", "candidate_sha"):
         value = record[field]
         if not isinstance(value, str) or not SHA1.fullmatch(value):
@@ -74,12 +72,18 @@ def validate(record: Any) -> list[str]:
                 errors.append(f"inputs[{i}].{field} must be explicit (use a stated unknown value when unavailable)")
         if item.get("eligibility") not in {"eligible", "excluded", "unresolved"}:
             errors.append(f"inputs[{i}].eligibility must be eligible, excluded, or unresolved")
+        if item.get("eligibility") == "unresolved" and not str(item.get("reason", "")).strip():
+            errors.append(f"inputs[{i}] unresolved eligibility requires a reason")
         if item.get("eligibility") == "excluded" and not str(item.get("reason", "")).strip():
             errors.append(f"inputs[{i}] excluded input requires a reason")
         digest = item.get("sha256")
         if digest is not None and (not isinstance(digest, str) or not SHA256.fullmatch(digest)):
             errors.append(f"inputs[{i}].sha256 must be 64 lowercase hex characters")
 
+    scope_partial = any(
+        isinstance(item, dict) and item.get("eligibility") == "unresolved"
+        for item in inputs
+    )
     result_rows = record["results"]
     result_ids: set[str] = set()
     if not isinstance(result_rows, list):
@@ -98,13 +102,17 @@ def validate(record: Any) -> list[str]:
     for item in inputs:
         if isinstance(item, dict) and item.get("eligibility") == "eligible" and item.get("id") not in result_ids:
             errors.append(f"eligible input missing result: {item.get('id')}")
-        if isinstance(item, dict) and item.get("eligibility") == "eligible" and item.get("id") in result_ids:
+        if isinstance(item, dict) and item.get("eligibility") == "unresolved" and item.get("id") not in result_ids:
+            errors.append(f"unresolved eligibility must remain visible as unresolved: {item.get('id')}")
+        if isinstance(item, dict) and item.get("eligibility") == "unresolved" and item.get("id") in result_ids:
             disposition = next(
                 row.get("disposition") for row in result_rows
                 if isinstance(row, dict) and row.get("input_id") == item.get("id")
             )
-            if disposition == "excluded":
-                errors.append(f"eligible input cannot have excluded disposition: {item.get('id')}")
+            if disposition != "unresolved":
+                errors.append(f"unresolved eligibility cannot receive assessed disposition: {item.get('id')}")
+            if disposition == "unresolved" and not str(item.get("reason", "")).strip():
+                errors.append(f"unresolved artifact requires a reason: {item.get('id')}")
         if isinstance(item, dict) and item.get("eligibility") == "excluded" and item.get("id") in result_ids:
             disposition = next(
                 row.get("disposition") for row in result_rows
@@ -117,17 +125,36 @@ def validate(record: Any) -> list[str]:
     if not isinstance(layers, dict) or set(layers) != LAYERS:
         errors.append("validation must contain exactly source, content, retrieval layers")
     elif all(isinstance(layer, dict) and layer.get("status") in OUTCOMES for layer in layers.values()):
+        required_layers = []
         for name, layer in layers.items():
-            if layer["status"] == "NOT RUN" and not str(layer.get("reason", "")).strip():
+            status = layer["status"]
+            if not isinstance(layer.get("required"), bool):
+                errors.append(f"validation.{name}.required must explicitly declare applicability")
+            if status == "NOT RUN" and not str(layer.get("reason", "")).strip():
                 errors.append(f"validation.{name} NOT RUN requires reason")
-        required_layers = [layer for layer in layers.values() if layer["status"] != "NOT APPLICABLE"]
-        expected = "PASS"
+            if status == "NOT APPLICABLE":
+                if not isinstance(layer.get("precondition"), str) or not layer["precondition"].strip():
+                    errors.append(f"validation.{name} NOT APPLICABLE requires declared precondition")
+                if not isinstance(layer.get("reason"), str) or not layer["reason"].strip():
+                    errors.append(f"validation.{name} NOT APPLICABLE requires reason")
+                if layer.get("required") is not False:
+                    errors.append(f"validation.{name} NOT APPLICABLE requires required=false")
+            elif layer.get("required") is True:
+                required_layers.append(layer)
+            elif status != "NOT APPLICABLE":
+                errors.append(f"validation.{name} required=false must be reported NOT APPLICABLE")
+        all_not_applicable = not required_layers
+        expected = "NOT CHECKED" if all_not_applicable else "PASS"
         if any(layer["status"] == "FAIL" for layer in required_layers):
             expected = "FAIL"
         elif any(layer["status"] in {"PARTIAL", "NOT RUN"} for layer in required_layers):
             expected = "PARTIAL"
+        if scope_partial and expected == "PASS":
+            expected = "PARTIAL"
         if record["gate"] != expected:
-            errors.append(f"gate must be {expected} based on layer outcomes")
+            errors.append(f"gate must be {expected} based on layer and scope outcomes")
+        if not required_layers:
+            errors.append("gate cannot be established when no validation layer is required")
     elif isinstance(layers, dict):
         for name, layer in layers.items():
             if not isinstance(layer, dict) or layer.get("status") not in OUTCOMES:

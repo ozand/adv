@@ -8,7 +8,7 @@ Make batch research/synthesis reproducible and independently reviewable while ke
 
 ## Batch record
 
-The minimal machine-readable example/checker subset is: batch/Issue identity, base and candidate SHA, one writer, frozen input IDs/source/revision/locator/hash and eligibility, one result per eligible input, three validation-layer statuses and aggregate gate, exact-SHA read-only review declaration, durable sanitized Issue receipt pointer, and an explicit release-decision field. Owner, objective, exclusions and stop conditions remain documented in the governing Issue. The checker does not authenticate identities or approval.
+The minimal machine-readable example/checker subset is: batch/Issue identity, base and candidate SHA, owner/objective/writer, frozen input IDs/source/revision/locator/hash and eligibility, one result per eligible input, three validation-layer statuses with explicit `required` flags, declared precondition/reason for every NOT APPLICABLE layer, aggregate gate, exact-SHA read-only review declaration, durable sanitized Issue receipt pointer, and explicit release-decision field. The checker does not authenticate identities or approval. Unknown input eligibility must remain unresolved and cannot receive studied/synthesized credit until represented as a newly frozen, resolved input record.
 
 For each batch, retain these fields in its Issue/PR record or an explicitly scoped companion artifact. [`batch-record.example.json`](batch-record.example.json) is a machine-readable synthetic example; the read-only checker validates its structure only.
 
@@ -38,7 +38,7 @@ Do not place private absolute paths, credentials, raw logs, source payloads, or 
 3. **Record results:** each artifact has one current disposition per ADR-011. `studied` requires an assessment receipt; `synthesized` requires a source-to-canonical-target relation. Unknown evidence remains unknown; excluded items require unique IDs/reasons; unresolved eligible artifacts stay in N without credit.
 4. **Separate validation layers:** report (a) universal `kb-bootstrap`, (b) repository consumer policy, and (c) retrieval/index only if separately authorized and run. `NOT RUN` is never PASS. Structural/profile checks do not establish local policy, truth, rights/privacy, retrieval freshness, or device behavior.
 5. **Independent exact-content review:** reviewers are read-only and record the exact candidate commit and relevant content hashes. A changed candidate invalidates review for changed bytes; review the new exact SHA. A branch name alone is not review identity.
-6. **Deterministic gate:** each required layer yields PASS/FAIL/PARTIAL/NOT RUN/NOT APPLICABLE with evidence. FAIL blocks release. PARTIAL names unresolved scope and cannot silently become PASS. NOT APPLICABLE is valid only when declared preconditions do not apply. Overall status cannot hide a layer.
+6. **Deterministic gate:** each layer declares `required: true|false`. A required layer yields PASS/FAIL/PARTIAL/NOT RUN; an unrequired layer must be NOT APPLICABLE with a concrete precondition and reason. FAIL blocks release. PARTIAL names unresolved scope and cannot silently become PASS. All layers NOT APPLICABLE means `NOT CHECKED`, not PASS, and cannot authorize release. Overall status cannot hide a layer or unresolved input eligibility.
 7. **Release receipt:** after owner decision, record batch ID, Issue/PR, base/source snapshot, candidate/reviewed/delivered commits, file hashes as needed, separate layer results, release decision, and residual risks. Keep it sanitized and durable in the governing Issue/PR; terminal logs alone are not durable evidence.
 
 No step implies automatic publication, evidence/status promotion, reciprocal-link generation, repair, migration, QMD mutation, or source acquisition.
@@ -76,7 +76,7 @@ synthesis coverage: 0/2
 unresolved scope: none
 ```
 
-The partition is `N=0+1+0+0+1=2`. If complete assessment is required, the gate is PARTIAL because an eligible artifact is unresolved. The excluded artifact is visible separately and outside N. If a listing's artifact eligibility is unknown, report it outside N and mark catalog scope PARTIAL/unknown; do not claim complete catalog coverage. If N=0, ratios are NOT APPLICABLE, not zero percent. The checker enforces that every eligible input has one result and that layer outcomes agree with the aggregate gate; it does not compute these coverage ratios.
+The partition is `N=0+1+0+0+1=2`. If complete assessment is required, the gate is PARTIAL because an eligible artifact is unresolved. The excluded artifact is visible separately and outside N. If a listing's artifact eligibility is unknown, report it outside N and mark catalog scope PARTIAL/unknown; do not claim complete catalog coverage. Its result cannot be `studied` or `synthesized`; resolve identity/eligibility under a new frozen input record before assessment. If N=0, ratios are NOT APPLICABLE, not zero percent. The checker enforces that every eligible input has one result and that layer outcomes agree with the aggregate gate; it does not compute these coverage ratios.
 
 A sanitized receipt can summarize the separate checks, for example:
 
@@ -97,6 +97,7 @@ Owner acceptance is recorded on [Issue #48](https://github.com/ozand/adv/issues/
 ## Verification status
 
 - Example manifest/result arithmetic is specification-only; no source artifacts were retrieved or assessed.
-- The local read-only structural receipt checker is implemented; no batch engine, schema validator for source content, or review identity authentication is implemented.
+- The local read-only structural receipt checker is implemented; it requires explicit applicability for every layer, rejects NOT APPLICABLE without a concrete precondition/reason, and does not permit a PASS gate when all layers are unrequired. Unknown-eligibility artifacts cannot be assessed under that unresolved record; scope remains PARTIAL.
+- The checker does not recompute coverage ratios, verify that declared preconditions are true, or authenticate human review/release identity.
 - No QMD runtime state, private corpus, or device/hardware state was inspected.
 - Contract acceptance does not assert operational performance or production readiness.
