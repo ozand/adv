@@ -166,9 +166,12 @@ def validate(record: Any) -> list[str]:
         for field in ("source", "revision", "locator"):
             if not isinstance(item.get(field), str) or not item[field].strip():
                 errors.append(f"inputs[{i}].{field} must be explicit (use a stated unknown value when unavailable)")
+        identity_unknown = any(part.strip().casefold() in {"unknown", "unavailable", "not available"} for part in source_identity)
         eligibility = item.get("eligibility")
         if not isinstance(eligibility, str) or eligibility not in {"eligible", "excluded", "unresolved"}:
             errors.append(f"inputs[{i}].eligibility must be eligible, excluded, or unresolved")
+        elif identity_unknown and eligibility != "unresolved":
+            errors.append(f"inputs[{i}] with unknown identity components must remain unresolved")
         if eligibility == "unresolved" and not has_reason(item.get("reason")):
             errors.append(f"inputs[{i}] unresolved eligibility requires a reason")
         if eligibility == "excluded" and not has_reason(item.get("reason")):
@@ -251,6 +254,13 @@ def validate(record: Any) -> list[str]:
             continue
         if item.get("eligibility") == "eligible" and item_id not in result_ids:
             errors.append(f"eligible input missing result: {item_id}")
+        identity_unknown = any(
+            isinstance(item.get(field), str)
+            and item[field].strip().casefold() in {"unknown", "unavailable", "not available"}
+            for field in ("source", "revision", "locator")
+        )
+        if identity_unknown and item.get("eligibility") != "unresolved":
+            errors.append(f"unknown identity must remain unresolved: {item_id}")
         if item.get("eligibility") == "unresolved" and item_id not in result_ids:
             errors.append(f"unresolved eligibility must remain visible as unresolved: {item_id}")
         if item.get("eligibility") == "unresolved" and item_id in result_ids:

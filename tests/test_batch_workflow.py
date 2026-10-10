@@ -331,6 +331,13 @@ def test_duplicate_artifact_ids_and_double_ownership_fail():
     assert any("duplicate result ownership" in error for error in errors)
 
 
+def test_unknown_identity_component_cannot_be_marked_eligible():
+    record = valid_record()
+    record["inputs"][0]["revision"] = "unknown"
+    errors = MODULE.validate(record)
+    assert any("with unknown identity components must remain unresolved" in error for error in errors)
+
+
 def test_unresolved_eligibility_cannot_be_assessed_without_new_resolved_record():
     record = valid_record()
     record["inputs"].append({"id": "unknown", "source": "synthetic", "revision": "unknown", "locator": "?", "eligibility": "unresolved", "reason": "identity not frozen"})
