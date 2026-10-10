@@ -108,6 +108,42 @@ def test_cli_malformed_enum_types_fail_deterministically(tmp_path):
         assert "Traceback" not in proc.stderr
 
 
+def test_unhashable_input_id_returns_structural_failure_without_traceback(tmp_path):
+    record = valid_record()
+    record["inputs"][0]["id"] = []
+    path = tmp_path / "unhashable-input-id.json"
+    path.write_text(json.dumps(record), encoding="utf-8")
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), str(path)], capture_output=True, text=True, check=False,
+    )
+    assert proc.returncode == 1
+    assert "RESULT: FAIL" in proc.stdout
+    assert "Traceback" not in proc.stderr
+    assert MODULE.validate(record)
+
+
+def test_non_string_reasons_are_rejected():
+    cases = [
+        ("input", "unresolved", None),
+        ("input", "unresolved", []),
+        ("input", "excluded", []),
+        ("result", "deferred", None),
+        ("result", "deferred", {}),
+        ("result", "unresolved", {}),
+    ]
+    for section, state, reason in cases:
+        record = valid_record()
+        if section == "input":
+            row = record["inputs"][0]
+            row["eligibility"] = state
+            row["reason"] = reason
+        else:
+            row = record["results"][0]
+            row["disposition"] = state
+            row["reason"] = reason
+        assert MODULE.validate(record), (section, state, reason)
+
+
 def test_minimal_valid_synthetic_record_passes_structural_check():
     record = valid_record()
     record["results"] = record["results"][:1]
@@ -198,11 +234,19 @@ def test_not_applicable_requires_declared_exclusion_precondition():
     assert any("precondition" in error for error in MODULE.validate(record))
 
 
-def test_eligible_unresolved_result_forces_partial_gate():
-    record = valid_record()
-    record["results"][0] = {"input_id": "a", "disposition": "unresolved", "reason": "synthetic access unresolved"}
-    record["gate"] = "PASS"
-    assert any("gate must be PARTIAL" in error for error in MODULE.validate(record))
+def test_eligible_incomplete_results_force_partial_gate_and_block_release():
+    for disposition in ("not_assessed", "deferred", "unresolved"):
+        record = valid_record()
+        row = record["results"][0]
+        row.clear()
+        row.update({"input_id": "a", "disposition": disposition})
+        if disposition in {"deferred", "unresolved"}:
+            row["reason"] = "synthetic incomplete state"
+        record["gate"] = "PASS"
+        record["release"] = {"authorized": True, "decision_ref": "synthetic owner decision"}
+        errors = MODULE.validate(record)
+        assert any("gate must be PARTIAL" in error for error in errors)
+        assert record["gate"] == "PASS" and record["release"]["authorized"] is True
 
 
 def test_all_layers_not_applicable_cannot_be_a_pass_or_authorize_release():

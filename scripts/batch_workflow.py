@@ -14,6 +14,12 @@ from typing import Any
 
 SHA1 = re.compile(r"^[0-9a-f]{40}$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
+
+
+def has_reason(value: Any) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
 ISSUE_URL = re.compile(r"https://github\.com/[^/\s]+/[^/\s]+/issues/[1-9][0-9]*")
 RECEIPT_URL = re.compile(r"https://github\.com/[^/\s]+/[^/\s]+/issues/[1-9][0-9]*(?:#issuecomment-[1-9][0-9]*)?")
 LAYERS = {"source", "content", "retrieval"}
@@ -56,6 +62,8 @@ def validate(record: Any) -> list[str]:
     if not isinstance(inputs, list) or not inputs:
         errors.append("inputs must be a non-empty array")
         inputs = []
+    valid_input_ids: set[str] = set()
+    valid_inputs: dict[str, dict[str, Any]] = {}
     for i, item in enumerate(inputs):
         if not isinstance(item, dict):
             errors.append(f"inputs[{i}] must be an object")
@@ -66,16 +74,19 @@ def validate(record: Any) -> list[str]:
             continue
         if input_id in ids:
             errors.append(f"duplicate input id: {input_id}")
-        ids.add(input_id)
+        else:
+            ids.add(input_id)
+            valid_input_ids.add(input_id)
+            valid_inputs[input_id] = item
         for field in ("source", "revision", "locator"):
             if not isinstance(item.get(field), str) or not item[field].strip():
                 errors.append(f"inputs[{i}].{field} must be explicit (use a stated unknown value when unavailable)")
         eligibility = item.get("eligibility")
         if not isinstance(eligibility, str) or eligibility not in {"eligible", "excluded", "unresolved"}:
             errors.append(f"inputs[{i}].eligibility must be eligible, excluded, or unresolved")
-        if item.get("eligibility") == "unresolved" and not str(item.get("reason", "")).strip():
+        if eligibility == "unresolved" and not has_reason(item.get("reason")):
             errors.append(f"inputs[{i}] unresolved eligibility requires a reason")
-        if item.get("eligibility") == "excluded" and not str(item.get("reason", "")).strip():
+        if eligibility == "excluded" and not has_reason(item.get("reason")):
             errors.append(f"inputs[{i}] excluded input requires a reason")
         digest = item.get("sha256")
         if digest is not None and (not isinstance(digest, str) or not SHA256.fullmatch(digest)):
@@ -87,6 +98,7 @@ def validate(record: Any) -> list[str]:
     )
     result_rows = record["results"]
     result_ids: set[str] = set()
+    result_dispositions: dict[str, str] = {}
     if not isinstance(result_rows, list):
         errors.append("results must be an array")
         result_rows = []
@@ -104,13 +116,15 @@ def validate(record: Any) -> list[str]:
         disposition = item.get("disposition")
         if not isinstance(disposition, str) or disposition not in DISPOSITIONS:
             errors.append(f"results[{i}] has invalid disposition")
-        elif item.get("disposition") == "excluded":
+        else:
+            result_dispositions.setdefault(input_id, disposition)
+        if disposition == "excluded":
             errors.append(f"results[{i}] cannot use excluded; exclusions are outside the eligible partition")
-        elif item["disposition"] == "deferred" and not str(item.get("reason", "")).strip():
+        elif isinstance(disposition, str) and disposition == "deferred" and not has_reason(item.get("reason")):
             errors.append(f"results[{i}] deferred disposition requires a reason")
-        elif item["disposition"] == "unresolved" and not str(item.get("reason", "")).strip():
+        elif isinstance(disposition, str) and disposition == "unresolved" and not has_reason(item.get("reason")):
             errors.append(f"results[{i}] unresolved disposition requires a reason")
-        elif item["disposition"] in {"studied", "synthesized"}:
+        elif isinstance(disposition, str) and disposition in {"studied", "synthesized"}:
             assessment = item.get("assessment")
             if not isinstance(assessment, dict) or any(
                 not isinstance(assessment.get(field), str) or not assessment[field].strip()
@@ -126,27 +140,31 @@ def validate(record: Any) -> list[str]:
                     errors.append(f"results[{i}] synthesized disposition requires target relations")
                 if not isinstance(item.get("claim_provenance"), list) or not item["claim_provenance"]:
                     errors.append(f"results[{i}] synthesized disposition requires claim/source provenance")
-    unresolved_result = any(
-        isinstance(item, dict) and item.get("disposition") == "unresolved"
+    incomplete_result = any(
+        isinstance(item, dict)
+        and isinstance(item.get("input_id"), str)
+        and item["input_id"] in valid_input_ids
+        and item.get("input_id") in result_dispositions
+        and result_dispositions[item["input_id"]] in {"not_assessed", "deferred", "unresolved"}
         for item in result_rows
     )
-    scope_partial = scope_partial or unresolved_result
+    scope_partial = scope_partial or incomplete_result
     for item in inputs:
-        if isinstance(item, dict) and item.get("eligibility") == "eligible" and item.get("id") not in result_ids:
-            errors.append(f"eligible input missing result: {item.get('id')}")
-        if isinstance(item, dict) and item.get("eligibility") == "unresolved" and item.get("id") not in result_ids:
-            errors.append(f"unresolved eligibility must remain visible as unresolved: {item.get('id')}")
-        if isinstance(item, dict) and item.get("eligibility") == "unresolved" and item.get("id") in result_ids:
-            disposition = next(
-                row.get("disposition") for row in result_rows
-                if isinstance(row, dict) and row.get("input_id") == item.get("id")
-            )
+        item_id = item.get("id") if isinstance(item, dict) else None
+        if not isinstance(item_id, str) or not item_id.strip() or item_id not in valid_input_ids:
+            continue
+        if item.get("eligibility") == "eligible" and item_id not in result_ids:
+            errors.append(f"eligible input missing result: {item_id}")
+        if item.get("eligibility") == "unresolved" and item_id not in result_ids:
+            errors.append(f"unresolved eligibility must remain visible as unresolved: {item_id}")
+        if item.get("eligibility") == "unresolved" and item_id in result_ids:
+            disposition = result_dispositions.get(item_id)
             if disposition != "unresolved":
-                errors.append(f"unresolved eligibility cannot receive assessed disposition: {item.get('id')}")
-            if disposition == "unresolved" and not str(item.get("reason", "")).strip():
-                errors.append(f"unresolved artifact requires a reason: {item.get('id')}")
-        if isinstance(item, dict) and item.get("eligibility") == "excluded" and item.get("id") in result_ids:
-            errors.append(f"excluded input must remain outside results: {item.get('id')}")
+                errors.append(f"unresolved eligibility cannot receive assessed disposition: {item_id}")
+            if disposition == "unresolved" and not has_reason(valid_inputs[item_id].get("reason")):
+                errors.append(f"unresolved artifact requires a reason: {item_id}")
+        if item.get("eligibility") == "excluded" and item_id in result_ids:
+            errors.append(f"excluded input must remain outside results: {item_id}")
 
     layers = record["validation"]
     if not isinstance(layers, dict) or set(layers) != LAYERS:
@@ -162,7 +180,7 @@ def validate(record: Any) -> list[str]:
             status = layer["status"]
             if not isinstance(layer.get("required"), bool):
                 errors.append(f"validation.{name}.required must explicitly declare applicability")
-            if status == "NOT RUN" and not str(layer.get("reason", "")).strip():
+            if status == "NOT RUN" and not has_reason(layer.get("reason")):
                 errors.append(f"validation.{name} NOT RUN requires reason")
             if status == "NOT APPLICABLE":
                 if not isinstance(layer.get("precondition"), str) or not layer["precondition"].strip():

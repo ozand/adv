@@ -98,6 +98,6 @@ Owner acceptance is recorded on [Issue #48](https://github.com/ozand/adv/issues/
 
 - Example manifest/result arithmetic is specification-only; no source artifacts were retrieved or assessed.
 - The local read-only structural receipt checker is implemented; it requires explicit applicability for every layer, rejects NOT APPLICABLE without a concrete precondition/reason, and does not permit a PASS gate when all layers are unrequired. Unknown-eligibility artifacts cannot be assessed under that unresolved record; scope remains PARTIAL.
-- The checker validates disposition-specific required fields, but does not verify that receipts, target relations, preconditions, or provenance are factually correct; hashes are format-checked rather than checked against source bytes. Reviewer/release identity and sanitization are not authenticated.
+- The checker requires PARTIAL for eligible `not_assessed`, `deferred`, or `unresolved` dispositions and rejects non-string reasons and malformed input IDs. It validates disposition-specific required fields, but does not verify that receipts, target relations, preconditions, or provenance are factually correct; hashes are format-checked rather than checked against source bytes. Reviewer/release identity and sanitization are not authenticated.
 - No QMD runtime state, private corpus, or device/hardware state was inspected.
 - Contract acceptance does not assert operational performance or production readiness.
