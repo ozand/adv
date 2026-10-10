@@ -21,7 +21,7 @@ def valid_record():
         "objective": "synthetic validation fixture",
         "writer": "writer-role",
         "inputs": [
-            {"id": "a", "source": "synthetic source", "revision": "synthetic revision", "locator": "a.md", "eligibility": "eligible", "sha256": "a" * 64},
+            {"id": "a", "source": "https://example.test/source", "revision": "synthetic revision", "locator": "a.md", "eligibility": "eligible", "sha256": "a" * 64},
             {"id": "b", "source": "synthetic source", "revision": "synthetic revision", "locator": "b.md", "eligibility": "eligible"},
             {"id": "c", "source": "synthetic source", "revision": "synthetic revision", "locator": "c.md", "eligibility": "eligible"},
             {"id": "d", "source": "synthetic source", "revision": "synthetic revision", "locator": "d.md", "eligibility": "eligible"},
@@ -31,7 +31,8 @@ def valid_record():
         "results": [
             {"input_id": "a", "disposition": "studied", "assessment": {"scope": "synthetic scope", "date": "2026-01-01", "reviewer": "fixture", "outcome": "claims reviewed", "limitations": "synthetic"}},
             {"input_id": "b", "disposition": "deferred", "reason": "synthetic defer"},
-            {"input_id": "c", "disposition": "synthesized", "assessment": {"scope": "synthetic scope", "date": "2026-01-01", "reviewer": "fixture", "outcome": "claim represented", "limitations": "synthetic"}, "targets": ["kb/wiki/entities/example.md"], "claim_provenance": [{"source": "synthetic source", "revision": "synthetic revision", "locator": "c.md#claim"}]},
+            {"input_id": "c", "disposition": "synthesized", "assessment": {"scope": "synthetic scope", "date": "2026-01-01", "reviewer": "fixture", "outcome": "claim represented", "limitations": "synthetic"}, "targets": ["kb/wiki/entities/example.md"], "claim_provenance": [{"source": "https://example.test/source", "revision": "synthetic revision", "locator": "c.md#claim", "claim": "synthetic claim"}]},
+
             {"input_id": "d", "disposition": "unresolved", "reason": "synthetic access outcome unresolved"},
             {"input_id": "e", "disposition": "not_assessed"},
         ],
@@ -56,6 +57,14 @@ def valid_record():
         },
         "release": {"authorized": False},
     }
+
+
+def test_receipt_issue_url_rejects_owner_delimiter():
+    record = valid_record()
+    record["issue"] = "https://github.com/acme?x/repo/issues/1"
+    record["receipt"]["issue"] = record["issue"]
+    record["receipt"]["url"] = record["issue"] + "#issuecomment-1"
+    assert any("canonical GitHub Issue" in error for error in MODULE.validate(record))
 
 
 def test_malformed_enum_types_return_structural_errors():
@@ -144,6 +153,50 @@ def test_non_string_reasons_are_rejected():
         assert MODULE.validate(record), (section, state, reason)
 
 
+def test_governing_issue_url_rejects_query_delimiter_components():
+    record = valid_record()
+    record["issue"] = "https://github.com/acme?x/repo/issues/1"
+    assert any("canonical GitHub Issue" in error for error in MODULE.validate(record))
+    record = valid_record()
+    record["issue"] = "https://github.com/acme/repo/issues/1?x=1"
+    assert any("canonical GitHub Issue" in error for error in MODULE.validate(record))
+
+
+def test_duplicate_source_artifact_identity_is_rejected_but_distinct_revision_is_allowed():
+    record = valid_record()
+    duplicate = dict(record["inputs"][0], id="duplicate-id")
+    record["inputs"].append(duplicate)
+    record["results"].append({"input_id": "duplicate-id", "disposition": "not_assessed"})
+    errors = MODULE.validate(record)
+    assert any("duplicates source-artifact identity" in error for error in errors)
+    distinct = valid_record()
+    distinct["inputs"][1] = dict(distinct["inputs"][0], id="revision-two", revision="different revision")
+    distinct["results"].append({"input_id": "revision-two", "disposition": "studied", "assessment": {"scope": "synthetic", "date": "2026-01-01", "reviewer": "fixture", "outcome": "claims reviewed", "limitations": "synthetic"}})
+    distinct["inputs"] = [row for row in distinct["inputs"] if row["id"] in {"a", "revision-two"}]
+    distinct["results"] = [row for row in distinct["results"] if row["input_id"] in {"a", "revision-two"}]
+    distinct["gate"] = "PASS"
+    assert MODULE.validate(distinct) == []
+
+
+def test_synthesized_target_must_be_internal_canonical_path():
+    for target in ("https://example.com/x", "../../outside.md", "kb/wiki/../private.md", r"kb/wiki\\private.md", "kb/wiki/%2e%2e/out.md"):
+        record = valid_record()
+        row = next(item for item in record["results"] if item["input_id"] == "c")
+        row["disposition"] = "synthesized"
+        row["targets"] = [target]
+        row["claim_provenance"] = [{"source": "public citation", "revision": "r1", "locator": "source.md#claim", "claim": "claim-a"}]
+        assert any("canonical internal target" in error for error in MODULE.validate(record)), target
+
+
+def test_malformed_claim_provenance_relation_is_rejected():
+    record = valid_record()
+    row = next(item for item in record["results"] if item["input_id"] == "c")
+    row["disposition"] = "synthesized"
+    row["targets"] = ["kb/wiki/entities/example.md"]
+    row["claim_provenance"] = [None]
+    assert any("provenance relations" in error for error in MODULE.validate(record))
+
+
 def test_minimal_valid_synthetic_record_passes_structural_check():
     record = valid_record()
     record["results"] = record["results"][:1]
@@ -176,8 +229,8 @@ def test_all_dispositions_require_their_contract_evidence():
     results[3].pop("reason")
     errors = MODULE.validate(record)
     assert any("deferred disposition requires a reason" in error for error in errors)
-    assert any("synthesized disposition requires target relations" in error for error in errors)
-    assert any("synthesized disposition requires claim/source provenance" in error for error in errors)
+    assert any("synthesized disposition requires canonical internal target relations" in error for error in errors)
+    assert any("synthesized disposition requires claim/source provenance relations" in error for error in errors)
     assert any("unresolved disposition requires a reason" in error for error in errors)
 
 

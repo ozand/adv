@@ -9,19 +9,61 @@ import argparse
 import json
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
+from urllib.parse import urlsplit
 
 SHA1 = re.compile(r"^[0-9a-f]{40}$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
+ISSUE_PATH = re.compile(r"^/([^/]+)/([^/]+)/issues/([1-9][0-9]*)$")
+ISSUE_COMMENT = re.compile(r"^issuecomment-[1-9][0-9]*$")
 
 
 def has_reason(value: Any) -> bool:
     return isinstance(value, str) and bool(value.strip())
 
 
-ISSUE_URL = re.compile(r"https://github\.com/[^/\s]+/[^/\s]+/issues/[1-9][0-9]*")
-RECEIPT_URL = re.compile(r"https://github\.com/[^/\s]+/[^/\s]+/issues/[1-9][0-9]*(?:#issuecomment-[1-9][0-9]*)?")
+def valid_target(value: Any) -> bool:
+    if not isinstance(value, str) or "\\" in value or "%" in value or "://" in value:
+        return False
+    path = PurePosixPath(value)
+    return (
+        not path.is_absolute()
+        and value == path.as_posix()
+        and value.startswith("kb/wiki/")
+        and all(part not in {"", ".", ".."} for part in path.parts)
+    )
+
+
+def valid_claim_relation(value: Any) -> bool:
+    return isinstance(value, dict) and all(
+        has_reason(value.get(field))
+        for field in ("source", "revision", "locator", "claim")
+    )
+
+
+def issue_identity(value: Any, *, allow_comment: bool = False) -> tuple[str, str, str] | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = urlsplit(value)
+        match = ISSUE_PATH.fullmatch(parsed.path)
+        if (
+            parsed.scheme != "https" or parsed.netloc.casefold() != "github.com"
+            or parsed.username is not None or parsed.password is not None
+            or parsed.port is not None or parsed.query or match is None
+        ):
+            return None
+        owner, repo, number = match.groups()
+        if not re.fullmatch(r"[A-Za-z0-9-]+", owner) or not re.fullmatch(r"[A-Za-z0-9_.-]+", repo):
+            return None
+        if parsed.fragment and (not allow_comment or not ISSUE_COMMENT.fullmatch(parsed.fragment)):
+            return None
+        return owner.casefold(), repo.casefold(), number
+    except ValueError:
+        return None
+
+
 LAYERS = {"source", "content", "retrieval"}
 OUTCOMES = {"PASS", "FAIL", "PARTIAL", "NOT RUN", "NOT APPLICABLE"}
 DISPOSITIONS = {"not_assessed", "studied", "synthesized", "deferred", "unresolved"}
@@ -44,7 +86,8 @@ def validate(record: Any) -> list[str]:
 
     if not isinstance(record["batch_id"], str) or not record["batch_id"].strip():
         errors.append("batch_id must be a non-empty identifier")
-    if not isinstance(record["issue"], str) or not ISSUE_URL.fullmatch(record["issue"]):
+    batch_issue = issue_identity(record["issue"])
+    if batch_issue is None:
         errors.append("issue must be a canonical GitHub Issue HTTPS URL")
     if not isinstance(record["writer"], str) or not record["writer"].strip():
         errors.append("writer must be a non-empty identifier")
@@ -59,6 +102,7 @@ def validate(record: Any) -> list[str]:
 
     inputs = record["inputs"]
     ids: set[str] = set()
+    source_identities: set[tuple[str, str, str]] = set()
     if not isinstance(inputs, list) or not inputs:
         errors.append("inputs must be a non-empty array")
         inputs = []
@@ -74,10 +118,18 @@ def validate(record: Any) -> list[str]:
             continue
         if input_id in ids:
             errors.append(f"duplicate input id: {input_id}")
-        else:
-            ids.add(input_id)
-            valid_input_ids.add(input_id)
-            valid_inputs[input_id] = item
+            continue
+        source_identity = tuple(item.get(field) for field in ("source", "revision", "locator"))
+        if not all(isinstance(part, str) and part.strip() for part in source_identity):
+            errors.append(f"inputs[{i}] source/revision/locator identity must be non-empty strings")
+            continue
+        if source_identity in source_identities:
+            errors.append(f"inputs[{i}] duplicates source-artifact identity")
+            continue
+        ids.add(input_id)
+        source_identities.add(source_identity)
+        valid_input_ids.add(input_id)
+        valid_inputs[input_id] = item
         for field in ("source", "revision", "locator"):
             if not isinstance(item.get(field), str) or not item[field].strip():
                 errors.append(f"inputs[{i}].{field} must be explicit (use a stated unknown value when unavailable)")
@@ -134,12 +186,15 @@ def validate(record: Any) -> list[str]:
             if item["disposition"] == "synthesized":
                 targets = item.get("targets")
                 if not isinstance(targets, list) or not targets or any(
-                    not isinstance(target, str) or not target.strip()
+                    not valid_target(target)
                     for target in targets
                 ):
-                    errors.append(f"results[{i}] synthesized disposition requires target relations")
-                if not isinstance(item.get("claim_provenance"), list) or not item["claim_provenance"]:
-                    errors.append(f"results[{i}] synthesized disposition requires claim/source provenance")
+                    errors.append(f"results[{i}] synthesized disposition requires canonical internal target relations")
+                provenance = item.get("claim_provenance")
+                if not isinstance(provenance, list) or not provenance or any(
+                    not valid_claim_relation(relation) for relation in provenance
+                ):
+                    errors.append(f"results[{i}] synthesized disposition requires claim/source provenance relations")
     incomplete_result = any(
         isinstance(item, dict)
         and isinstance(item.get("input_id"), str)
@@ -244,17 +299,19 @@ def validate(record: Any) -> list[str]:
     if not isinstance(receipt, dict):
         errors.append("receipt must be an object")
     else:
-        if not isinstance(receipt.get("url"), str) or not RECEIPT_URL.fullmatch(receipt["url"]):
+        receipt_issue = issue_identity(receipt.get("url"), allow_comment=True)
+        if receipt_issue is None:
             errors.append("receipt requires a canonical GitHub Issue or issue-comment URL")
-        elif receipt["url"].split("#", 1)[0].rstrip("/").casefold() != record["issue"].rstrip("/").casefold():
+        elif batch_issue is not None and receipt_issue != batch_issue:
             errors.append("receipt URL must belong to the governing Issue")
         if not isinstance(receipt.get("retention"), str) or not receipt["retention"].strip():
             errors.append("receipt requires a retention statement")
         if receipt.get("sanitized") is not True:
             errors.append("receipt must assert sanitized public-safe content")
-        if not isinstance(receipt.get("issue"), str) or not ISSUE_URL.fullmatch(receipt["issue"]):
+        receipt_issue_base = issue_identity(receipt.get("issue"))
+        if receipt_issue_base is None:
             errors.append("receipt must link its governing GitHub Issue")
-        elif receipt["issue"] != record["issue"]:
+        elif batch_issue is not None and receipt_issue_base != batch_issue:
             errors.append("receipt Issue does not match batch Issue")
 
     release = record["release"]
