@@ -1,4 +1,7 @@
 import importlib.util
+import json
+import subprocess
+import sys
 from pathlib import Path
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "batch_workflow.py"
@@ -53,6 +56,56 @@ def valid_record():
         },
         "release": {"authorized": False},
     }
+
+
+def test_malformed_enum_types_return_structural_errors():
+    cases = [
+        ("inputs", 0, "eligibility", []),
+        ("inputs", 0, "eligibility", {}),
+        ("inputs", 0, "eligibility", None),
+        ("results", 0, "disposition", []),
+        ("results", 0, "disposition", {}),
+        ("results", 0, "disposition", None),
+        ("validation", "source", "status", []),
+        ("validation", "source", "status", {}),
+        ("validation", "source", "status", None),
+        ("review", None, "status", []),
+        ("review", None, "status", {}),
+        ("review", None, "status", None),
+    ]
+    for section, index, field, value in cases:
+        record = valid_record()
+        if index is None:
+            record[section][field] = value
+        else:
+            record[section][index][field] = value
+        assert MODULE.validate(record), (section, field, value)
+
+
+def test_cli_malformed_enum_types_fail_deterministically(tmp_path):
+    cases = (
+        ("inputs", "eligibility", []),
+        ("results", "disposition", {}),
+        ("validation", "status", []),
+        ("review", "status", {}),
+    )
+    for section, field, value in cases:
+        record = valid_record()
+        if section == "validation":
+            record[section]["source"][field] = value
+        elif section in {"inputs", "results"}:
+            record[section][0][field] = value
+        else:
+            record[section][field] = value
+        path = tmp_path / f"{section}.json"
+        path.write_text(json.dumps(record), encoding="utf-8")
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT), str(path)],
+            capture_output=True, text=True, check=False,
+        )
+        assert proc.returncode == 1
+        assert "RESULT: FAIL" in proc.stdout
+        assert "Traceback" not in proc.stderr
 
 
 def test_minimal_valid_synthetic_record_passes_structural_check():

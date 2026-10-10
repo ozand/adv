@@ -70,7 +70,8 @@ def validate(record: Any) -> list[str]:
         for field in ("source", "revision", "locator"):
             if not isinstance(item.get(field), str) or not item[field].strip():
                 errors.append(f"inputs[{i}].{field} must be explicit (use a stated unknown value when unavailable)")
-        if item.get("eligibility") not in {"eligible", "excluded", "unresolved"}:
+        eligibility = item.get("eligibility")
+        if not isinstance(eligibility, str) or eligibility not in {"eligible", "excluded", "unresolved"}:
             errors.append(f"inputs[{i}].eligibility must be eligible, excluded, or unresolved")
         if item.get("eligibility") == "unresolved" and not str(item.get("reason", "")).strip():
             errors.append(f"inputs[{i}] unresolved eligibility requires a reason")
@@ -100,7 +101,8 @@ def validate(record: Any) -> list[str]:
         if input_id in result_ids:
             errors.append(f"duplicate result ownership for input: {input_id}")
         result_ids.add(input_id)
-        if item.get("disposition") not in DISPOSITIONS:
+        disposition = item.get("disposition")
+        if not isinstance(disposition, str) or disposition not in DISPOSITIONS:
             errors.append(f"results[{i}] has invalid disposition")
         elif item.get("disposition") == "excluded":
             errors.append(f"results[{i}] cannot use excluded; exclusions are outside the eligible partition")
@@ -149,7 +151,12 @@ def validate(record: Any) -> list[str]:
     layers = record["validation"]
     if not isinstance(layers, dict) or set(layers) != LAYERS:
         errors.append("validation must contain exactly source, content, retrieval layers")
-    elif all(isinstance(layer, dict) and layer.get("status") in OUTCOMES for layer in layers.values()):
+    elif all(
+        isinstance(layer, dict)
+        and isinstance(layer.get("status"), str)
+        and layer["status"] in OUTCOMES
+        for layer in layers.values()
+    ):
         required_layers = []
         for name, layer in layers.items():
             status = layer["status"]
@@ -182,7 +189,11 @@ def validate(record: Any) -> list[str]:
             errors.append("gate cannot be established when no validation layer is required")
     elif isinstance(layers, dict):
         for name, layer in layers.items():
-            if not isinstance(layer, dict) or layer.get("status") not in OUTCOMES:
+            if (
+                not isinstance(layer, dict)
+                or not isinstance(layer.get("status"), str)
+                or layer["status"] not in OUTCOMES
+            ):
                 errors.append(f"validation.{name}.status is invalid")
 
     review = record["review"]
@@ -205,9 +216,10 @@ def validate(record: Any) -> list[str]:
             or review["reviewer"].strip().casefold() == record["writer"].strip().casefold()
         ):
             errors.append("reviewer identity must differ from writer identity")
-        if review.get("status") not in {"PASS", "FAIL", "PARTIAL"}:
+        review_status = review.get("status")
+        if not isinstance(review_status, str) or review_status not in {"PASS", "FAIL", "PARTIAL"}:
             errors.append("review status must be PASS, FAIL, or PARTIAL")
-        elif review["status"] != "PASS" and record["gate"] == "PASS":
+        elif review_status != "PASS" and record["gate"] == "PASS":
             errors.append("gate cannot PASS when exact-candidate review is not PASS")
 
     receipt = record["receipt"]
