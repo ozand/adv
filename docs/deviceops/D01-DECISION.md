@@ -45,6 +45,21 @@ TypeScript comparison records: `@modelcontextprotocol/sdk@1.32.1` (MIT, npm inte
 4. **#37/#38 inputs — reviewed, not completed/transferred.** #37 requires bounded transport-neutral operations, effects/authority and honest uncertainty/retry while preserving ADR-006; its stage-A evidence dependency remains. #38 requires evidence-linked concrete scenarios compared consistently across host/device/hybrid, and forbids an unsupported selection; its scenario evidence remains. These are input constraints, not completed deliverables, and both issues stay open.
 5. **Future source-task gates — documented.** G0 decision/path/version gates, G1 fake-only offline conformance, G2 client integration on fake device, G3 separate connect/status authorization and G4 per-effect authorization/recovery gates are defined in VALIDATION.md; this D01 proposal does not clear a source issue to start before owner acceptance.
 
+## Falsification questions for owner review
+
+The recommendation should be rejected or revised if any of these is true:
+
+1. The supported host is not Windows 11 x64, or CPython cannot be distributed through the owner's approved local deployment channel.
+2. Reusing the existing Python protocol validator/tests is less valuable than a typed Rust/Node client that already exists in the intended runtime repository.
+3. A persistent named-pipe server cannot be reliably supervised as the only session/job owner, or the security boundary cannot restrict clients to the intended local principal.
+4. SQLite's locking, durability, migration, retention or backup behavior cannot meet the bounded job/evidence requirements without replaying uncertain device effects.
+5. A different repo owner/visibility/publication lifecycle is required, or a separate `ozand/deviceops` repo would conflict with established ownership.
+6. Offline CI cannot isolate untrusted PR builds from USB and production secrets while still validating the proposed core.
+7. The intended web-chat/MCP client cannot use local IPC via the approved host integration, requiring a remote endpoint in the initial MVP.
+8. A firmware/profile recovery path cannot be qualified independently, making the proposed staged fake-first then separately authorized hardware sequence unsafe or circular.
+
+These are decision falsifiers, not claims that the conditions have been tested.
+
 ## Gates before implementation
 
-No runtime code, dependency installation, repository creation, serial/USB, firmware, audio, flash, or network endpoint under this issue. After owner acceptance, open/activate the separately scoped implementation issue in the approved runtime repository; pin toolchain/dependencies there; build fake-only lifecycle and parity tests first. Hardware access remains a separate owner authorization and profile qualification. ADR-015 stays Proposed until explicit owner acceptance.
+No runtime code, dependency installation, repository creation, serial/USB, firmware, audio, flash, or network endpoint under this issue. After owner acceptance, open/activate the separately scoped implementation issue in the approved runtime repository; verify/pin the selected toolchain/dependencies there; build fake-only lifecycle and parity tests first. Hardware access remains a separate owner authorization and profile qualification. ADR-015–017 stay Proposed until explicit owner acceptance.
