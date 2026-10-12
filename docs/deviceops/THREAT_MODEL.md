@@ -6,7 +6,7 @@
 
 This threat model covers the proposed host-side DeviceOps policy and executor boundary: authenticated callers, frontends, queued operations, grants, target/session binding, artifacts, transports, receipts, secrets, and the physical device effects invoked by adapters. It does not establish that DeviceOps exists, that any control is implemented, or that a hardware identity mechanism is available.
 
-Inputs and assumptions are drawn from open Issue #70, the exact proposed security/contract docs in PR #82 candidate `196d2f915e0fa2424b707f3fd30d873050a3b022`, and accepted ADR-006/009 in that same candidate. ADR-014 is still Proposed. D01 (#68) and D02 (#69) remain open; therefore host runtime, OS, IPC, persistence, cryptographic grant representation, and final operation schemas remain unresolved. All controls below are requirements or hypotheses to validate, not present guarantees.
+Inputs and assumptions are drawn from open Issue #70, the exact proposed security/contract docs in PR #82 candidate `196d2f915e0fa2424b707f3fd30d873050a3b022`, accepted ADR-006/009 in that candidate, and accepted ADR-015/016/017. ADR-014 remains Proposed for the broader service/API direction. D01 choices (Python/Windows first, one persistent executor over authenticated local-user named pipes, SQLite local storage, and private runtime repo/path) are accepted; D02 schemas and D03 grant issuer/lifecycle remain proposals or owner decisions. Packaging, ACL, durability, trusted-clock, and cross-process qualification remain open. All controls below are requirements or hypotheses to validate, not present guarantees.
 
 ## 2. Security objectives and assets
 
@@ -24,7 +24,7 @@ Protect:
 
 | Actor / component | Assumed trust | Security boundary / failure mode |
 |---|---|---|
-| Local interactive Windows user / proposed grant issuer | Proposed as trusted only when authenticated by the accepted named-pipe OS principal and acting through a non-tool local approval surface; owner decision pending | Mistaken scope, wrong target selection, compromised user account, or equally privileged process |
+| Local interactive Windows user / proposed grant issuer | Proposed authority derives from the authenticated named-pipe OS principal; this proves process identity, not human presence. An agent running as that same user may invoke the issuer surface; owner acceptance pending | Mistaken scope, wrong target selection, same-user code exercising issuer authority, or compromised account |
 | Agent/model and its supplied arguments | Untrusted | Prompt injection, self-approval, confused deputy, malicious plan/artifact references |
 | CLI/MCP/web frontend | Authenticated principal context required; client payload itself untrusted | Principal spoofing, frontend-specific policy bypass, cross-user access |
 | DeviceOps core/policy | Intended enforcement point, not yet implemented | Bug, stale policy, confused deputy, TOCTOU, inconsistent transport rules |
@@ -80,7 +80,7 @@ The frontend cannot be the only enforcement point if another interface can dispa
 
 ## 6. Proposed grant and dispatch invariants
 
-Proposed MVP issuer for owner review: an operator must take an explicit authenticated action through a local approval surface that is not exposed as a DeviceOps tool. The executor derives the issuer principal from the authenticated Windows named-pipe client context; it rejects caller-supplied principal strings as authority. The model, tool call, device output, annotations and logs cannot issue or broaden a grant. The scoped permit is kept in the local SQLite store and only an opaque reference may appear in model-visible results.
+Proposed MVP issuer for owner review: an operator must take an explicit authenticated action through a local approval surface that is not exposed as a DeviceOps tool. The executor derives the issuer principal from the authenticated Windows named-pipe client context; it rejects caller-supplied principal strings as authority. This authenticates the client process/user, not human presence: a process running as the same user may invoke the issuer surface. Tool calls, device output, annotations and logs cannot issue or broaden grants by themselves. The scoped permit is kept in the local SQLite store and only an opaque reference may appear in model-visible results.
 
 A grant or equivalent trusted authorization record should bind at minimum:
 
@@ -122,7 +122,7 @@ For each case record exact source SHA, fixture/test name, fake transport call co
 
 - **D01/#68 accepted:** Python/Windows 11 x64 first, SQLite local durable storage, one persistent executor with authenticated local-user Windows named pipes, and private `ozand/deviceops` path boundary. Packaging, ACL qualification, trusted clock details and durability guarantees remain untested.
 - **D02/#69:** canonical schemas for principal, identity evidence, capability/effects, plan, grant reference, operation lifecycle and reason codes remain proposals.
-- **D03/#70 owner decision pending:** whether the authenticated local interactive Windows user may issue scoped SQLite permit records via a non-tool approval surface, and whether the proposed transaction/reserve/revalidate/crash-as-consumed lifecycle is acceptable. No source implementation or authority follows from this draft.
+- **D03/#70 owner decision pending:** whether this bounded local-user issuer is acceptable despite same-user agent processes being able to invoke it, or whether separate human-presence authorization is required; and whether the proposed scoped SQLite permit record plus transaction/reserve/revalidate/crash-as-consumed lifecycle is acceptable. No source implementation or authority follows from this draft.
 - **Later deployment/remote work:** authentication provider, cross-user boundary, secret provider, network exposure, rate limits, incident response and independently reviewed deployment profile.
 
 D03 documentation may propose a concrete authority model for owner review. Enforcement code remains blocked until the owner resolves the issuer/lifecycle decision and applicable D02 contract and implementation gates are accepted. This draft does not imply that a documented SQLite record is authentic against a same-user/administrator attacker.
