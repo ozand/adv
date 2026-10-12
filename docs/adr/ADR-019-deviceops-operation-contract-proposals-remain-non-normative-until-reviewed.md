@@ -11,7 +11,7 @@
 
 D02 needs to clarify host operation semantics, identifiers, bounds, results, and fake-only conformance cases while D01 architecture and security decisions remain under review. Accepted ADR-006/009 already define bounded firmware source contracts, but do not define a stable host DeviceOps API. Publishing a draft as though it were normative could cause adapters or clients to depend on unreviewed schemas, numbers, or enforcement assumptions.
 
-This proposed decision is grounded in the Issue #69 task and the bounded source/document review recorded in [the Issue #69 research comment](https://github.com/ozand/adv/issues/69#issuecomment-6129685648). No runtime behavior or API implementation was tested.
+This proposed decision is grounded in the Issue #69 task and the bounded source/document review recorded in [the Issue #69 research comment](https://github.com/ozand/adv/issues/69#issuecomment-6129685648). A private, fake-only status-schema validator and unit suite have since been implemented and locally tested as a candidate; this is not production runtime, adapter, device, or stable API evidence.
 
 ## Decision
 
@@ -48,7 +48,7 @@ Rejected for this proposal because the roadmap permits parallel draft work; acce
 | Claim in Decision | Test | Currently |
 |---|---|---|
 | Proposal artifacts are labeled non-normative and gated on D01/review | Read-only review of `docs/deviceops/proposals/D02-contract-proposal.md` and this ADR | not yet independently reviewed |
-| Draft fixture plan does not claim validator/runtime execution | Review text and verify no runtime implementation/test artifacts are included in this change | not yet independently reviewed |
+| Draft distinguishes locally executed fake-only candidate tests from absent production/device enforcement | Review ADR-021 and private PR #4 evidence; confirm no hardware/runtime test is claimed | Candidate tests run locally; exact corrected-head review pending |
 | ADR-006/009 wire contracts are unchanged | Diff scope check: only proposal/ADR/research/index paths; no firmware/host implementation paths | not yet independently reviewed |
 
 ## References
