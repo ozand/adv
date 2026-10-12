@@ -1,6 +1,6 @@
 # DeviceOps — threat model and security scenarios
 
-**Status:** threat-model draft for [D03 / #70](https://github.com/ozand/adv/issues/70), not a security audit or implemented control. **Epic:** [#66](https://github.com/ozand/adv/issues/66). Proposed decision: [ADR-018](../adr/ADR-018-deviceops-authority-grants-threat-model.md). This document is source/design-only; it authorizes no equipment, network, credential, or deployment operation.
+**Status:** accepted trust-model baseline for [D03 / #70](https://github.com/ozand/adv/issues/70), not a security audit or proof of implemented controls. **Epic:** [#66](https://github.com/ozand/adv/issues/66). Decision: [ADR-018](../adr/ADR-018-deviceops-authority-grants-threat-model.md). This document authorizes no equipment, network, credential, or deployment operation.
 
 ## 1. Scope and evidence boundary
 
@@ -24,7 +24,7 @@ Protect:
 
 | Actor / component | Assumed trust | Security boundary / failure mode |
 |---|---|---|
-| Local interactive Windows user / proposed grant issuer | Proposed authority derives from the authenticated named-pipe OS principal; this proves process identity, not human presence. An agent running as that same user may invoke the issuer surface; owner acceptance pending | Mistaken scope, wrong target selection, same-user code exercising issuer authority, or compromised account |
+| Local interactive Windows user / accepted grant issuer | Authority derives from the authenticated named-pipe OS principal; this proves process identity, not human presence. An agent running as that same user may invoke the issuer surface; this bounded local-user authority is owner-accepted for MVP | Mistaken scope, wrong target selection, same-user code exercising issuer authority, or compromised account |
 | Agent/model and its supplied arguments | Untrusted | Prompt injection, self-approval, confused deputy, malicious plan/artifact references |
 | CLI/MCP/web frontend | Authenticated principal context required; client payload itself untrusted | Principal spoofing, frontend-specific policy bypass, cross-user access |
 | DeviceOps core/policy | Intended enforcement point, not yet implemented | Bug, stale policy, confused deputy, TOCTOU, inconsistent transport rules |
@@ -80,7 +80,7 @@ The frontend cannot be the only enforcement point if another interface can dispa
 
 ## 6. Proposed grant and dispatch invariants
 
-Proposed MVP issuer for owner review: an operator must take an explicit authenticated action through a local approval surface that is not exposed as a DeviceOps tool. The executor derives the issuer principal from the authenticated Windows named-pipe client context; it rejects caller-supplied principal strings as authority. This authenticates the client process/user, not human presence: a process running as the same user may invoke the issuer surface. Tool calls, device output, annotations and logs cannot issue or broaden grants by themselves. The scoped permit is kept in the local SQLite store and only an opaque reference may appear in model-visible results.
+Accepted MVP issuer: an operator-authorized action uses a local approval surface that is not exposed as a DeviceOps tool. The executor derives the issuer principal from the authenticated Windows named-pipe client context; it rejects caller-supplied principal strings as authority. This authenticates the client process/user, not human presence: a process running as the same user may invoke the issuer surface. Tool calls, device output, annotations and logs cannot issue or broaden grants by themselves. The scoped permit is kept in the local SQLite store and only an opaque reference may appear in model-visible results.
 
 A grant or equivalent trusted authorization record should bind at minimum:
 
@@ -92,7 +92,7 @@ A grant or equivalent trusted authorization record should bind at minimum:
 6. issuance/expiry, finite use or effect budget, and revocation state;
 7. policy revision and any material preconditions that must be revalidated.
 
-Before dispatch, the core should atomically verify and consume authority against the operation record, then the broker should verify the same target/session and plan remain current. If persistence/clock/identity/revocation state cannot be established, deny before I/O. A changed field requires a new grant, not silent mutation. The proposed local MVP uses a SQLite permit row, not a signed bearer token. A single transaction records grant-use reservation and accepted operation/dispatch intent before I/O; after an uncertain crash the reservation remains consumed and the operation is inconclusive, never automatically replayed. The owner must accept/reject/revise this issuer and lifecycle proposal; none of it is implemented by this documentation.
+Before dispatch, the core should atomically verify and consume authority against the operation record, then the broker should verify the same target/session and plan remain current. If persistence/clock/identity/revocation state cannot be established, deny before I/O. A changed field requires a new grant, not silent mutation. The proposed local MVP uses a SQLite permit row, not a signed bearer token. A single transaction records grant-use reservation and accepted operation/dispatch intent before I/O; after an uncertain crash the reservation remains consumed and the operation is inconclusive, never automatically replayed. The owner accepted this issuer and lifecycle baseline; documentation acceptance does not mean runtime enforcement is complete.
 
 ## 7. Effect and uncertainty model
 
@@ -122,10 +122,10 @@ For each case record exact source SHA, fixture/test name, fake transport call co
 
 - **D01/#68 accepted:** Python/Windows 11 x64 first, SQLite local durable storage, one persistent executor with authenticated local-user Windows named pipes, and private `ozand/deviceops` path boundary. Packaging, ACL qualification, trusted clock details and durability guarantees remain untested.
 - **D02/#69:** canonical schemas for principal, identity evidence, capability/effects, plan, grant reference, operation lifecycle and reason codes remain proposals.
-- **D03/#70 owner decision pending:** whether this bounded local-user issuer is acceptable despite same-user agent processes being able to invoke it, or whether separate human-presence authorization is required; and whether the proposed scoped SQLite permit record plus transaction/reserve/revalidate/crash-as-consumed lifecycle is acceptable. No source implementation or authority follows from this draft.
+- **D03/#70 accepted:** bounded local-user issuer and scoped SQLite permit record with transaction/reserve/revalidate/crash-as-consumed lifecycle, as recorded in ADR-018 and owner receipt [comment 6134302252](https://github.com/ozand/adv/issues/70#issuecomment-6134302252). Same-user agents may exercise that user's authority; this is not human-presence proof. Implementation and ACL/durability qualification are incomplete; no hardware authority follows.
 - **Later deployment/remote work:** authentication provider, cross-user boundary, secret provider, network exposure, rate limits, incident response and independently reviewed deployment profile.
 
-D03 documentation may propose a concrete authority model for owner review. Enforcement code remains blocked until the owner resolves the issuer/lifecycle decision and applicable D02 contract and implementation gates are accepted. This draft does not imply that a documented SQLite record is authentic against a same-user/administrator attacker.
+The owner accepted the D03 issuer/lifecycle baseline. Enforcement implementation proceeds in staged fake/offline slices under Issue #70 and the private runtime repository; D02 schemas remain separately governed. Hardware access, network exposure, system-service installation, and production security qualification remain excluded pending their own gates. This draft does not imply that a documented SQLite record is authentic against a same-user/administrator attacker.
 
 ## References
 
