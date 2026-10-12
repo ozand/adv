@@ -3,12 +3,13 @@
 **Status:** Accepted — owner confirmed the D01 language/OS choice on 2026-10-12; acceptance does not authorize runtime or device effects.
 **Date:** 2026-10-12.
 **Issue:** [#68](https://github.com/ozand/adv/issues/68); [Epic #66](https://github.com/ozand/adv/issues/66).
+**Storage decision:** SQLite was also owner-accepted for local durable state in #68; see D01. Schema, retention and migration are separate implementation work.
 **Supersedes:** None.
 **Related:** ADR-014, ADR-016, ADR-017.
 
 ## Context
 
-ADR-014 establishes a proposed host service/core but leaves implementation language open. Issue #68 asks for a bounded comparison of Rust, Python and TypeScript, including reuse and maintenance. This ADR records the owner-accepted host language/runtime choice; process lifecycle, IPC, storage and repository location are separate decisions.
+ADR-014 establishes a proposed host service/core but leaves implementation language open. Issue #68 asks for a bounded comparison of Rust, Python and TypeScript, including reuse and maintenance. This ADR records the owner-accepted host language/runtime choice; process lifecycle, IPC and repository location are separate decisions. SQLite storage is also accepted in Issue #68 and summarized in the D01 decision record.
 
 Evidence: **verified** — PR #82 candidate `196d2f915e0fa2424b707f3fd30d873050a3b022` contains a Python ADV diagnostic CLI and fake-serial tests; serial import is optional and protocol parsing uses standard-library modules. **reported** — the DeviceOps roadmap requires a single-writer executor and CLI/MCP parity. Existing Python source supports reuse, but does not prove a service implementation or production readiness.
 

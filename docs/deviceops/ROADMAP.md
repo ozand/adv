@@ -7,7 +7,7 @@
 | ID / Issue | Результат | Основные зависимости / gate |
 |---|---|---|
 | D00 / [#67](https://github.com/ozand/adv/issues/67) | Этот пакет требований, архитектуры и задач | Поручение владельца; reviewed PR |
-| D01 / [#68](https://github.com/ozand/adv/issues/68) | Предложение по host language, executor/IPC, storage и repository boundary; все решения ждут owner acceptance | D00; входы #37/#38; owner review; [D01 proposal](D01-DECISION.md), Proposed ADR-015–017 |
+| D01 / [#68](https://github.com/ozand/adv/issues/68) | Owner-accepted choices: Python/Windows, persistent executor/named-pipe IPC, SQLite, private runtime repo/path. Qualification, dependency review and #37/#38 inputs remain open | D00; [D01 decision record](D01-DECISION.md), Accepted ADR-015–017; remaining qualification is separately scoped |
 | D02 / [#69](https://github.com/ozand/adv/issues/69) | Схемы операций и golden/negative fixtures | D01 для принятия; draft параллельно |
 | D03 / [#70](https://github.com/ozand/adv/issues/70) | Identity, policy и привязанные grants | D01/D02; threat model параллельно |
 | D04 / [#71](https://github.com/ozand/adv/issues/71) | Executor, job store, single writer, restart/reconciliation | D01–D03 |
@@ -70,4 +70,4 @@ D05 и D06 разрабатываются параллельно через со
 
 ## 6. Незакрытые решения
 
-Точный repository/path кода, runtime/ОС/IPC/storage, версии SDK и реализационные numeric bounds, trust/grant implementation, выбранный remote client, firmware profiles для config/OTA. У каждого решения есть владелец задачи: D01, D02, D03, D09, D12/D13 соответственно. Отсутствие этих деталей не маскируется готовыми командами установки.
+Exact dependency pins and transitive license/security qualification, Windows packaging/runtime qualification, implementation numeric bounds, trust/grant implementation, remote client, firmware profiles for config/OTA. Repository/path and stack direction were accepted in D01; details owned by D02, D03, D09, D12/D13 respectively. No install commands are implied by these decisions.
