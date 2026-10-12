@@ -4,7 +4,7 @@
 
 ## Recommendation
 
-Recommendation: Python 3.11+ host core, Windows 11 x64 first qualification target. Process lifecycle and real local IPC are proposed separately in ADR-016; repository location and publication boundary are separate in ADR-017. Propose SQLite as the local transactional store for operations/evidence; schema, migration and backup details remain D02/D04 work and this is not a selected dependency. MCP/CLI must share the one executor if both are enabled; stdio-only independent frontend processes are insufficient. No listener, runtime repository creation or implementation is authorized.
+Recommendation: Python 3.11+ host core, Windows 11 x64 first qualification target. Process lifecycle and real local IPC are proposed separately in ADR-016; repository location and publication boundary are separate in ADR-017. Propose SQLite as the local transactional store for operation/job/evidence state, with DB in a user-private application-data directory and bounded schema/retention/migration/backup policy defined in D02/D04. This is a concrete proposed technology choice, not an implementation or claim of acceptance. MCP/CLI must share the one executor if both are enabled; stdio-only independent frontend processes are insufficient. No listener, runtime repository creation or implementation is authorized.
 
 This recommendation is **theory**, not a measured compatibility result. Python reuse has a concrete source basis: PR #82 candidate `196d2f915e0fa2424b707f3fd30d873050a3b022` contains a standard-library protocol validator plus fake-serial tests. That does not make the CLI a service or prove Windows packaging/serial behavior.
 
@@ -12,17 +12,27 @@ This recommendation is **theory**, not a measured compatibility result. Python r
 
 | Candidate | Reuse / MCP / serial | Windows and packaging | Cost / risk | Disposition |
 |---|---|---|---|---|
-| Python 3.11+ | Existing ADV CLI/tests; pyserial; official MCP Python SDK | Windows support and single-folder packaging require prototype qualification; straightforward script/test workflow | Dynamic typing; distribution and migrations need ownership | Recommended for reuse-first MVP |
+| CPython 3.11.17 | Existing ADV CLI/tests; pyserial; official MCP Python SDK | Windows 11 x64 is first qualification target; packaging requires prototype qualification | Dynamic typing; distribution and migrations need ownership | Recommended; patch/runtime lifecycle still needs owner confirmation |
 | TypeScript / Node | Official MCP TypeScript SDK; serialport bindings | SDK metadata requires Node >=18; serialport 13 requires Node >=20 and native binding packaging qualification | Native dependencies and larger deployment footprint | Viable alternative; no reuse advantage in current repo |
 | Rust | Strong static typing and single-binary potential; serial/MCP crates need pinned review | Potentially good Windows artifact, but cross-build/signing/install workflow unverified | Rewrite existing Python protocol behavior; more initial integration work | Do not infer host language from firmware preference |
 
-Registry metadata snapshot checked 2026-10-12 (**reported**): pyserial 3.5, SHA256 `c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0`; MCP Python SDK 2.3.0, SHA256 `dd0c44c089d16453e8ae31a3877a0054d7a2314caaa81f5e0541b9b1734b237`; pytest 8.4.2, SHA256 `872f880de3fc3a5bdc88a11b39c9710c3497a547cfa9320bc3c5e62fbf272e79`; each is registry artifact metadata, not a selected runtime pin. MCP TypeScript SDK 1.32.1 and serialport 13.0.0 metadata report MIT, with npm integrity hashes `sha512-2DdE+SJDtzLEEWzY1ZjY7Q+VcPhcV1KisD3zI4u0XZyktsjHum1mwbMI+JaulUBi2OZk+KJAi2uPXzxichPkdw==` and `sha512-PHpnTd8isMGPfFTZNCzOZp9m4mAJSNWle9Jxu6BPTcWq7YXl5qN7tp8Sgn0h+WIGcD6JFz5QDgixC2s4VW7vzg==`. None is a chosen dependency; primary-source review, Windows qualification and complete transitive-license/security audit remain outstanding.
+**reported — package registry records, checked 2026-10-12 (not primary-source qualification):**
 
-## Runtime constraints to carry forward
+| Candidate | Exact artifact / version | Registry SHA-256 | License metadata |
+|---|---|---|---|
+| pyserial | `pyserial-3.5-py2.py3-none-any.whl` | `c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0` | BSD |
+| Python MCP SDK | `mcp-2.3.0-py3-none-any.whl` | `dd0c44c089d16453e8ae31a3877a0054d7a2314caaa81f5e0541b9b1734b2377` | MIT |
+| pytest | `pytest-8.4.2-py3-none-any.whl` | `872f880de3fc3a5bdc88a11b39c9710c3497a547cfa9320bc3c5e62fbf272e79` | MIT |
 
-- One persistent executor owns the serial/session and job lifecycle; CLI and MCP reach that same process through authenticated local IPC. See Proposed ADR-016; the concrete IPC mechanism remains open pending Windows qualification.
-- Storage must persist bounded operations without replaying uncertain effects; the exact store/schema remains open for D02/D04.
-- No TCP/HTTP listener, remote tunnel, browser bridge, or network service in the local MVP.
+Registry records: [pyserial 3.5](https://pypi.org/project/pyserial/3.5/), [MCP SDK 2.3.0](https://pypi.org/project/mcp/2.3.0/), [pytest 8.4.2](https://pypi.org/project/pytest/8.4.2/). Primary project sources for later verification: [pyserial](https://github.com/pyserial/pyserial/tree/v3.5), [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk/tree/v2.3.0), [pytest](https://github.com/pytest-dev/pytest/tree/8.4.2). Python runtime candidate: CPython 3.11.17 (Python 3.11 Windows docs showed this patch release on 2026-10-12); installer signature/hash and support lifecycle are not verified here. SQLite is proposed via Python's standard-library `sqlite3`, not an external package.
+
+TypeScript comparison records: `@modelcontextprotocol/sdk@1.32.1` (MIT, npm integrity `sha512-2DdE+SJDtzLEEWzY1ZjY7Q+VcPhcV1KisD3zI4u0XZyktsjHum1mwbMI+JaulUBi2OZk+KJAi2uPXzxichPkdw==`) and `serialport@13.0.0` (MIT, npm integrity `sha512-PHpnTd8isMGPfFTZNCzOZp9m4mAJSNWle9Jxu6BPTcWq7YXl5qN7tp8Sgn0h+WIGcD6JFz5QDgixC2s4VW7vzg==`). These are versioned comparison candidates, not selected pins. Confirm source tags, Python version support, Windows behavior, wheel/sdist licensing, all transitive licenses and vulnerability status in a later governed implementation task before adopting any dependency. No packages were installed.
+
+## Local MVP operational constraints
+
+- Offline/fake MVP requires no device, USB/COM, network, tunnel, browser, firmware, audio, SD or flash. Untrusted PR/build work has no USB/production-secret access (SECURITY.md); hardware execution is a separate allowlisted runner/gate.
+- Firmware/deployment failure recovery and recovery capability are profile-specific; unverified firmware does not trigger automatic reflash. A runtime repository/path choice does not grant hardware/recovery authorization.
+- Web-chat/client acceptance starts on fake device before separately authorized remote/account/network exposure (VALIDATION G2).
 - No arbitrary serial/shell command. Use named capabilities, current ADR-006/009 compatibility, explicit effects, and no implicit SD/audio/run/flash operations.
 - Initial OS qualification target recommendation: Windows 11 x64; other OSes are not claimed until tested.
 - `adv` is proposed to remain documentation/coordination only (ADR-017); the owner must approve the destination and exact path allowlist separately.
@@ -30,10 +40,10 @@ Registry metadata snapshot checked 2026-10-12 (**reported**): pyserial 3.5, SHA2
 ## Issue #68 acceptance coverage
 
 1. **Stack, dependencies, licenses, versions/SHA, OS, rationale — partial.** Language/OS recommendation and registry metadata are documented; no SHA-locked package selection, primary-source qualification, or complete transitive license audit is claimed.
-2. **Owner acceptance / ADR status — unmet.** ADR-015/016/017 remain Proposed; owner must accept/reject or revise them.
+2. **Owner acceptance / ADR status — unmet.** ADR-015/016/017 remain Proposed; owner must accept/reject or revise them. The open proposal questions are: accept Python 3.11+ and Windows 11 x64 first; accept a persistent executor and authenticated Windows named-pipe IPC for CLI/MCP; accept SQLite for local durable state; accept `ozand/deviceops` plus path allowlist and suggested local clone path. Each may be accepted or explicitly changed; none is an agent-granted permission.
 3. **Implementation location and path allowlist — proposed, not accepted.** ADR-017 recommends `ozand/deviceops`, with service source under `/deviceops/`, tests under `/tests/`, docs under `/docs/`, and root manifests/locks; owner confirmation is required. Suggested local clone `T:/Code/esp32/deviceops` is unverified and not created.
-4. **#37/#38 inputs — reviewed, not completed/transferred.** Their constraints are cited here; #37's stage-A evidence dependency and #38's scenario evidence/comparison criteria remain upstream work. These issues stay open.
-5. **Future source-task gates — documented.** Fake-only prototype and separately authorized hardware gates are stated; this does not clear a source issue to start before owner acceptance.
+4. **#37/#38 inputs — reviewed, not completed/transferred.** #37 requires bounded transport-neutral operations, effects/authority and honest uncertainty/retry while preserving ADR-006; its stage-A evidence dependency remains. #38 requires evidence-linked concrete scenarios compared consistently across host/device/hybrid, and forbids an unsupported selection; its scenario evidence remains. These are input constraints, not completed deliverables, and both issues stay open.
+5. **Future source-task gates — documented.** G0 decision/path/version gates, G1 fake-only offline conformance, G2 client integration on fake device, G3 separate connect/status authorization and G4 per-effect authorization/recovery gates are defined in VALIDATION.md; this D01 proposal does not clear a source issue to start before owner acceptance.
 
 ## Gates before implementation
 

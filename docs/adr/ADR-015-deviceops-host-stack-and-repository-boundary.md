@@ -18,7 +18,7 @@ Recommend a host language that can reuse existing protocol logic without treatin
 
 ### Prior art
 
-The Python client and fake-serial tests at the candidate SHA above are the directly relevant reuse point. Candidate registry metadata observed 2026-10-12: pyserial 3.5 BSD-3-Clause; MCP Python SDK 2.3.0 MIT (Python >=3.10); pytest 8.4.2 MIT (Python >=3.9); TypeScript MCP SDK 1.32.1 MIT (Node >=18); serialport 13.0.0 MIT (Node >=20). Metadata does not establish Windows compatibility, package quality, full transitive-license compliance or security; versions are not selected or pinned.
+The Python client and fake-serial tests at the candidate SHA above are the directly relevant reuse point. Versioned registry candidates and exact artifact digests are listed in [D01](../deviceops/D01-DECISION.md); they are reported metadata, not selected dependency pins or qualification evidence. Registry metadata does not establish Windows compatibility, package quality, full transitive-license compliance or security.
 
 ## Decision
 
