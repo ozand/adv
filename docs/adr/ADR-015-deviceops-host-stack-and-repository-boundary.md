@@ -29,7 +29,7 @@ Use Python 3.11+ for the DeviceOps host core, with Windows 11 x64 as the first q
 
 ### What this IS NOT
 
-This ADR does not decide executor process lifecycle, IPC, storage, code repository, packaging design, or authority/security enforcement. It does not accept a dependency version, authorize installation, or approve runtime/device/network activity. It does not change ADR-006/009 firmware contracts.
+This ADR does not decide executor process lifecycle, IPC, SQLite schema/retention/migrations, code repository, packaging design, or authority/security enforcement. It does not accept a dependency version, authorize installation, or approve runtime/device/network activity. It does not change ADR-006/009 firmware contracts.
 
 ### Success criteria
 
