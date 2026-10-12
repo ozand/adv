@@ -61,7 +61,7 @@ Keep these independent evidence dimensions:
 
 ## 4. Request deduplication, cancellation, and late results
 
-Deduplication key candidate: authenticated principal + target + `request_id`; compare a canonical normalized-payload digest. Identical retries within declared retention return the same host operation. Same key with different digest returns conflict. This is host request deduplication, not exactly-once device execution.
+Deduplication key candidate: authenticated principal + target + `request_id`; compare a canonical normalized-payload digest. Identical retries within declared retention return the same host operation. Same scoped key with different digest returns conflict. Reusing a request ID for another target is a distinct key and remains subject to that target's policy. This is host request deduplication, not exactly-once device execution.
 
 A client cancelling its wait is not the same as cancelling an operation. A cancellation request MUST produce a distinct event and may yield `cancelled` only if dispatch has not occurred or safe stop is confirmed according to the capability contract. Otherwise retain truthful in-progress/unknown effect state. Cancellation never implies rollback.
 
@@ -88,7 +88,8 @@ Fixtures use synthetic targets, IDs, frames, times and evidence. The harness MUS
 | Minimum valid request and each declared maximum | Accepted by schema layer | Exact version, bounds, and canonical digest |
 | Each field one over limit; unknown field; malformed enum/encoding | Rejected before job enqueue/effects | No dispatch, bounded error |
 | Same principal/target/request ID and same canonical payload | Existing operation returned | No duplicate job or device send |
-| Same idempotency key, changed payload or target | Conflict | No dispatch |
+| Same principal + target + request ID, changed canonical payload | Conflict | No dispatch |
+| Same request ID at a different target | Distinct scoped key; evaluate target policy | Never misclassify as same-key payload conflict |
 | Partial write, full write/lost ACK, reset after dispatch | `inconclusive`, effect unknown as appropriate | No automatic mutating retry |
 | Wrong session, stale firmware evidence, mismatched result family/ID | Reject or inconclusive | Never relabel a late frame as requested result |
 | Status request receives delayed terminal result frame | Protocol mismatch retained as ambiguity | Does not count as status success; does not claim result query ran |
