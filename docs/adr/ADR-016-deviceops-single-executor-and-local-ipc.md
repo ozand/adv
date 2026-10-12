@@ -1,6 +1,6 @@
 # ADR-016: Route DeviceOps clients through one persistent local executor
 
-**Status:** Proposed — requires owner review before implementation.
+**Status:** Accepted — owner confirmed the executor/IPC choice on 2026-10-12; acceptance does not authorize hardware I/O.
 **Date:** 2026-10-12.
 **Issue:** [#68](https://github.com/ozand/adv/issues/68).
 **Supersedes:** None.
@@ -14,7 +14,7 @@ ADR-014 proposes one owner for the device session and equivalent CLI/MCP semanti
 
 ### What this IS
 
-Propose one persistent local executor process as the sole serial/session owner. CLI and MCP, if both enabled, must reach the same process through authenticated local IPC; independent stdio-launched cores cannot satisfy the shared-executor requirement. Require single-instance enforcement, explicit client/process lifecycle and a named busy/error result when the executor is unavailable. Recommend authenticated Windows named pipes for CLI/MCP access to the persistent local executor; this transport choice is Proposed, not accepted or implemented. Authenticate/ACL to the local interactive user, use bounded framed messages, and reject remote clients. Socket alternatives are not part of this MVP proposal.
+Decision: one persistent local executor process as the sole serial/session owner. Owner accepted this executor/IPC direction on 2026-10-12. CLI and MCP, if both enabled, must reach the same process through authenticated local IPC; independent stdio-launched cores cannot satisfy the shared-executor requirement. Require single-instance enforcement, explicit client/process lifecycle and a named busy/error result when the executor is unavailable. Decision: authenticated Windows named pipes for CLI/MCP access to the persistent local executor. This design is accepted but not implemented or qualified. Authenticate/ACL to the local interactive user, use bounded framed messages, and reject remote clients. Socket alternatives are not part of this MVP decision.
 
 ### What this IS NOT
 
@@ -50,13 +50,13 @@ Named operation authority and firmware contracts remain transport-independent. A
 
 | Claim | Test | Currently |
 |---|---|---|
-| Both frontends reach one process | IPC contract integration with fake transport | not yet written |
-| Duplicate executor is rejected safely | multi-process single-instance test | not yet written |
+| Both frontends reach one process | IPC contract integration with fake transport | not yet written; decision accepted, implementation unqualified |
+| Duplicate executor is rejected safely | multi-process single-instance test | not yet written; decision accepted, implementation unqualified |
 | Restart does not replay uncertain operation | crash/restart reconciliation fixtures | not yet written |
 
 ## Rollback
 
-Before acceptance, choose one frontend only or revise the proposal. After acceptance, changing process/IPC topology requires a superseding ADR.
+Owner acceptance recorded 2026-10-12. Changing process/IPC topology requires a superseding ADR.
 
 ## References
 

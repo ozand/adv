@@ -1,6 +1,6 @@
 # ADR-017: Keep DeviceOps runtime artifacts outside the `adv` knowledge repository
 
-**Status:** Proposed — requires owner review and acceptance.
+**Status:** Accepted — owner approved `ozand/deviceops` and local path on 2026-10-12. Publication and hardware use remain separately gated.
 **Date:** 2026-10-12.
 **Issue:** [#68](https://github.com/ozand/adv/issues/68).
 **Supersedes:** None.
@@ -8,21 +8,21 @@
 
 ## Context
 
-The `adv` project is a public Cardputer knowledge repository. ADR-007 distinguishes reviewed knowledge from local source originals. A persistent DeviceOps service would add executable source, dependency locks, releases and operational state, with a different release and trust lifecycle. Issue #68 explicitly asks whether implementation belongs in `adv` and requires a concrete path boundary. The exact destination repository is not yet named or authorized.
+The `adv` project is a public Cardputer knowledge repository. ADR-007 distinguishes reviewed knowledge from local source originals. A persistent DeviceOps service would add executable source, dependency locks, releases and operational state, with a different release and trust lifecycle. Issue #68 asks whether implementation belongs in `adv` and requires a concrete path boundary. The owner named the destination and recorded authorization before its creation.
 
 ## Decision
 
 ### What this IS
 
-Propose that `adv` contain architecture/decision documents and coordination only. Recommend the repository `ozand/deviceops` for runtime source, tests, manifests and lockfiles; binary releases should use reviewed GitHub Releases artifacts rather than commit binaries into either source repository. Read-only GitHub lookup on 2026-10-12 reported that the repository did not exist; suggested local path `T:/Code/esp32/deviceops` was also absent at inspection. These are time-bounded observations, not permission to create either. Do not create that repository or transfer code until the owner accepts this identity and a separate issue approves an exact runtime path allowlist: `/deviceops/` for service source, `/tests/`, `/docs/`, and root manifests/locks. Device bindings, databases, ports, logs, credentials and operational captures stay local/private, never in either public repository.
+Keep `adv` for architecture/decision documents and coordination. Use the private repository `ozand/deviceops` for runtime source, tests, manifests and lockfiles; binary releases should use reviewed GitHub Releases artifacts rather than commit binaries into either source repository. The owner approved the identity, local clone path `T:/Code/esp32/deviceops`, and path allowlist: `/deviceops/` for service source, `/tests/`, `/docs/`, and root manifests/locks. The repository was created private and bootstrapped; this ADR authorizes no unrelated code transfer. Device bindings, databases, ports, logs, credentials and operational captures stay local/private, never in either public repository.
 
 ### What this IS NOT
 
-Does not create a repository, select its name/owner/visibility, authorize code migration or publication, or change ADR-007's evidence/publication rules.
+Does not authorize public release, code transfer from `adv`, packages, binaries, hardware or network activity; ADR-007 evidence/publication rules remain in force.
 
 ### Success criteria
 
-Owner approves destination identity and exact path allowlist in a separately governed task; confirm whether `T:/Code/esp32/deviceops` is the intended local clone path without creating it here. PR review confirms `adv` changes are documentation-only and contain no runtime artifacts or private operational data.
+Owner approval is recorded in Issue #68. Bootstrap commit `e56fd6a628a6bd7137b4adb48b8c646f7674263d` contains only README, contributor governance and a minimal Python project manifest. Subsequent PRs must verify exact path scope and contain no private operational data.
 
 ## Consequences
 
@@ -40,21 +40,20 @@ Existing firmware contracts, hardware authorization and evidence requirements re
 
 ## Alternatives Considered
 
-- **Put service and binaries in `adv`:** rejected because runtime lifecycle and executable artifacts conflict with the knowledge-only project boundary.
-- **Name/create a new repository now:** deferred because the destination identity and owner approval are not established by Issue #68.
-- **Do nothing:** keeps the current boundary safe but leaves no approved implementation location; acceptable until owner decides.
+- **Keep runtime source in `adv`:** rejected because runtime lifecycle and executable artifacts conflict with the knowledge-only project boundary.
+- **Publish runtime source immediately:** rejected because the approved bootstrap is private and publication requires separate approval.
 
 ## Test Contract
 
 | Claim | Test | Currently |
 |---|---|---|
-| `adv` changes contain no runtime artifacts | exact changed-path allowlist review | applicable to each PR; not yet automated |
-| Runtime destination is owner-approved | owner receipt plus verified repository/path | not yet available |
+| `adv` changes contain no runtime artifacts | exact changed-path allowlist review | required for each PR; not automated |
+| Runtime destination is owner-approved | owner receipt plus verified repository/path | satisfied for private bootstrap; implementation scope remains issue-gated |
 | Private runtime state is excluded from publication | staged-path and secret/privacy review | required for future runtime PRs |
 
 ## Rollback
 
-Before acceptance, keep current repository structure and make no runtime move. After acceptance, changing the boundary requires a superseding ADR and explicit migration/release plan.
+Acceptance recorded 2026-10-12. Changing this boundary requires a superseding ADR and explicit migration/release plan.
 
 ## References
 

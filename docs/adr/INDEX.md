@@ -12,6 +12,6 @@
 | [ADR-012](ADR-012-define-cardputer-consumer-validation-contract.md) | Define a Cardputer consumer-validation contract | Accepted |
 | [ADR-013](ADR-013-define-bounded-batch-knowledge-workflow.md) | Define a bounded batch knowledge workflow | Accepted |
 | [ADR-014](ADR-014-deviceops-service-centered-agent-infrastructure.md) | DeviceOps service-centered agent infrastructure | Proposed; direction owner-confirmed |
-| [ADR-015](ADR-015-deviceops-host-stack-and-repository-boundary.md) | Implement the DeviceOps host core in Python | Proposed; owner decision pending |
-| [ADR-016](ADR-016-deviceops-single-executor-and-local-ipc.md) | Route DeviceOps clients through one persistent local executor | Proposed; owner decision pending |
-| [ADR-017](ADR-017-deviceops-runtime-repository-boundary.md) | Keep DeviceOps runtime artifacts outside the `adv` knowledge repository | Proposed; owner decision pending |
+| [ADR-015](ADR-015-deviceops-host-stack-and-repository-boundary.md) | Implement the DeviceOps host core in Python | Accepted; runtime unimplemented |
+| [ADR-016](ADR-016-deviceops-single-executor-and-local-ipc.md) | Route DeviceOps clients through one persistent local executor | Accepted; runtime unimplemented |
+| [ADR-017](ADR-017-deviceops-runtime-repository-boundary.md) | Keep DeviceOps runtime artifacts outside the `adv` knowledge repository | Accepted; private runtime repo bootstrapped |
