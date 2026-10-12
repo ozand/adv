@@ -42,23 +42,23 @@ TypeScript comparison records: `@modelcontextprotocol/sdk@1.32.1` (MIT, npm inte
 1. **Stack, dependencies, licenses, versions/SHA, OS, rationale — architecture accepted; qualification partial.** Owner accepted Python 3.11+ / Windows 11 x64 first, persistent executor/named-pipe IPC, SQLite and private repo/path. Registry candidate metadata is documented; no SHA-locked package selection, primary-source qualification, Windows packaging validation or complete transitive-license audit is claimed.
 2. **Owner acceptance / ADR status — satisfied.** Owner confirmation is recorded in Issue #68 comment [6130478169](https://github.com/ozand/adv/issues/68#issuecomment-6130478169): Python 3.11+ and Windows 11 x64 first; persistent executor with authenticated Windows named-pipe IPC; SQLite local durable state; private `ozand/deviceops` and approved path allowlist. ADR-015/016/017 are Accepted. This is architecture acceptance only.
 3. **Implementation location and path allowlist — satisfied for bootstrap.** Private `ozand/deviceops`, local clone `T:/Code/esp32/deviceops`, and `/deviceops/`, `/tests/`, `/docs/`, root manifests/locks are owner-approved. Bootstrap commit `e56fd6a628a6bd7137b4adb48b8c646f7674263d` is limited to root governance/readme/manifest; runtime implementation still requires a scoped issue.
-4. **#37/#38 inputs — reviewed, not completed/transferred.** #37 requires bounded transport-neutral operations, effects/authority and honest uncertainty/retry while preserving ADR-006; its stage-A evidence dependency remains. #38 requires evidence-linked concrete scenarios compared consistently across host/device/hybrid, and forbids an unsupported selection; its scenario evidence remains. These are input constraints, not completed deliverables, and both issues stay open.
+4. **#37/#38 inputs — reviewed; qualification remains partial.** D01 preserves #37 constraints on bounded transport-neutral operations, explicit effects/authority, honest uncertainty/retry and ADR-006 compatibility; the source issue's stage-A evidence dependency is not satisfied here. D01 also preserves #38's requirement for evidence-linked, comparable host/device/hybrid scenarios and no unsupported selection; scenario evidence is not completed here. Neither upstream issue is closed or represented as transferred/completed by this decision.
 5. **Future source-task gates — documented.** G0 decision/path/version gates, G1 fake-only offline conformance, G2 client integration on fake device, G3 separate connect/status authorization and G4 per-effect authorization/recovery gates are defined in VALIDATION.md; this decision record does not itself authorize implementation or hardware access.
 
 ## Qualification questions
 
 These questions remain for runtime qualification or future design review; they do not undo owner acceptance of the four D01 choices:
 
-1. The supported host is not Windows 11 x64, or CPython cannot be distributed through the owner's approved local deployment channel.
-2. Reusing the existing Python protocol validator/tests is less valuable than a typed Rust/Node client that already exists in the intended runtime repository.
-3. A persistent named-pipe server cannot be reliably supervised as the only session/job owner, or the security boundary cannot restrict clients to the intended local principal.
-4. SQLite's locking, durability, migration, retention or backup behavior cannot meet the bounded job/evidence requirements without replaying uncertain device effects.
-5. A different repo owner/visibility/publication lifecycle is required, or a separate `ozand/deviceops` repo would conflict with established ownership.
-6. Offline CI cannot isolate untrusted PR builds from USB and production secrets while still validating the proposed core.
-7. The intended web-chat/MCP client cannot use local IPC via the approved host integration, requiring a remote endpoint in the initial MVP.
-8. A firmware/profile recovery path cannot be qualified independently, making the proposed staged fake-first then separately authorized hardware sequence unsafe or circular.
+1. **Host/deployment distribution:** Python 3.11.9 x64 exists locally; no clean Windows 11 installation or approved distribution channel was tested. **Open qualification.**
+2. **Reuse vs rewrite:** existing Python validator/fake-serial tests at PR #82 candidate SHA are documented; no Rust/Node alternative codebase was identified or benchmarked. **No contrary evidence found; not a comparative runtime test.**
+3. **Named-pipe supervision/security:** decision accepted; no service lifecycle, ACL or multi-client integration prototype was tested. **Open qualification.**
+4. **SQLite durability:** stdlib SQLite 3.45.1 is present locally; no schema, crash/recovery, retention or backup test was run. **Open qualification.**
+5. **Repository ownership/publication:** owner named the private `ozand/deviceops` repository/path and allowlist; repository visibility and bootstrap commit were verified. **Satisfied for bootstrap; public release remains unapproved.**
+6. **Offline CI isolation:** policy is documented in project security/validation docs; CI isolation itself was not tested in this decision work. **Open qualification.**
+7. **Client IPC integration:** named-pipe IPC is accepted; no real CLI/MCP client integration or remote-client requirement was tested. **Open qualification.**
+8. **Recovery profile:** device/firmware recovery was not exercised or qualified. **Open; hardware effects remain separately authorized.**
 
-These are decision falsifiers, not claims that the conditions have been tested.
+These are bounded evidence dispositions, not claims that untested conditions pass.
 
 ## Gates after architecture acceptance
 
