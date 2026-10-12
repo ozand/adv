@@ -36,8 +36,8 @@ Source review, source-contract test, fake transport, настоящий клие
 | V20 | Cross-user remote/browser request, stream loss, закрытая вкладка и stale session не обходят policy | R12; D09/D11 |
 | V21 | Receipt связан с точным device/profile/artifact/test; неизвестные поля evidence не повышают confidence | R09/R13; D14 |
 | V22 | Непроверенный build job не имеет USB/production secrets; stable требует отдельного допуска | R13; D07/D14 |
-| V23 | Config conflict/partial apply/network loss: нет затирки и ложного rollback | R14; D12 |
-| V24 | Fake OTA boot loop/power loss/failed confirmation/data migration: корректные slot/rollback outcomes | R14; D13 |
+| V23 | Config conflict/partial apply/network loss: нет затирки и ложного rollback; unsupported/unknown firmware profile or missing capability is denied before config I/O | R14; D12 |
+| V24 | Fake OTA boot loop/power loss/failed confirmation/data migration: корректные slot/rollback outcomes; unsupported/unknown firmware profile or missing capability is denied before OTA I/O | R14; D13 |
 
 Каждая исходная задача добавляет focused tests; D14 соединяет их, а не откладывает все проверки до конца проекта. Точные test names/команды появляются вместе с реализацией и записываются в соответствующий issue.
 
