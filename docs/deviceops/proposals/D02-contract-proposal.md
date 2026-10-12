@@ -8,6 +8,8 @@
 
 **Research receipt:** [Issue #69 comment](https://github.com/ozand/adv/issues/69#issuecomment-6129685648).
 
+**Proposed decision record:** [ADR-019](../../adr/ADR-019-deviceops-operation-contract-proposals-remain-non-normative-until-reviewed.md).
+
 This proposal sharpens `docs/deviceops/CONTRACTS.md` without changing firmware wire contracts, choosing an implementation stack, or authorizing hardware/network access. “MUST” below means a candidate requirement for review, not an existing runtime guarantee.
 
 ## 1. Contract layers and identity

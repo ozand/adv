@@ -11,7 +11,7 @@
 
 D02 needs to clarify host operation semantics, identifiers, bounds, results, and fake-only conformance cases while D01 architecture and security decisions remain under review. Accepted ADR-006/009 already define bounded firmware source contracts, but do not define a stable host DeviceOps API. Publishing a draft as though it were normative could cause adapters or clients to depend on unreviewed schemas, numbers, or enforcement assumptions.
 
-This proposed decision is grounded in the Issue #69 task and the source/document review recorded in `kb/research/2026-10-12_deviceops-d02-contract-proposal/research-record.md`. No runtime behavior or API implementation was tested.
+This proposed decision is grounded in the Issue #69 task and the bounded source/document review recorded in [the Issue #69 research comment](https://github.com/ozand/adv/issues/69#issuecomment-6129685648). No runtime behavior or API implementation was tested.
 
 ## Decision
 
@@ -55,7 +55,7 @@ Rejected for this proposal because the roadmap permits parallel draft work; acce
 
 - [Issue #69](https://github.com/ozand/adv/issues/69)
 - [D02 proposal](../deviceops/proposals/D02-contract-proposal.md)
-- [D02 research record](../../kb/research/2026-10-12_deviceops-d02-contract-proposal/research-record.md)
+- [D02 research record](https://github.com/ozand/adv/issues/69#issuecomment-6129685648)
 - [ADR-006](ADR-006-hardware-diagnostic-serial-json.md)
 - [ADR-009](ADR-009-bounded-opt-in-audio-diagnostics.md)
 - [ADR-014](ADR-014-deviceops-service-centered-agent-infrastructure.md)
