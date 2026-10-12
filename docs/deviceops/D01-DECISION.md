@@ -34,8 +34,8 @@ TypeScript comparison records: `@modelcontextprotocol/sdk@1.32.1` (MIT, npm inte
 - Firmware/deployment failure recovery and recovery capability are profile-specific; unverified firmware does not trigger automatic reflash. A runtime repository/path choice does not grant hardware/recovery authorization.
 - Web-chat/client acceptance starts on fake device before separately authorized remote/account/network exposure (VALIDATION G2).
 - No arbitrary serial/shell command. Use named capabilities, current ADR-006/009 compatibility, explicit effects, and no implicit SD/audio/run/flash operations.
-- Initial OS qualification target recommendation: Windows 11 x64; other OSes are not claimed until tested.
-- `adv` is proposed to remain documentation/coordination only (ADR-017); the owner must approve the destination and exact path allowlist separately.
+- Initial OS target accepted by the owner: Windows 11 x64; other OSes are not claimed until tested.
+- `adv` remains documentation/coordination only (ADR-017); the owner-approved destination and exact path allowlist are recorded above.
 
 ## Issue #68 acceptance coverage
 
