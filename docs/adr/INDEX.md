@@ -16,4 +16,4 @@
 | [ADR-016](ADR-016-deviceops-single-executor-and-local-ipc.md) | Route DeviceOps clients through one persistent local executor | Accepted; runtime unimplemented |
 | [ADR-017](ADR-017-deviceops-runtime-repository-boundary.md) | Keep DeviceOps runtime artifacts outside the `adv` knowledge repository | Accepted; private runtime repo bootstrapped |
 | [ADR-019](ADR-019-deviceops-operation-contract-proposals-remain-non-normative-until-reviewed.md) | Keep D02 operation contracts non-normative until reviewed | Proposed |
-| [ADR-021](ADR-021-deviceops-status-contract-and-bounds.md) | Define a bounded draft status-operation contract | Proposed |
+| [ADR-021](ADR-021-deviceops-status-contract-and-bounds.md) | Define a bounded draft status-operation contract | Accepted; implementation/Issue #69 partial |

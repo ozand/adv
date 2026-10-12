@@ -9,15 +9,15 @@
 
 ## Context
 
-D02 needs to clarify host operation semantics, identifiers, bounds, results, and fake-only conformance cases while D01 architecture and security decisions remain under review. Accepted ADR-006/009 already define bounded firmware source contracts, but do not define a stable host DeviceOps API. Publishing a draft as though it were normative could cause adapters or clients to depend on unreviewed schemas, numbers, or enforcement assumptions.
+D02 needs to clarify host operation semantics, identifiers, bounds, results, and fake-only conformance cases. D01 choices in ADR-015–017 are accepted; ADR-006/009 define bounded firmware source contracts but not a stable host DeviceOps API. Owner acceptance of the narrow ADR-021 status-only contract does not make other operation schemas, production enforcement, or public API assumptions normative. Publishing unreviewed expansions as stable could create premature dependencies.
 
 This proposed decision is grounded in the Issue #69 task and the bounded source/document review recorded in [the Issue #69 research comment](https://github.com/ozand/adv/issues/69#issuecomment-6129685648). A private, fake-only status-schema validator and unit suite have since been implemented and locally tested as a candidate; this is not production runtime, adapter, device, or stable API evidence.
 
 ## Decision
 
-Until D01 and the relevant owner/security review accept D02, operation schemas, reason enums, catalog names, and bounds are proposals only. They MUST be marked non-normative and MUST NOT be presented as a stable API, implemented enforcement, or authorization to access devices, serial, network, firmware, or deployment.
+The owner has accepted only ADR-021's bounded `diagnostic_start` / `STATUS` contract slice. Other operation schemas, reason enums, catalog names, bounds, and enforcement remain proposals until separately reviewed and accepted. Even the accepted slice MUST NOT be presented as a stable public API, implemented production enforcement, or authorization to access devices, serial, network, firmware, or deployment.
 
-The D02 draft may specify deterministic fake-only validation cases and acceptance criteria. It does not change ADR-006/009 wire contracts or select an implementation repository, runtime, schema dialect, dependency, or trust model. Acceptance of the host contract requires an explicit ADR decision and exact-candidate review before implementation relying on the contract begins.
+The D02 draft may specify deterministic fake-only validation cases and acceptance criteria. It does not change ADR-006/009 wire contracts or select an implementation repository, runtime, schema dialect, dependency, or trust model. Any expansion beyond the owner-accepted ADR-021 slice requires an explicit ADR decision and exact-candidate review before implementation relies on it.
 
 ## Consequences
 
@@ -47,7 +47,7 @@ Rejected for this proposal because the roadmap permits parallel draft work; acce
 
 | Claim in Decision | Test | Currently |
 |---|---|---|
-| Proposal artifacts are labeled non-normative and gated on D01/review | Read-only review of `docs/deviceops/proposals/D02-contract-proposal.md` and this ADR | not yet independently reviewed |
+| The accepted ADR-021 slice is distinguished from still-proposed D02 expansions and no production/device authority is implied | Review the D02 proposal and this ADR against owner receipt #6134297908 | Candidate wording updated; exact-head documentation review pending |
 | Draft distinguishes locally executed fake-only candidate tests from absent production/device enforcement | Review ADR-021 and private PR #4 evidence; confirm no hardware/runtime test is claimed | Candidate tests run locally; exact corrected-head review pending |
 | ADR-006/009 wire contracts are unchanged | Diff scope check: only proposal/ADR/research/index paths; no firmware/host implementation paths | not yet independently reviewed |
 

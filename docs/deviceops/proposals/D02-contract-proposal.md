@@ -1,18 +1,18 @@
 # D02 — proposed contracts and fixtures
 
-**Status:** proposal for review; not a stable API, accepted schema, or enforcement implementation.
+**Status:** wider D02 proposal remains partial. The narrow ADR-021 `diagnostic_start` / `STATUS` contract is owner-accepted; this document's broader operations and persistence semantics are not.
 
 **Issue:** [#69](https://github.com/ozand/adv/issues/69) · **Epic:** [#66](https://github.com/ozand/adv/issues/66)
 
-**Prerequisite for acceptance:** D01 / #68 decisions and owner/reviewer approval.
+**Decision record:** D01 / #68 is accepted. ADR-021's bounded status-only slice is accepted by owner receipt #6134297908; all broader D02 surfaces remain subject to exact review and separate acceptance.
 
 **Research receipt:** [Issue #69 comment](https://github.com/ozand/adv/issues/69#issuecomment-6129685648).
 
-**Proposed decision records:** [ADR-019](../../adr/ADR-019-deviceops-operation-contract-proposals-remain-non-normative-until-reviewed.md) (process boundary) and [ADR-021](../../adr/ADR-021-deviceops-status-contract-and-bounds.md) (candidate status-only format and bounds).
+**Decision records:** [ADR-019](../../adr/ADR-019-deviceops-operation-contract-proposals-remain-non-normative-until-reviewed.md) (process boundary) and [ADR-021](../../adr/ADR-021-deviceops-status-contract-and-bounds.md) (accepted narrow status-only format and bounds; broader D02 remains open).
 
-**Executable candidate:** [private runtime PR #4](https://github.com/ozand/deviceops/pull/4), currently based on bootstrap `e56fd6a628a6bd7137b4adb48b8c646f7674263d`; candidate head is recorded in the Issue #69 handoff. This PR is proposed-only and does not publish a stable API.
+**Private implementation candidate:** [deviceops PR #4](https://github.com/ozand/deviceops/pull/4), exact head `f667cc2f1e0c23426c707967e0e712af5286b010`, based on current main `ca86cbd6ef5cd6814f776974ee340a8bdbdaec8e`. It adds only the seven contract/schema/test paths and remains open for exact-head review; it does not publish a stable public API.
 
-This proposal sharpens `docs/deviceops/CONTRACTS.md` without changing firmware wire contracts, choosing an implementation stack, or authorizing hardware/network access. “MUST” below means a candidate requirement for review, not an existing runtime guarantee.
+This proposal sharpens `docs/deviceops/CONTRACTS.md` without changing firmware wire contracts, choosing an implementation stack, or authorizing hardware/network access. “MUST” below denotes a design requirement; only the explicitly accepted ADR-021 slice is an accepted contract decision. It does not imply that production runtime enforcement exists.
 
 ## 1. Contract layers and identity
 
@@ -27,9 +27,9 @@ Keep the following identifiers distinct:
 
 Binding/capability evidence SHOULD include its observation time, origin (`cached` or `fresh`), relevant profile/firmware claim, and confidence. An administrative `device_id` alone MUST NOT be represented as attested physical identity.
 
-## 2. Candidate schemas and bounds
+## 2. Accepted status schema slice and proposed broader bounds
 
-The formal JSON Schema dialect and exact fields remain subject to review. A status-only candidate is now staged as `deviceops.request.v0` and `deviceops.result.v0` in private PR #4; the `.v0` labels are draft identifiers, not accepted stable API versions. Candidate host bounds are request JSON ≤4096 UTF-8 bytes, result receipt JSON ≤1024 bytes, identifiers ≤128 characters, reason codes ≤64 characters, queue depth ≤32, retained jobs ≤128, and ≤64 events/job. These values are proposed finite test boundaries, not measured or accepted operational defaults. Firmware frame limits remain unchanged. Other operation profiles, pagination, retention TTL, plan/grant schemas, and stable error mappings remain open for later review. The wider proposal is to define versioned schemas for:
+The accepted ADR-021 slice uses JSON Schema Draft 2020-12 with status-only schemas `deviceops.request.v0` and `deviceops.result.v0` in private [PR #4](https://github.com/ozand/deviceops/pull/4), current head `f667cc2f1e0c23426c707967e0e712af5286b010`. Its request accepts only `diagnostic_start` / `STATUS`. Accepted finite host contract bounds are request JSON ≤4096 UTF-8 bytes, result receipt JSON ≤1024 bytes, identifiers ≤128 characters, reason codes ≤64 characters, queue depth ≤32, retained jobs ≤128, and ≤64 events/job. These are not measured service-capacity guarantees; queue/job/event enforcement, TTL, pagination, and other profiles remain unimplemented or proposed. Firmware frame limits remain unchanged. Other operation profiles, pagination, retention TTL, plan/grant schemas, and stable error mappings remain open for later review. The wider proposal is to define versioned schemas for:
 
 - **Binding/capability snapshot:** target reference, observed session generation, profile and firmware evidence, named capabilities, freshness and expiry.
 - **Operation request:** `request_id`, target reference, capability ID/version, and operation-specific arguments validated against a closed schema. Unknown fields and unsupported versions are rejected before effects.
@@ -37,7 +37,7 @@ The formal JSON Schema dialect and exact fields remain subject to review. A stat
 - **Plan/grant reference:** immutable digest, exact target and capability scope, expiry, and issuer reference; the agent cannot mint its own grant.
 - **Result/evidence receipt:** bounded terminal result, stages, transmission/ack/effect/verification axes, provenance, and evidence references.
 
-Each schema MUST declare enforceable maxima for encoded request/response bytes, individual strings and collections, log page bytes, queue depth, retained jobs/events, plan/grant TTL, and client wait timeout. D02 acceptance requires each chosen maximum to have a positive boundary fixture and a one-over-limit rejection fixture. The status-only draft proposes the values above; queue/retention enforcement, result-encoding boundary, TTL, pagination and wait-timeout behavior are not yet implemented by the contract PR. Host wait deadline MUST be distinct from any device execution deadline. A host timeout does not prove that the device stopped.
+Each schema MUST declare enforceable maxima for encoded request/response bytes, individual strings and collections, log page bytes, queue depth, retained jobs/events, plan/grant TTL, and client wait timeout. D02 acceptance requires each chosen maximum to have a positive boundary fixture and a one-over-limit rejection fixture. The accepted status-only contract defines the values above. The private parser enforces encoded request and result bounds; it does not implement queue/retention enforcement, TTL, pagination, wait-timeout behavior, or production execution. Host wait deadline MUST be distinct from any device execution deadline. A host timeout does not prove that the device stopped.
 
 Closed-object validation is the default: reject unknown keys, duplicate/ambiguous identifiers, malformed encodings, non-finite numbers, and values outside the declared limits before enqueue or I/O. Truncation is never silent; if a bounded presentation truncates, mark it and preserve the underlying operation status separately.
 
@@ -59,7 +59,7 @@ Keep these independent evidence dimensions:
 - verification: `not_attempted | passed | failed | inconclusive`;
 - evidence level: `source_documented | source_tested | fake_tested | client_tested | device_observed | externally_verified` (per claim, not global).
 
-`succeeded` means only that the declared operation postcondition is satisfied. A successful `status` read is not a board-health PASS. Physical checks in a profile that carries independent physical observation may use `PASS | FAIL | NOT_TESTED | INCONCLUSIVE`; host state MUST NOT derive these values. The status-only candidate restricts `physical_result` to `NOT_TESTED | INCONCLUSIVE`; `PASS` and `FAIL` are invalid until a separately reviewed physical-measurement profile and evidence contract exist. Timeout, lost acknowledgement, partial write, reset, or late/unmatched response with uncertain effect yields `inconclusive` unless stronger evidence resolves it. Never automatically retry a potentially mutating operation solely because its host wait expired.
+`succeeded` means only that the declared operation postcondition is satisfied. A successful `status` read is not a board-health PASS. Physical checks in a profile that carries independent physical observation may use `PASS | FAIL | NOT_TESTED | INCONCLUSIVE`; host state MUST NOT derive these values. The accepted status-only contract restricts `physical_result` to `NOT_TESTED | INCONCLUSIVE`; `PASS` and `FAIL` are invalid until a separately reviewed physical-measurement profile and evidence contract exist. Timeout, lost acknowledgement, partial write, reset, or late/unmatched response with uncertain effect yields `inconclusive` unless stronger evidence resolves it. Never automatically retry a potentially mutating operation solely because its host wait expired.
 
 ## 4. Request deduplication, cancellation, and late results
 
@@ -102,10 +102,10 @@ Fixtures use synthetic targets, IDs, frames, times and evidence. The harness MUS
 | Queue, retained-job/event, TTL, and page limits at boundary and over | Boundary accepted; over-limit rejected/expired per declared rule | Resource limits explicit and deterministic |
 | Host CLI-like and MCP-like fixture clients call same fake core | Equivalent normalized results and denials | No client can widen capability or erase uncertainty |
 
-The private runtime PR contains candidate serialized request/result schemas, a pure request validator, and runnable synthetic fixtures for malformed/unknown/duplicate/oversize requests, status-vs-physical verification, cache replay after session generation change, firmware-marker mismatch, late result ambiguity, and fixed parser-only fixture execution. A source review found mismatches in the first candidate and corrective changes are being prepared; result bound enforcement, all resource maxima, status transition enforcement, broader operation semantics, and exact-head independent review remain open. Neither document nor private PR establishes a stable API or hardware evidence.
+Private PR #4 at exact head `f667cc2f1e0c23426c707967e0e712af5286b010` contains the accepted status request/result schemas, pure parsers (`validate_operation_request` and `validate_result_receipt`), typed mappings, and runnable synthetic fixtures for malformed/unknown/duplicate/oversize requests, status-vs-physical verification, unknown-effect success rejection, cache replay after session-generation change, firmware-marker mismatch, late-result ambiguity, and fixed parser-only fixture execution. The 53 contract tests passed within a 154-test repository run on Python 3.13.3; Draft 2020-12 schema checks and request/result parser-schema parity smoke passed. Exact-head independent review remains pending. Queue/resource enforcement, status transition persistence, adapter/runtime semantics, broader operations and hardware evidence remain open; this does not establish a stable public API or production enforcement.
 
 ## 8. Compatibility and decision gates
 
 Preserve accepted ADR-006/ADR-009 source contracts. Do not change firmware wire shapes or send host `operation_id` directly as firmware ID. A firmware result retained only in RAM is unavailable after reset; do not fabricate persistence. Audio remains explicitly opt-in and outside the initial MVP catalogue; no result implies audibility or physical pass.
 
-This draft does not select a stable API, schema dialect, implementation language/runtime, persistent store, transport SDK, trust/grant design, or exact bounds. D01 and owner/security review must resolve relevant architecture and trust questions. An accepted contract or implementation gate requires an ADR update/new ADR as appropriate, exact reviewed candidate SHA, schema/fixture validation, and explicit owner decision. No hardware, serial, network, package installation, runtime, or deployment operation is authorized by this proposal.
+The narrow ADR-021 contract is accepted; this broader proposal does not accept additional operations, production enforcement, adapter semantics, or a stable public API. D01 architecture and the separate ADR-018 grant decision do not authorize hardware effects. Further contract expansions require a reviewed ADR and exact-candidate owner disposition. No hardware, serial, network, package installation, service deployment, or physical testing is authorized by this document.
