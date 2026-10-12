@@ -12,3 +12,4 @@
 | [ADR-012](ADR-012-define-cardputer-consumer-validation-contract.md) | Define a Cardputer consumer-validation contract | Accepted |
 | [ADR-013](ADR-013-define-bounded-batch-knowledge-workflow.md) | Define a bounded batch knowledge workflow | Accepted |
 | [ADR-014](ADR-014-deviceops-service-centered-agent-infrastructure.md) | DeviceOps service-centered agent infrastructure | Proposed; direction owner-confirmed |
+| [ADR-018](ADR-018-deviceops-authority-grants-threat-model.md) | Bind DeviceOps authorization grants to principals, targets, operations, and effects | Proposed; Issue #70 |
