@@ -24,7 +24,7 @@ Protect:
 
 | Actor / component | Assumed trust | Security boundary / failure mode |
 |---|---|---|
-| Human operator / grant issuer | Trusted only through an authenticated, auditable issuance path | Mistaken scope, wrong target selection, compromised account or issuer |
+| Local interactive Windows user / proposed grant issuer | Proposed as trusted only when authenticated by the accepted named-pipe OS principal and acting through a non-tool local approval surface; owner decision pending | Mistaken scope, wrong target selection, compromised user account, or equally privileged process |
 | Agent/model and its supplied arguments | Untrusted | Prompt injection, self-approval, confused deputy, malicious plan/artifact references |
 | CLI/MCP/web frontend | Authenticated principal context required; client payload itself untrusted | Principal spoofing, frontend-specific policy bypass, cross-user access |
 | DeviceOps core/policy | Intended enforcement point, not yet implemented | Bug, stale policy, confused deputy, TOCTOU, inconsistent transport rules |
@@ -35,7 +35,7 @@ Protect:
 | OS administrator / independent USB process | Out of scope for service-only protection unless separately constrained | Can bypass local policy, read files/secrets, open the port, or race/alter execution |
 | Physical attacker / modified device | Not proven prevented by software grants | Physical substitution, firmware modification, electrical effects, untrusted peripherals |
 
-**Out of scope for the proposed host policy alone:** guaranteeing protection against a fully privileged OS administrator, independent process with direct USB/serial access, physical board substitution, compromised trusted issuer, or compromised host kernel. D01 must choose the actual OS/runtime deployment boundary and state which OS controls can mitigate (not erase) these risks.
+**Out of scope for the proposed host policy alone:** guaranteeing protection against a fully privileged OS administrator, equally privileged process able to modify the local store, independent process with direct USB/serial access, physical board substitution, compromised trusted issuer, or compromised host kernel. The accepted D01 boundary is a local Windows executor with named pipes and SQLite; its ACL, tamper resistance and bypass behavior still require qualification. These risks cannot be erased by the service alone.
 
 ## 4. Trust boundaries and flows
 
@@ -43,7 +43,7 @@ Protect:
 flowchart LR
     A[Agent or user input: untrusted] --> F[Authenticated frontend]
     F -->|principal from trusted auth context| C[Policy and plan core]
-    U[Trusted operator or policy issuer] -->|scoped grant| C
+    U[Proposed local operator approval: owner decision pending] -->|scoped SQLite permit record| C
     C -->|persist operation and grant use| J[(Transactional job/grant store)]
     C -->|revalidate before dispatch| B[Single-writer broker]
     B --> X[Bounded adapter/executor]
@@ -80,6 +80,8 @@ The frontend cannot be the only enforcement point if another interface can dispa
 
 ## 6. Proposed grant and dispatch invariants
 
+Proposed MVP issuer for owner review: an operator must take an explicit authenticated action through a local approval surface that is not exposed as a DeviceOps tool. The executor derives the issuer principal from the authenticated Windows named-pipe client context; it rejects caller-supplied principal strings as authority. The model, tool call, device output, annotations and logs cannot issue or broaden a grant. The scoped permit is kept in the local SQLite store and only an opaque reference may appear in model-visible results.
+
 A grant or equivalent trusted authorization record should bind at minimum:
 
 1. issuer identity and authenticated principal;
@@ -90,7 +92,7 @@ A grant or equivalent trusted authorization record should bind at minimum:
 6. issuance/expiry, finite use or effect budget, and revocation state;
 7. policy revision and any material preconditions that must be revalidated.
 
-Before dispatch, the core should atomically verify and consume authority against the operation record, then the broker should verify the same target/session and plan remain current. If persistence/clock/identity/revocation state cannot be established, deny before I/O. A changed field requires a new grant, not silent mutation. Whether the token is signed, locally sealed, or represented by a protected database row is deliberately unresolved pending D01/D03 decisions.
+Before dispatch, the core should atomically verify and consume authority against the operation record, then the broker should verify the same target/session and plan remain current. If persistence/clock/identity/revocation state cannot be established, deny before I/O. A changed field requires a new grant, not silent mutation. The proposed local MVP uses a SQLite permit row, not a signed bearer token. A single transaction records grant-use reservation and accepted operation/dispatch intent before I/O; after an uncertain crash the reservation remains consumed and the operation is inconclusive, never automatically replayed. The owner must accept/reject/revise this issuer and lifecycle proposal; none of it is implemented by this documentation.
 
 ## 7. Effect and uncertainty model
 
@@ -118,12 +120,12 @@ For each case record exact source SHA, fixture/test name, fake transport call co
 
 ## 9. Open decisions and dependency gates
 
-- **D01/#68:** implementation repository/path allowlist, host OS/runtime, IPC, persistence, trusted clock and OS-level enforcement assumptions.
-- **D02/#69:** canonical schemas for principal, identity evidence, capability/effects, plan, grant reference, operation lifecycle and reason codes.
-- **D03/#70:** issuer trust, grant representation/storage, atomic replay/budget strategy, revoke semantics, and fake security fixtures.
+- **D01/#68 accepted:** Python/Windows 11 x64 first, SQLite local durable storage, one persistent executor with authenticated local-user Windows named pipes, and private `ozand/deviceops` path boundary. Packaging, ACL qualification, trusted clock details and durability guarantees remain untested.
+- **D02/#69:** canonical schemas for principal, identity evidence, capability/effects, plan, grant reference, operation lifecycle and reason codes remain proposals.
+- **D03/#70 owner decision pending:** whether the authenticated local interactive Windows user may issue scoped SQLite permit records via a non-tool approval surface, and whether the proposed transaction/reserve/revalidate/crash-as-consumed lifecycle is acceptable. No source implementation or authority follows from this draft.
 - **Later deployment/remote work:** authentication provider, cross-user boundary, secret provider, network exposure, rate limits, incident response and independently reviewed deployment profile.
 
-D03 may author and review this threat-model proposal in parallel, but enforcement code remains blocked until relevant decisions and exact repo/path allowlist are accepted. This draft does not resolve dependency issues by assuming a particular cryptographic or storage mechanism.
+D03 documentation may propose a concrete authority model for owner review. Enforcement code remains blocked until the owner resolves the issuer/lifecycle decision and applicable D02 contract and implementation gates are accepted. This draft does not imply that a documented SQLite record is authentic against a same-user/administrator attacker.
 
 ## References
 
