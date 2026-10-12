@@ -32,7 +32,7 @@ DeviceOps — предлагаемый сервис, который даёт л�
 | [VALIDATION](VALIDATION.md) | Проверки отказов, паритет клиентов, допуск к оборудованию и отчёт |
 | [AGENT_GUIDE](AGENT_GUIDE.md) | Как локальному агенту взять задачу и передать проверенный результат |
 | [ROADMAP](ROADMAP.md) | Все задачи, зависимости, параллельные работы и этапы |
-| [D01 decision proposal](D01-DECISION.md) | Предлагаемые host stack, ОС и граница runtime-репозитория |
+| [D01 decision proposal](D01-DECISION.md) | Предлагаемый host language, границы общего executor/IPC и публикации runtime artifacts; см. Proposed ADR-015–017 |
 | [REFERENCES](REFERENCES.md) | Первичные источники и границы подтверждённых сведений |
 
 ## Первый полезный результат

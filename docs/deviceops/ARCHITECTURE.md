@@ -39,7 +39,7 @@ Local agent / Web chat / Operator / Approved CI job
 
 ## 2. Предлагаемый MVP: один host-процесс
 
-Для первой версии достаточно одного владельца core, локального транзакционного хранилища и нескольких клиентов. SQLite, Python 3.11+, Windows 11-first и package direction предлагаются в [D01](D01-DECISION.md) и ADR-015; это не принятые зависимости/решения до owner review. Отдельный кластер, брокер сообщений и облачная база не нужны для проверки первого сценария.
+Для первой версии достаточно одного владельца core, локального транзакционного хранилища и нескольких клиентов. Python 3.11+ предлагается в ADR-015; общий executor и IPC — в ADR-016; граница runtime-репозитория — в ADR-017. Это предложения до review владельцем. Выбор хранилища остаётся открытым для D02/D04. Отдельный кластер, брокер сообщений и облачная база не нужны для проверки первого сценария.
 
 CLI/MCP фасад обращается к этому владельцу через локальный защищённый IPC или согласованный in-process режим. Запуск второго фасада не должен создавать второго исполнителя одной платы. ОС-специфичные права IPC и exclusive-open serial проходят отдельную квалификацию.
 
@@ -104,4 +104,4 @@ Adapter interface должен получать bounded request, immutable targe
 
 ## 9. Решения D01
 
-Предлагаемый выбор host language/OS/IPC/storage и место реализации описаны в [D01](D01-DECISION.md) и Proposed ADR-015; все требуют owner review. Закреплённые версии SDK, достаточная identity для каждого risk tier, формат grant/plan integrity и процедура hardware допуска остаются открытыми для соответствующих D02/D03 и квалификационных работ. Браузер и provider-specific tunnel не должны становиться обязательными зависимостями core.
+Предложения по host language, общему executor/local IPC и границе runtime repository разделены в [D01](D01-DECISION.md) и Proposed ADR-015–017; все требуют owner review. Storage/schema, закреплённые версии SDK, identity для каждого risk tier, grant/plan integrity и процедура hardware допуска остаются открыты для D02/D03 и будущих qualification issues. Браузер и provider-specific tunnel не должны становиться обязательными зависимостями core.
