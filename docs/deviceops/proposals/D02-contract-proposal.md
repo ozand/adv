@@ -59,7 +59,7 @@ Keep these independent evidence dimensions:
 - verification: `not_attempted | passed | failed | inconclusive`;
 - evidence level: `source_documented | source_tested | fake_tested | client_tested | device_observed | externally_verified` (per claim, not global).
 
-`succeeded` means only that the declared operation postcondition is satisfied. A successful `status` read is not a board-health PASS. Physical checks use profile-defined `PASS | FAIL | NOT_TESTED | INCONCLUSIVE`; host state MUST NOT derive these values. Timeout, lost acknowledgement, partial write, reset, or late/unmatched response with uncertain effect yields `inconclusive` unless stronger evidence resolves it. Never automatically retry a potentially mutating operation solely because its host wait expired.
+`succeeded` means only that the declared operation postcondition is satisfied. A successful `status` read is not a board-health PASS. Physical checks in a profile that carries independent physical observation may use `PASS | FAIL | NOT_TESTED | INCONCLUSIVE`; host state MUST NOT derive these values. The status-only candidate restricts `physical_result` to `NOT_TESTED | INCONCLUSIVE`; `PASS` and `FAIL` are invalid until a separately reviewed physical-measurement profile and evidence contract exist. Timeout, lost acknowledgement, partial write, reset, or late/unmatched response with uncertain effect yields `inconclusive` unless stronger evidence resolves it. Never automatically retry a potentially mutating operation solely because its host wait expired.
 
 ## 4. Request deduplication, cancellation, and late results
 
@@ -98,11 +98,11 @@ Fixtures use synthetic targets, IDs, frames, times and evidence. The harness MUS
 | Firmware-marker mismatch or unknown marker | Reject/deny compatibility before adapter dispatch; do not probe mutating commands | Marker is informational evidence, never identity or authorization |
 | Status request receives delayed terminal result frame | Protocol mismatch retained as ambiguity | Does not count as status success; does not claim result query ran |
 | Cancellation before dispatch / after possible dispatch | Cancelled only for safe pre-dispatch stop; otherwise honest unresolved state | Cancel is not rollback |
-| Physical check has no observation / all-zero measurement | `NOT_TESTED` or `INCONCLUSIVE` per profile | Never infer physical PASS/FAIL from host success or software completion |
+| Status-only request has no independent physical observation | `NOT_TESTED` or `INCONCLUSIVE`; `PASS` and `FAIL` rejected in this profile | Never infer physical PASS/FAIL from host success or software completion |
 | Queue, retained-job/event, TTL, and page limits at boundary and over | Boundary accepted; over-limit rejected/expired per declared rule | Resource limits explicit and deterministic |
 | Host CLI-like and MCP-like fixture clients call same fake core | Equivalent normalized results and denials | No client can widen capability or erase uncertainty |
 
-The private runtime PR contains candidate serialized request/result schemas, a pure request validator, and runnable synthetic fixtures for malformed/unknown/duplicate/oversize requests, status-vs-physical verification, cache replay after session generation change, firmware-marker mismatch, late result ambiguity, and no-backend fixture execution. At its current candidate head, these are proposed implementation evidence only; result bound/enforcement, all resource maxima, status transition enforcement, broader operation semantics, and independent review remain open. This document and the private PR do not establish a stable API or hardware evidence.
+The private runtime PR contains candidate serialized request/result schemas, a pure request validator, and runnable synthetic fixtures for malformed/unknown/duplicate/oversize requests, status-vs-physical verification, cache replay after session generation change, firmware-marker mismatch, late result ambiguity, and fixed parser-only fixture execution. A source review found mismatches in the first candidate and corrective changes are being prepared; result bound enforcement, all resource maxima, status transition enforcement, broader operation semantics, and exact-head independent review remain open. Neither document nor private PR establishes a stable API or hardware evidence.
 
 ## 8. Compatibility and decision gates
 
