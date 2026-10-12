@@ -13,3 +13,4 @@
 | [ADR-013](ADR-013-define-bounded-batch-knowledge-workflow.md) | Define a bounded batch knowledge workflow | Accepted |
 | [ADR-014](ADR-014-deviceops-service-centered-agent-infrastructure.md) | DeviceOps service-centered agent infrastructure | Proposed; direction owner-confirmed |
 | [ADR-019](ADR-019-deviceops-operation-contract-proposals-remain-non-normative-until-reviewed.md) | Keep D02 operation contracts non-normative until reviewed | Proposed |
+| [ADR-021](ADR-021-deviceops-status-contract-and-bounds.md) | Define a bounded draft status-operation contract | Proposed |
