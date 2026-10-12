@@ -14,7 +14,7 @@ The `adv` project is a public Cardputer knowledge repository. ADR-007 distinguis
 
 ### What this IS
 
-Propose that `adv` contain architecture/decision documents and coordination only. Place DeviceOps runtime source, tests, manifests, lockfiles, packages and binary releases in a separate, explicitly owner-approved runtime repository. Until its identity and allowlist are approved, create no runtime repository and transfer no code. Device bindings, databases, ports, logs, credentials and operational captures stay local/private, never in either public repository.
+Propose that `adv` contain architecture/decision documents and coordination only. Recommend the repository `ozand/deviceops` for runtime source, tests, manifests and lockfiles; binary releases should use reviewed GitHub Releases artifacts rather than commit binaries into either source repository. This is a proposed destination, not an existing repository or a repository-creation authorization. Do not create that repository or transfer code until the owner accepts this proposed identity and a separate issue approves an exact runtime path allowlist (for example, `/deviceops/` for service source, `/tests/`, `/docs/`, and root manifests/locks). Device bindings, databases, ports, logs, credentials and operational captures stay local/private, never in either public repository.
 
 ### What this IS NOT
 
@@ -22,7 +22,7 @@ Does not create a repository, select its name/owner/visibility, authorize code m
 
 ### Success criteria
 
-Owner approves destination identity and exact path allowlist in a separately governed task. PR review confirms `adv` changes are documentation-only and contain no runtime artifacts or private operational data.
+Owner approves destination identity and exact path allowlist in a separately governed task; confirm whether `T:/Code/esp32/deviceops` is the intended local clone path without creating it here. PR review confirms `adv` changes are documentation-only and contain no runtime artifacts or private operational data.
 
 ## Consequences
 

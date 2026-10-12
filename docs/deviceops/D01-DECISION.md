@@ -4,7 +4,7 @@
 
 ## Recommendation
 
-Recommendation: Python 3.11+ host core, Windows 11 x64 first qualification target. Process lifecycle and real local IPC are proposed separately in ADR-016; repository location and publication boundary are separate in ADR-017. SQLite/storage details remain an open D02/D04 implementation decision, not selected here. MCP/CLI must share the one executor if both are enabled; stdio-only independent frontend processes are insufficient. No listener, runtime repository creation or implementation is authorized.
+Recommendation: Python 3.11+ host core, Windows 11 x64 first qualification target. Process lifecycle and real local IPC are proposed separately in ADR-016; repository location and publication boundary are separate in ADR-017. Propose SQLite as the local transactional store for operations/evidence; schema, migration and backup details remain D02/D04 work and this is not a selected dependency. MCP/CLI must share the one executor if both are enabled; stdio-only independent frontend processes are insufficient. No listener, runtime repository creation or implementation is authorized.
 
 This recommendation is **theory**, not a measured compatibility result. Python reuse has a concrete source basis: PR #82 candidate `196d2f915e0fa2424b707f3fd30d873050a3b022` contains a standard-library protocol validator plus fake-serial tests. That does not make the CLI a service or prove Windows packaging/serial behavior.
 
@@ -31,7 +31,7 @@ Registry metadata snapshot checked 2026-10-12 (**reported**): pyserial 3.5, SHA2
 
 1. **Stack, dependencies, licenses, versions/SHA, OS, rationale — partial.** Language/OS recommendation and registry metadata are documented; no SHA-locked package selection, primary-source qualification, or complete transitive license audit is claimed.
 2. **Owner acceptance / ADR status — unmet.** ADR-015/016/017 remain Proposed; owner must accept/reject or revise them.
-3. **Implementation location and path allowlist — proposed, not accepted.** ADR-017 keeps runtime outside `adv`, but no destination repository identity or exact future runtime allowlist exists yet.
+3. **Implementation location and path allowlist — proposed, not accepted.** ADR-017 recommends `ozand/deviceops`, with service source under `/deviceops/`, tests under `/tests/`, docs under `/docs/`, and root manifests/locks; owner confirmation is required. Suggested local clone `T:/Code/esp32/deviceops` is unverified and not created.
 4. **#37/#38 inputs — reviewed, not completed/transferred.** Their constraints are cited here; #37's stage-A evidence dependency and #38's scenario evidence/comparison criteria remain upstream work. These issues stay open.
 5. **Future source-task gates — documented.** Fake-only prototype and separately authorized hardware gates are stated; this does not clear a source issue to start before owner acceptance.
 

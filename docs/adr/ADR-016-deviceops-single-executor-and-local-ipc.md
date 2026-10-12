@@ -14,7 +14,7 @@ ADR-014 proposes one owner for the device session and equivalent CLI/MCP semanti
 
 ### What this IS
 
-Propose one persistent local executor process as the sole serial/session owner. CLI and MCP, if both enabled, must reach the same process through authenticated local IPC; independent stdio-launched cores cannot satisfy the shared-executor requirement. Require single-instance enforcement, explicit client/process lifecycle and a named busy/error result when the executor is unavailable. Qualify Windows named pipes against other local IPC mechanisms before choosing one; named pipes remain a candidate, not a decision.
+Propose one persistent local executor process as the sole serial/session owner. CLI and MCP, if both enabled, must reach the same process through authenticated local IPC; independent stdio-launched cores cannot satisfy the shared-executor requirement. Require single-instance enforcement, explicit client/process lifecycle and a named busy/error result when the executor is unavailable. Recommend authenticated Windows named pipes for CLI/MCP access to the persistent local executor; this transport choice is Proposed, not accepted or implemented. Authenticate/ACL to the local interactive user, use bounded framed messages, and reject remote clients. Socket alternatives are not part of this MVP proposal.
 
 ### What this IS NOT
 
@@ -22,7 +22,7 @@ Not an in-process-only dual frontend, not two independent serial owners, and not
 
 ### Success criteria
 
-Fake tests show CLI and MCP reach the same executor and state, a second executor cannot claim the target, clients can reconnect after restart, and no offline test opens physical serial.
+Fake tests show CLI and MCP reach the same executor/state over named pipes, non-owner access is rejected, duplicate executor is rejected, clients reconnect after restart, messages are bounded, and no offline test opens physical serial.
 
 ## Consequences
 
@@ -42,6 +42,8 @@ Named operation authority and firmware contracts remain transport-independent. A
 
 - **One stdio MCP process per client:** fails to provide a shared executor to the independent CLI and couples job lifetime to client lifetime.
 - **In-process core per frontend:** permits duplicate session owners unless a separate broker is added.
+- **Per-client stdio executor:** fails to share persistent state and serial ownership; one stdio process per MCP client cannot serve the independent CLI.
+- **Local TCP socket:** adds port binding/discovery and firewall/authentication risk when the Windows local named-pipe mechanism can scope access to local principals.
 - **Network listener:** increases attack surface without a demonstrated remote requirement for the first local MVP.
 
 ## Test Contract
