@@ -7,7 +7,7 @@
 | ID / Issue | Результат | Основные зависимости / gate |
 |---|---|---|
 | D00 / [#67](https://github.com/ozand/adv/issues/67) | Этот пакет требований, архитектуры и задач | Поручение владельца; reviewed PR |
-| D01 / [#68](https://github.com/ozand/adv/issues/68) | Предложение по стеку, ОС, зависимостям и месту кода; решение ожидает owner acceptance | D00; входы #37/#38; owner review; [D01 proposal](D01-DECISION.md), Proposed ADR-015 |
+| D01 / [#68](https://github.com/ozand/adv/issues/68) | Предложение по host language, executor/IPC и repository boundary; все решения ждут owner acceptance | D00; входы #37/#38; owner review; [D01 proposal](D01-DECISION.md), Proposed ADR-015–017 |
 | D02 / [#69](https://github.com/ozand/adv/issues/69) | Схемы операций и golden/negative fixtures | D01 для принятия; draft параллельно |
 | D03 / [#70](https://github.com/ozand/adv/issues/70) | Identity, policy и привязанные grants | D01/D02; threat model параллельно |
 | D04 / [#71](https://github.com/ozand/adv/issues/71) | Executor, job store, single writer, restart/reconciliation | D01–D03 |
