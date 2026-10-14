@@ -1,6 +1,6 @@
 # ADR-022: Use an owner-provisioned Git executable for qualification probes
 
-**Status**: Accepted — owner confirmed 2026-10-14; implementation and qualification pending
+**Status**: Accepted — owner confirmed 2026-10-14; runner correction implemented and scoped-reviewed, broader qualification pending
 **Date**: 2026-10-14
 **Authors**: Coding assistant
 **Issue**: [#81](https://github.com/ozand/adv/issues/81)
@@ -21,7 +21,7 @@ Before Git output can bind a qualification receipt to source and pytest inputs, 
 
 ### What this IS
 
-The qualification operator must provision and explicitly select an absolute Git executable path from the controlled local toolchain for the run. The runner must resolve that configured path once, reject a bare command name, invoke only that executable for all Git probes with an environment that cannot redirect executable lookup or Git configuration, pass `--no-replace-objects` on every identity/cleanliness probe, and verify Git's reported top-level directory is exactly the runner root before treating Git metadata as repository identity. The operator-provisioned path is a trust input, not cryptographic authentication: qualification documentation must identify who provisions it and how that local installation is controlled. Missing, invalid, or mismatched configuration fails closed; no silent fallback to inherited PATH.
+The qualification operator must provision and explicitly select an absolute Git executable path from the controlled local toolchain for the run. The runner must resolve that configured path once, reject a bare command name, invoke only that executable for all Git probes with a sanitized environment that removes inherited executable/config redirection variables, disable the tested repository-local fsmonitor hook, pass `--no-replace-objects` on every identity/cleanliness probe, and verify Git's reported top-level directory is exactly the runner root before treating Git metadata as repository identity. The operator-provisioned path is a trust input, not cryptographic authentication: qualification documentation must identify who provisions it and how that local installation is controlled. Missing, invalid, or mismatched configuration fails closed; no silent fallback to inherited PATH.
 
 This ADR records the accepted trust-source policy; it does not choose a machine-wide installation location, installer, version pin, signature scheme, allowlist service, or administrator-level integrity guarantee. Those details require separate evidence and authorization.
 
@@ -49,7 +49,7 @@ Operators must provision and select Git deliberately; local setup and qualificat
 
 ### What does not change
 
-Only conformance-runner Git probes are in scope. Python selection, manifest cases, evidence classes, receipt privacy, Windows Job Object behavior, production/runtime code, hardware authorization, and the five-path PR #17 scope do not change by this proposal.
+Only conformance-runner Git probes are in scope. Python selection, manifest cases, evidence classes, receipt privacy, Windows Job Object behavior, production/runtime code, hardware authorization, and the five-path PR #17 scope do not change.
 
 ## Alternatives Considered
 
@@ -84,7 +84,7 @@ These tests establish the named runner behaviors only. They do not qualify the e
 
 ## Rollback
 
-Owner acceptance of the trust-source decision is recorded in [Issue #81 comment #6175603056](https://github.com/ozand/adv/issues/81#issuecomment-6175603056). Acceptance makes this decision binding; it does not claim the runner correction is implemented or qualified. If this decision is later reversed, a superseding ADR should document the replacement trust source; reverting runner code alone would reopen the reviewed false-identity path.
+Owner acceptance of the trust-source decision is recorded in [Issue #81 comment #6175603056](https://github.com/ozand/adv/issues/81#issuecomment-6175603056). The runner correction is implemented and has a scoped independent review at exact PR #17 head `bfd290f7fa94670c7e745c02ffc93aea7ea731c5` (#6176758662). Broader Issue #81 qualification remains partial, with 13 validation rows NOT_RUN and no hardware/service lifecycle qualification. If this decision is later reversed, a superseding ADR should document the replacement trust source; reverting runner code alone would reopen the reviewed false-identity path.
 
 ## References
 
