@@ -19,6 +19,7 @@ This is the entry point for Cardputer knowledge. Bounded research captures in `r
 - [Selected Launcher projects](wiki/reports/2026-10-07_launcher-cardputer-projects.md) — revision-pinned, source-linked overview of three examples.
 - [CalcPuter](wiki/entities/calculator-calcputer.md) — upstream-documented calculator features and source/license references.
 - [Cardulator](wiki/entities/calculator-cardulator.md) — upstream-documented scientific calculator/REPL features and source/license references.
+- [Issue #49 comparison report](wiki/reports/issue49-cardputer-comparison.md) — bounded comparison; draft, not release-approved.
 
 ## Workflow
 
