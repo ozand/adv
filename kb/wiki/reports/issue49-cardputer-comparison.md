@@ -15,7 +15,7 @@ sources:
 
 # Cardputer project comparison — Issue #49
 
-**Draft for review; not approved for public release.** The exact set/exclusions and coordinator-relayed owner decision are recorded at [Issue #49](https://github.com/ozand/adv/issues/49#issuecomment-6094176320). This comparison reuses only already-published evidence references; it is not a new source inventory.
+**Release authorized; PR review and merge pending.** The exact set/exclusions are recorded at [Issue #49](https://github.com/ozand/adv/issues/49#issuecomment-6094176320). The owner-authorized delivery instruction for this exact reviewed package is recorded as coordinator-relayed provenance at [Issue comment 6158421250](https://github.com/ozand/adv/issues/49#issuecomment-6158421250), not as a direct GitHub-authored owner statement. Authorization does not mean the change has been delivered to `main`. This comparison reuses only already-published evidence references; it is not a new source inventory.
 
 ## Method and findings
 
@@ -31,7 +31,7 @@ The existing report records no root LICENSE for `cardputer-examples`; rights for
 
 ## Exact set and exclusions
 
-The exact five-entry manifest and explicit exclusions are recorded before content work in the [Issue #49 execution record](https://github.com/ozand/adv/issues/49#issuecomment-6094176320) and mirrored in `docs/issue49/approved-set.json`. All other Launcher rows/projects/repositories and additional variants/sources are excluded. No ranking, unsupported runtime/device claim, source acquisition, QMD operation, or release permission is inferred.
+The exact five-entry manifest and explicit exclusions are recorded before content work in the [Issue #49 execution record](https://github.com/ozand/adv/issues/49#issuecomment-6094176320) and mirrored in `docs/issue49/approved-set.json`. The manifest also records coordinator-relayed release authorization at [comment 6158421250](https://github.com/ozand/adv/issues/49#issuecomment-6158421250); PR review and merge remain pending. All other Launcher rows/projects/repositories and additional variants/sources are excluded. No ranking, unsupported runtime/device claim, source acquisition, QMD operation, or release permission is inferred.
 
 ## Within-category comparison
 
@@ -41,11 +41,11 @@ The existing Launcher report distinguishes AREA512 as an OS/runtime platform, `c
 
 ### Calculator applications
 
-CalcPuter is documented as a calculator application; Cardulator as a scientific calculator/REPL. Existing profiles describe different feature detail and toolchain claims, not controlled parity evidence. Compare only those source-attributed descriptions; successful build, device behavior, and cross-project feature absence remain **unknown**. See [CalcPuter](../entities/calcputer.md) and [Cardulator](../entities/cardulator.md).
+CalcPuter is documented as a calculator application; Cardulator as a scientific calculator/REPL. Existing profiles describe different feature detail and toolchain claims, not controlled parity evidence. Compare only those source-attributed descriptions; successful build, device behavior, and cross-project feature absence remain **unknown**. See the canonical [CalcPuter](../entities/calculator-calcputer.md) and [Cardulator](../entities/calculator-cardulator.md) entity profiles, extended with Issue #49 comparison notes.
 
 ## Existing source profiles
 
 - [Selected Launcher projects](../reports/2026-10-07_launcher-cardputer-projects.md) — AREA512, examples, UcPlayground; pinned revisions and rights caveats.
-- [CalcPuter](../entities/calculator-calcputer.md) and [Cardulator](../entities/calculator-cardulator.md) — existing revision-pinned public profiles.
+- [CalcPuter](../entities/calculator-calcputer.md) and [Cardulator](../entities/calculator-cardulator.md) — existing revision-pinned canonical project profiles, extended in place with comparison notes.
 
-The five Issue #49 profiles under `../entities/` retain project distinctions, source pins and source-reported evidence. The exact-set manifest is recorded at https://github.com/ozand/adv/issues/49#issuecomment-6094176320 and mirrored in the execution plan. Consumer-validator fixtures and pinned universal validation cover structure and links only; neither verifies truth, hardware operation, rights, nor public-release readiness.
+The three firmware/example profiles under `../entities/` retain project distinctions, source pins and source-reported evidence. CalcPuter and Cardulator are not duplicated: their existing canonical entities carry the bounded Issue #49 comparison notes. The exact-set manifest is recorded at https://github.com/ozand/adv/issues/49#issuecomment-6094176320 and mirrored in the execution plan and `docs/issue49/approved-set.json`. Consumer-validator fixtures and pinned universal validation cover structure and links only; neither verifies truth, hardware operation, rights, nor public-release readiness.

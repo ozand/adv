@@ -36,3 +36,7 @@ The upstream README presents CalcPuter as a C++ calculator for M5Stack Cardputer
 
 - [Pinned upstream README](https://github.com/advascript/calcputer/blob/d70d88d707f9fd289d096c4295b61159963c9b47/README.md)
 - [Pinned upstream LICENSE](https://github.com/advascript/calcputer/blob/d70d88d707f9fd289d096c4295b61159963c9b47/LICENSE)
+
+## Issue #49 comparison note
+
+This project is compared with Cardulator only as a calculator-oriented project, using source-reported feature and setup descriptions. The README's feature detail is not controlled parity evidence: undocumented features must remain **unknown**, not absent. Successful build and physical-device behavior remain unverified. The approved comparison set and exclusions are recorded in the [Issue #49 execution record](https://github.com/ozand/adv/issues/49#issuecomment-6094176320); see the [bounded comparison report](../reports/issue49-cardputer-comparison.md).
