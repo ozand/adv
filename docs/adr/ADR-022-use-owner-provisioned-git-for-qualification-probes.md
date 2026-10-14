@@ -80,7 +80,7 @@ Not selected as the general policy: it avoids Git executable lookup but weakens 
 | Archive mode remains caller-asserted and distinct | `tests/conformance/test_runner.py::test_archive_source_sha_is_asserted_and_git_state_unknown`; `test_archive_skips_git_untracked_scan` | Implemented and independently reviewed; archive identity remains asserted, not authenticated |
 | The bounded pytest-influencer scan and pre/post source checks fail closed for covered inputs | `tests/conformance/test_runner.py::test_ignored_conftest_is_detected_even_when_gitignore_excludes_it`; `test_untracked_inputs_changing_during_run_abort_receipt` | Implemented and independently reviewed; scan is limited to documented pytest control-file patterns, not arbitrary filesystem immutability |
 
-These tests establish the named runner behaviors only. They do not qualify the entire Issue #81 validation program, authenticate the Git binary, or prove hardware/runtime behavior.
+These tests establish the named runner behaviors only. They do not qualify the entire Issue #81 validation program, authenticate the Git binary, or prove hardware/runtime behavior. A separate repository-local `filter.*.clean` execution path through an untracked `.gitattributes` remains unresolved on runner PR #17 head `bfd290f7fa94670c7e745c02ffc93aea7ea731c5` (finding [#4275486258](https://github.com/ozand/deviceops/pull/17#discussion_r4275486258), reproduction #6177178482); that candidate is not a complete Git-probe trust-boundary qualification.
 
 ## Rollback
 
