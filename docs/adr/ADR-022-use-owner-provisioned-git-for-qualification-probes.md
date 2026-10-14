@@ -21,9 +21,9 @@ Before Git output can bind a qualification receipt to source and pytest inputs, 
 
 ### What this IS
 
-This proposal recommends that the qualification operator provision and explicitly select an absolute Git executable path from the controlled local toolchain for the run. The runner should resolve that configured path once, reject a bare command name, invoke only that executable for all Git probes with an environment that cannot redirect executable lookup or Git configuration, pass `--no-replace-objects` on every identity/cleanliness probe, and verify Git's reported top-level directory is exactly the runner root before treating Git metadata as repository identity. The operator-provisioned path is a trust input, not cryptographic authentication: qualification documentation must identify who provisions it and how that local installation is controlled. Missing, invalid, or mismatched configuration fails closed; no silent fallback to inherited PATH.
+The qualification operator must provision and explicitly select an absolute Git executable path from the controlled local toolchain for the run. The runner must resolve that configured path once, reject a bare command name, invoke only that executable for all Git probes with an environment that cannot redirect executable lookup or Git configuration, pass `--no-replace-objects` on every identity/cleanliness probe, and verify Git's reported top-level directory is exactly the runner root before treating Git metadata as repository identity. The operator-provisioned path is a trust input, not cryptographic authentication: qualification documentation must identify who provisions it and how that local installation is controlled. Missing, invalid, or mismatched configuration fails closed; no silent fallback to inherited PATH.
 
-This ADR proposes the policy only. It does not choose a machine-wide installation location, installer, version pin, signature scheme, allowlist service, or administrator-level integrity guarantee. Those details require evidence from the qualification environment before implementation is authorized.
+This ADR records the accepted trust-source policy; it does not choose a machine-wide installation location, installer, version pin, signature scheme, allowlist service, or administrator-level integrity guarantee. Those details require separate evidence and authorization.
 
 ### What this IS NOT
 
@@ -31,11 +31,11 @@ This is not a general host sandbox, Git binary attestation, protection against a
 
 ### Success criteria
 
-- A fake `git` earlier on inherited PATH cannot affect any source identity or untracked-input probe.
-- The explicitly selected executable is used consistently for pre-run and post-run probes.
-- A wrong Git top-level, unavailable executable, malformed selection, or failed probe prevents a SHA-bound receipt.
-- Replacement refs cannot make identity/cleanliness probes describe a different tree; regression proves each probe uses `--no-replace-objects`.
-- Archive-asserted mode remains explicitly distinct and does not claim Git-authenticated identity.
+- A fake `git` earlier on inherited PATH cannot affect any source identity or untracked-input probe. **Implemented/reviewed** in PR #17 exact head `bfd290f7fa94670c7e745c02ffc93aea7ea731c5`; scoped receipt #6176758662.
+- The explicitly selected executable is used consistently for pre-run and post-run probes. **Implemented/reviewed** at the same exact head; repository-local `core.fsmonitor` execution is disabled and sentinel-tested.
+- A wrong Git top-level, unavailable executable, malformed selection, or failed probe prevents a SHA-bound receipt. **Implemented/reviewed** at the same exact head; full Issue #81 qualification remains incomplete.
+- Replacement refs cannot make identity/cleanliness probes describe a different tree. **Implemented/reviewed** at the same exact head; mismatch fails closed.
+- Archive-asserted mode remains explicitly distinct and does not claim Git-authenticated identity. **Implemented/reviewed** at the same exact head; archive SHA remains caller-asserted, not authenticated.
 
 ## Consequences
 
@@ -63,7 +63,7 @@ Rejected: this removes later PATH changes but does not authenticate the initial 
 
 ### Require an operator-provided absolute executable path
 
-Recommended for owner consideration: it makes selection explicit and auditable without creating a new installer or system-wide policy. It still relies on the operator's provisioning and local OS trust; it is not binary attestation.
+Selected: it makes selection explicit and auditable without creating a new installer or system-wide policy. It still relies on the operator's provisioning and local OS trust; it is not binary attestation.
 
 ### Always use archive-asserted mode and omit Git probes
 
@@ -73,12 +73,14 @@ Not selected as the general policy: it avoids Git executable lookup but weakens 
 
 | Claim | Test | Currently |
 |---|---|---|
-| Inherited PATH cannot replace the selected Git probe executable | `tests/conformance/test_runner.py::test_git_probes_ignore_inherited_path_shadow` | Not yet written; runtime repository change not authorized |
-| Inherited Git repository/config overrides cannot redirect source probes | `tests/conformance/test_runner.py::test_git_probes_ignore_inherited_git_environment` | Not yet written; cover `GIT_DIR`, `GIT_WORK_TREE`, `GIT_CONFIG`, and `GIT_CONFIG_COUNT`/`GIT_CONFIG_KEY_*`/`GIT_CONFIG_VALUE_*` |
-| Replacement refs cannot alter reported source identity or cleanliness | `tests/conformance/test_runner.py::test_git_probes_disable_replacement_refs` | Not yet written; configure a replacement ref for `HEAD` whose tree differs from the checked-out source and assert probes use `--no-replace-objects` |
-| Selected Git top-level must equal runner root | `tests/conformance/test_runner.py::test_git_identity_rejects_enclosing_repository` | Not yet written |
-| Git probe failures block receipt creation | `tests/conformance/test_runner.py::test_git_probe_failure_fails_closed` | Not yet written |
-| Archive mode remains caller-asserted and distinct | Existing `test_archive_source_sha_is_asserted_and_git_state_unknown` | Passing at candidate #3967035 (reported exact-archive evidence) |
+| Only the explicitly configured absolute Git executable is used; inherited executable/config overrides cannot redirect probes | `tests/conformance/test_runner.py::test_git_probe_requires_explicit_absolute_executable`; `test_git_probe_ignores_inherited_path_and_git_overrides` | Implemented and independently reviewed in runner PR #17 exact head `bfd290f7fa94670c7e745c02ffc93aea7ea731c5`; scoped PASS #6176758662 |
+| Local fsmonitor command hooks cannot execute during source probes | `tests/conformance/test_runner.py::test_git_probe_disables_repository_fsmonitor_hook` | Implemented and independently exercised with a temporary repository-local sentinel; scoped PASS #6176758662 |
+| Replacement refs cannot alter accepted source identity | `tests/conformance/test_runner.py::test_replacement_refs_fail_closed_before_git_source_identity_is_accepted` | Implemented and independently reviewed; replacement-ref case fails closed, #6176758662 |
+| Selected Git top-level must equal runner root and mismatched SHA fails closed | `tests/conformance/test_runner.py::test_source_sha_mismatch_in_git_mode_fails_closed` | Implemented and independently reviewed; overall qualification remains partial |
+| Archive mode remains caller-asserted and distinct | `tests/conformance/test_runner.py::test_archive_source_sha_is_asserted_and_git_state_unknown`; `test_archive_skips_git_untracked_scan` | Implemented and independently reviewed; archive identity remains asserted, not authenticated |
+| The bounded pytest-influencer scan and pre/post source checks fail closed for covered inputs | `tests/conformance/test_runner.py::test_ignored_conftest_is_detected_even_when_gitignore_excludes_it`; `test_untracked_inputs_changing_during_run_abort_receipt` | Implemented and independently reviewed; scan is limited to documented pytest control-file patterns, not arbitrary filesystem immutability |
+
+These tests establish the named runner behaviors only. They do not qualify the entire Issue #81 validation program, authenticate the Git binary, or prove hardware/runtime behavior.
 
 ## Rollback
 
