@@ -1,0 +1,88 @@
+# ADR-022: Use an owner-provisioned Git executable for qualification probes
+
+**Status**: Proposed
+**Date**: 2026-10-14
+**Authors**: Coding assistant
+**Issue**: [#81](https://github.com/ozand/adv/issues/81)
+**Supersedes**: None
+**Related**: ADR-015, ADR-017, ADR-018, ADR-021
+
+## Context
+
+Security review of `ozand/deviceops` PR #17 exact head `396703539d3c214d9b5798f87810bf53100810b0` found that the conformance runner invokes Git by bare name through inherited `PATH`. The reviewer reported reproducing a fake Git executable claiming a clean selected SHA and no untracked pytest influencers while an untracked `tests/conftest.py` existed (#4266557209). This is a review report, not independently reproduced by this ADR author. The earlier PYTHONPATH shadowing issue is separately fixed and reviewed (#4266253197).
+
+Published ADR-015 selects Python 3.11+ and Windows 11 x64 first, but leaves exact toolchain qualification open. ADR-017 selects the private runtime repository and file allowlist; ADR-018's OS-admin residual-threat language concerns the DeviceOps runtime authorization model, not this test runner's Git selection. No accepted ADR/D01 text identifies a trusted Git executable source or declares inherited PATH trustworthy. Thus Git identity and untracked-file probes have no defined executable trust source.
+
+### Problem statement
+
+Before Git output can bind a qualification receipt to source and pytest inputs, the runner needs a defined, reproducible way to select the Git executable and must fail closed if that executable or repository-root identity cannot be established.
+
+## Decision
+
+### What this IS
+
+This proposal recommends that the qualification operator provision and explicitly select an absolute Git executable path from the controlled local toolchain for the run. The runner should resolve that configured path once, reject a bare command name, invoke only that executable for all Git probes with an environment that cannot redirect executable lookup or Git configuration, and verify Git's reported top-level directory is exactly the runner root before treating Git metadata as repository identity. The operator-provisioned path is a trust input, not cryptographic authentication: qualification documentation must identify who provisions it and how that local installation is controlled. Missing, invalid, or mismatched configuration fails closed; no silent fallback to inherited PATH.
+
+This ADR proposes the policy only. It does not choose a machine-wide installation location, installer, version pin, signature scheme, allowlist service, or administrator-level integrity guarantee. Those details require evidence from the qualification environment before implementation is authorized.
+
+### What this IS NOT
+
+This is not a general host sandbox, Git binary attestation, protection against an OS administrator or equally privileged process, source-tree immutability, mutate-and-restore detection, or authorization for runtime/device/network effects. It does not alter ADR-015/017/018 or the DeviceOps runtime contract.
+
+### Success criteria
+
+- A fake `git` earlier on inherited PATH cannot affect any source identity or untracked-input probe.
+- The explicitly selected executable is used consistently for pre-run and post-run probes.
+- A wrong Git top-level, unavailable executable, malformed selection, or failed probe prevents a SHA-bound receipt.
+- Archive-asserted mode remains explicitly distinct and does not claim Git-authenticated identity.
+
+## Consequences
+
+### What gets easier
+
+The runner's source and untracked-input claims have an explicit executable-selection authority, and test evidence can distinguish caller-asserted archive identity from Git-probed repository identity.
+
+### What gets harder
+
+Operators must provision and select Git deliberately; local setup and qualification instructions gain a prerequisite. Selection alone does not prove binary integrity, so the local toolchain trust assumption remains explicit and may differ across hosts.
+
+### What does not change
+
+Only conformance-runner Git probes are in scope. Python selection, manifest cases, evidence classes, receipt privacy, Windows Job Object behavior, production/runtime code, hardware authorization, and the five-path PR #17 scope do not change by this proposal.
+
+## Alternatives Considered
+
+### Trust inherited PATH
+
+Rejected: the exact-head security review demonstrated that a lower-trust PATH entry can substitute Git and falsify both SHA and untracked-input results.
+
+### Resolve `git` from the current PATH and then pin the resulting absolute path
+
+Rejected: this removes later PATH changes but does not authenticate the initial selection; the attacker-controlled executable may be the one resolved.
+
+### Require an operator-provided absolute executable path
+
+Recommended for owner consideration: it makes selection explicit and auditable without creating a new installer or system-wide policy. It still relies on the operator's provisioning and local OS trust; it is not binary attestation.
+
+### Always use archive-asserted mode and omit Git probes
+
+Not selected as the general policy: it avoids Git executable lookup but weakens repository-mode source and untracked-input checks and cannot establish a Git-observed clean source tree. It may remain a bounded mode where its `archive-asserted` limitations are accepted.
+
+## Test Contract
+
+| Claim | Test | Currently |
+|---|---|---|
+| Inherited PATH cannot replace the selected Git probe executable | `tests/conformance/test_runner.py::test_git_probes_ignore_inherited_path_shadow` | Not yet written; runtime repository change not authorized |
+| Selected Git top-level must equal runner root | `tests/conformance/test_runner.py::test_git_identity_rejects_enclosing_repository` | Not yet written |
+| Git probe failures block receipt creation | `tests/conformance/test_runner.py::test_git_probe_failure_fails_closed` | Not yet written |
+| Archive mode remains caller-asserted and distinct | Existing `test_archive_source_sha_is_asserted_and_git_state_unknown` | Passing at candidate #3967035 (reported exact-archive evidence) |
+
+## Rollback
+
+This is Proposed and nonbinding. The owner may reject or revise it before acceptance without changing runtime behavior. If accepted and later reversed, a superseding ADR should document the replacement trust source; reverting runner code alone would reopen the reviewed false-identity path.
+
+## References
+
+- ADV Issue [#81](https://github.com/ozand/adv/issues/81), current PR #17 security finding [#4266557209](https://github.com/ozand/deviceops/pull/17#discussion_r4266557209)
+- ADV ADR-015, ADR-017, ADR-018, ADR-021, and [D01](../deviceops/D01-DECISION.md)
+- Prior corrected Python import-path finding [#4266253197](https://github.com/ozand/deviceops/pull/17#discussion_r4266253197)
