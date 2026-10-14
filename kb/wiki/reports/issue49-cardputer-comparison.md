@@ -5,11 +5,11 @@ description: "Bounded evidence-based comparison of five owner-approved Cardputer
 status: draft
 issue: "https://github.com/ozand/adv/issues/49"
 sources:
-  - resource: "https://github.com/ozand/adv/blob/main/kb/wiki/reports/2026-10-07_launcher-cardputer-projects.md"
+  - resource: "https://github.com/ozand/adv/blob/313e1ddb909c2487d0832b8783d03d06adc44199/kb/wiki/reports/2026-10-07_launcher-cardputer-projects.md"
     revision: "313e1ddb909c2487d0832b8783d03d06adc44199"
-  - resource: "https://github.com/ozand/adv/blob/main/kb/wiki/entities/calculator-calcputer.md"
+  - resource: "https://github.com/ozand/adv/blob/313e1ddb909c2487d0832b8783d03d06adc44199/kb/wiki/entities/calculator-calcputer.md"
     revision: "313e1ddb909c2487d0832b8783d03d06adc44199"
-  - resource: "https://github.com/ozand/adv/blob/main/kb/wiki/entities/calculator-cardulator.md"
+  - resource: "https://github.com/ozand/adv/blob/313e1ddb909c2487d0832b8783d03d06adc44199/kb/wiki/entities/calculator-cardulator.md"
     revision: "313e1ddb909c2487d0832b8783d03d06adc44199"
 ---
 
