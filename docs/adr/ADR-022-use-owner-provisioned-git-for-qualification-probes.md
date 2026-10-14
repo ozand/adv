@@ -1,6 +1,6 @@
 # ADR-022: Use an owner-provisioned Git executable for qualification probes
 
-**Status**: Proposed
+**Status**: Accepted — owner confirmed 2026-10-14; implementation and qualification pending
 **Date**: 2026-10-14
 **Authors**: Coding assistant
 **Issue**: [#81](https://github.com/ozand/adv/issues/81)
@@ -82,7 +82,7 @@ Not selected as the general policy: it avoids Git executable lookup but weakens 
 
 ## Rollback
 
-This is Proposed and nonbinding. The owner may reject or revise it before acceptance without changing runtime behavior. If accepted and later reversed, a superseding ADR should document the replacement trust source; reverting runner code alone would reopen the reviewed false-identity path.
+Owner acceptance of the trust-source decision is recorded in [Issue #81 comment #6175603056](https://github.com/ozand/adv/issues/81#issuecomment-6175603056). Acceptance makes this decision binding; it does not claim the runner correction is implemented or qualified. If this decision is later reversed, a superseding ADR should document the replacement trust source; reverting runner code alone would reopen the reviewed false-identity path.
 
 ## References
 
