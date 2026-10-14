@@ -36,3 +36,7 @@ The upstream README describes Cardulator as a scientific calculator and REPL scr
 
 - [Pinned upstream README](https://github.com/aroum/cardulator/blob/16e42a58bf67da0a4930ca7f257bdfd5b8c4f254/README.md)
 - [Pinned upstream LICENSE](https://github.com/aroum/cardulator/blob/16e42a58bf67da0a4930ca7f257bdfd5b8c4f254/LICENSE)
+
+## Issue #49 comparison note
+
+Compare Cardulator with CalcPuter only as a calculator-oriented project, using the documented feature descriptions. Its REPL and target/build statements remain upstream claims, not verified runtime or hardware results. Differences in source detail are not evidence that a feature is absent; undocumented coverage remains **unknown**. The approved comparison set and exclusions are recorded in the [Issue #49 execution record](https://github.com/ozand/adv/issues/49#issuecomment-6094176320); see the [bounded comparison report](../reports/issue49-cardputer-comparison.md).

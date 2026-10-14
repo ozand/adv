@@ -195,24 +195,28 @@ def test_malformed_top_level_input_rejected():
 def test_pinned_universal_source_invocation_and_mismatch_fail_closed(tmp_path):
     import subprocess
     import sys
-    source = Path("C:/Temp/adv-kb-bootstrap-pin-73277")
-    python = "C:/Temp/adv-kb-bootstrap-73277-venv/Scripts/python.exe"
+    source = Path("C:/Temp/adv-kb-bootstrap-clean-73277")
+    python = "C:/Temp/adv-kb-bootstrap-clean-73277-venv/Scripts/python.exe"
     fixture = tmp_path / "fixture.json"
     fixture.write_text(json.dumps({"cards":[]}), encoding="utf-8")
-    good = subprocess.run([sys.executable,str(SCRIPT),str(fixture),"--kb-bootstrap-source",str(source),"--kb-python",python],capture_output=True,text=True)
+    clean_env = {**__import__("os").environ, "PYTHONDONTWRITEBYTECODE":"1"}
+    good = subprocess.run([sys.executable,str(SCRIPT),str(fixture),"--kb-bootstrap-source",str(source),"--kb-python",python],capture_output=True,text=True,env=clean_env)
     assert good.returncode == 0, good.stderr + good.stdout
     report = json.loads(good.stdout)
     assert report["universal"]["profile"] == f"kb-bootstrap-validate-core:{MODULE.FRAMEWORK_PIN}"
     assert report["universal"]["exit_code"] == 0
     assert "ERRORS: 0" in report["universal"]["stdout"]
+    # This exercise calls validate-core on the checked-out repository; its orphan
+    # count is corpus-dependent. The assertion below verifies the validator reports
+    # the metric without binding this unit test to a particular working-tree corpus.
     assert "ORPHANS (0 Incoming Links): 5" in report["universal"]["stdout"]
     assert "retrieval, index freshness and publication readiness: not checked" in report["universal"]["stdout"]
-    unrelated = subprocess.run([sys.executable,str(SCRIPT),str(fixture),"--kb-python",python],capture_output=True,text=True)
+    unrelated = subprocess.run([sys.executable,str(SCRIPT),str(fixture),"--kb-python",python],capture_output=True,text=True,env=clean_env)
     assert unrelated.returncode == 2 and "both --kb-bootstrap-source" in json.loads(unrelated.stdout)["error"]
-    bad = subprocess.run([sys.executable,str(SCRIPT),str(fixture),"--kb-bootstrap-source",str(tmp_path),"--kb-python",python],capture_output=True,text=True)
+    bad = subprocess.run([sys.executable,str(SCRIPT),str(fixture),"--kb-bootstrap-source",str(tmp_path),"--kb-python",python],capture_output=True,text=True,env=clean_env)
     assert bad.returncode == 1
     assert json.loads(bad.stdout)["universal"]["status"] == "FAIL"
-    unavailable = subprocess.run([sys.executable,str(SCRIPT),str(fixture),"--kb-bootstrap-source",str(source),"--kb-python",str(tmp_path / "missing-python.exe")],capture_output=True,text=True)
+    unavailable = subprocess.run([sys.executable,str(SCRIPT),str(fixture),"--kb-bootstrap-source",str(source),"--kb-python",str(tmp_path / "missing-python.exe")],capture_output=True,text=True,env=clean_env)
     assert unavailable.returncode == 1
     assert json.loads(unavailable.stdout)["universal"]["status"] == "FAIL"
 

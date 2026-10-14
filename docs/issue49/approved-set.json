@@ -1,0 +1,55 @@
+{
+  "issue": "https://github.com/ozand/adv/issues/49",
+  "approval_record": "https://github.com/ozand/adv/issues/49#issuecomment-6094176320",
+  "owner_decision_provenance": "Coordinator-relayed verbatim decision; not direct GitHub-authored owner statement.",
+  "release_authorization": {
+    "authorized": true,
+    "record": "https://github.com/ozand/adv/issues/49#issuecomment-6158421250",
+    "provenance": "Coordinator-relayed owner instruction to execute the agreed integrated/pushed delivery plan for this exact reviewed package; not a direct GitHub-authored owner comment.",
+    "scope": "This exact five-project comparison package only; no additional projects, variants, source acquisition, code/assets/raw captures, or device claims."
+  },
+  "publication_status": "PR review and merge pending; authorization is not evidence of delivery.",
+  "projects": [
+    {
+      "id": "AREA512",
+      "repository": "https://github.com/engneer-hamachan/area512",
+      "revision": "5d0fef94f389161421b1f7559c15d8303effa7be",
+      "existing_reference": "kb/wiki/reports/2026-10-07_launcher-cardputer-projects.md",
+      "comparison_profile": "kb/wiki/entities/area512.md"
+    },
+    {
+      "id": "cardputer-examples",
+      "repository": "https://github.com/konsumer/cardputer-examples",
+      "revision": "6a648e32ad54457946ff7eb5a3b55a0dfaaa6cd2",
+      "existing_reference": "kb/wiki/reports/2026-10-07_launcher-cardputer-projects.md",
+      "comparison_profile": "kb/wiki/entities/cardputer-examples.md"
+    },
+    {
+      "id": "UcPlayground",
+      "repository": "https://github.com/tabozen/UcPlayground",
+      "revision": "b5cfc98b7deca6c0eeada7f94fb1bf619dccf100",
+      "existing_reference": "kb/wiki/reports/2026-10-07_launcher-cardputer-projects.md",
+      "comparison_profile": "kb/wiki/entities/ucplayground-cardputer.md"
+    },
+    {
+      "id": "CalcPuter",
+      "repository": "https://github.com/advascript/calcputer",
+      "revision": "d70d88d707f9fd289d096c4295b61159963c9b47",
+      "existing_reference": "kb/wiki/entities/calculator-calcputer.md",
+      "comparison_profile": "kb/wiki/entities/calculator-calcputer.md"
+    },
+    {
+      "id": "Cardulator",
+      "repository": "https://github.com/aroum/cardulator",
+      "revision": "16e42a58bf67da0a4930ca7f257bdfd5b8c4f254",
+      "existing_reference": "kb/wiki/entities/calculator-cardulator.md",
+      "comparison_profile": "kb/wiki/entities/calculator-cardulator.md"
+    }
+  ],
+  "exclusions": [
+    "All other Launcher rows/projects/repositories.",
+    "Additional variants or sources not represented in the five approved published references."
+  ],
+  "release_authorized": true,
+  "rights_caveat": "cardputer-examples has no root LICENSE at the pinned revision; assets/dependencies rights are unknown. Existing root licenses for other repositories do not clear every bundled asset/dependency."
+}
