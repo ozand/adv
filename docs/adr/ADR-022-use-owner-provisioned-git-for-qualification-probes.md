@@ -73,6 +73,7 @@ Not selected as the general policy: it avoids Git executable lookup but weakens 
 | Claim | Test | Currently |
 |---|---|---|
 | Inherited PATH cannot replace the selected Git probe executable | `tests/conformance/test_runner.py::test_git_probes_ignore_inherited_path_shadow` | Not yet written; runtime repository change not authorized |
+| Inherited Git repository/config overrides cannot redirect source probes | `tests/conformance/test_runner.py::test_git_probes_ignore_inherited_git_environment` | Not yet written; cover `GIT_DIR`, `GIT_WORK_TREE`, `GIT_CONFIG`, and `GIT_CONFIG_COUNT`/`GIT_CONFIG_KEY_*`/`GIT_CONFIG_VALUE_*` |
 | Selected Git top-level must equal runner root | `tests/conformance/test_runner.py::test_git_identity_rejects_enclosing_repository` | Not yet written |
 | Git probe failures block receipt creation | `tests/conformance/test_runner.py::test_git_probe_failure_fails_closed` | Not yet written |
 | Archive mode remains caller-asserted and distinct | Existing `test_archive_source_sha_is_asserted_and_git_state_unknown` | Passing at candidate #3967035 (reported exact-archive evidence) |
