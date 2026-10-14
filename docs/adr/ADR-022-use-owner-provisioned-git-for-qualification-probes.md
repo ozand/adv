@@ -21,7 +21,7 @@ Before Git output can bind a qualification receipt to source and pytest inputs, 
 
 ### What this IS
 
-This proposal recommends that the qualification operator provision and explicitly select an absolute Git executable path from the controlled local toolchain for the run. The runner should resolve that configured path once, reject a bare command name, invoke only that executable for all Git probes with an environment that cannot redirect executable lookup or Git configuration, and verify Git's reported top-level directory is exactly the runner root before treating Git metadata as repository identity. The operator-provisioned path is a trust input, not cryptographic authentication: qualification documentation must identify who provisions it and how that local installation is controlled. Missing, invalid, or mismatched configuration fails closed; no silent fallback to inherited PATH.
+This proposal recommends that the qualification operator provision and explicitly select an absolute Git executable path from the controlled local toolchain for the run. The runner should resolve that configured path once, reject a bare command name, invoke only that executable for all Git probes with an environment that cannot redirect executable lookup or Git configuration, pass `--no-replace-objects` on every identity/cleanliness probe, and verify Git's reported top-level directory is exactly the runner root before treating Git metadata as repository identity. The operator-provisioned path is a trust input, not cryptographic authentication: qualification documentation must identify who provisions it and how that local installation is controlled. Missing, invalid, or mismatched configuration fails closed; no silent fallback to inherited PATH.
 
 This ADR proposes the policy only. It does not choose a machine-wide installation location, installer, version pin, signature scheme, allowlist service, or administrator-level integrity guarantee. Those details require evidence from the qualification environment before implementation is authorized.
 
@@ -34,6 +34,7 @@ This is not a general host sandbox, Git binary attestation, protection against a
 - A fake `git` earlier on inherited PATH cannot affect any source identity or untracked-input probe.
 - The explicitly selected executable is used consistently for pre-run and post-run probes.
 - A wrong Git top-level, unavailable executable, malformed selection, or failed probe prevents a SHA-bound receipt.
+- Replacement refs cannot make identity/cleanliness probes describe a different tree; regression proves each probe uses `--no-replace-objects`.
 - Archive-asserted mode remains explicitly distinct and does not claim Git-authenticated identity.
 
 ## Consequences
@@ -74,6 +75,7 @@ Not selected as the general policy: it avoids Git executable lookup but weakens 
 |---|---|---|
 | Inherited PATH cannot replace the selected Git probe executable | `tests/conformance/test_runner.py::test_git_probes_ignore_inherited_path_shadow` | Not yet written; runtime repository change not authorized |
 | Inherited Git repository/config overrides cannot redirect source probes | `tests/conformance/test_runner.py::test_git_probes_ignore_inherited_git_environment` | Not yet written; cover `GIT_DIR`, `GIT_WORK_TREE`, `GIT_CONFIG`, and `GIT_CONFIG_COUNT`/`GIT_CONFIG_KEY_*`/`GIT_CONFIG_VALUE_*` |
+| Replacement refs cannot alter reported source identity or cleanliness | `tests/conformance/test_runner.py::test_git_probes_disable_replacement_refs` | Not yet written; configure a replacement ref for `HEAD` whose tree differs from the checked-out source and assert probes use `--no-replace-objects` |
 | Selected Git top-level must equal runner root | `tests/conformance/test_runner.py::test_git_identity_rejects_enclosing_repository` | Not yet written |
 | Git probe failures block receipt creation | `tests/conformance/test_runner.py::test_git_probe_failure_fails_closed` | Not yet written |
 | Archive mode remains caller-asserted and distinct | Existing `test_archive_source_sha_is_asserted_and_git_state_unknown` | Passing at candidate #3967035 (reported exact-archive evidence) |
