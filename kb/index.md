@@ -15,7 +15,7 @@ This is the entry point for Cardputer knowledge. Bounded research captures in `r
 
 ### Issue #50 — source-inspected patterns (draft candidates)
 
-These four concept notes are local draft candidates, not approved public releases. Their claims are limited to pinned-source code inspection; see the current [Issue #50 review/status receipt](https://github.com/ozand/adv/issues/50#issuecomment-6182417772).
+These four concept notes are local draft candidates, not approved public releases. Their claims are limited to pinned-source code inspection; the [Issue #50 record](https://github.com/ozand/adv/issues/50) is authoritative for the plan and review status.
 
 - [Incremental multiline REPL input assembly](wiki/concepts/incremental-multiline-repl-assembly.md)
 - [SD initialization frequency retry sequence](wiki/concepts/sd-initialization-frequency-retry.md)

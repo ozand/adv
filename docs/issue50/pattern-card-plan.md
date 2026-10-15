@@ -11,11 +11,11 @@ Issue #50; coordinator-relayed owner continuation instruction recorded at [comme
 3. `kb/wiki/concepts/expression-evaluator-pipeline.md` — CalcPuter, `src/main.cpp`, lines 70–100, 144–188, revision `d70d88d707f9fd289d096c4295b61159963c9b47`.
 4. `kb/wiki/concepts/cooperative-script-loop-budget.md` — Cardulator, `src/script_engine.cpp`, lines 41–79, 1138–1145, revision `16e42a58bf67da0a4930ca7f257bdfd5b8c4f254`.
 
-A minimal navigation link is in `kb/index.md`; no new concept taxonomy, schema, service, or pilot was introduced. The existing Issue #49 comparison report was deliberately not edited because it states only #49 content and links to project entities; adding #50 links there would be unrelated scope. This plan remains a local task artifact and is not linked from the canonical KB graph.
+A minimal navigation link is in `kb/index.md`; no new concept taxonomy, schema, service, or pilot was introduced. The existing Issue #49 comparison report was deliberately not edited because it states only #49 content and links to project entities; adding #50 links there would be unrelated scope. This plan remains a local task artifact; the canonical KB index points to the Issue #50 record instead of linking outside the KB graph.
 
 All are original synthesis, not copied implementation. Each claim is marked `code-inspected`; exact repository, immutable revision, file, and line locator are included. Runtime/applicability remains unknown where untested. Cards include problem, observed mechanism, applicability, trade-offs/limits, evidence/provenance, rights/transfer boundary, and links to existing project entities and the Issue #50 proposal. Cardulator limitations explicitly exclude bounded wall-clock time, responsiveness, preemption, real-time behavior, watchdog safety, and runtime success; SD sequence is not claimed reliable. See each card for detailed caveats.
 
-Cumulative changed-path allowlist for this local candidate: this plan, `kb/index.md`, and exactly the four concept cards above (six files total). No tests, source captures, or unrelated canonical entities/reports are modified.
+Content allowlist: this plan, `kb/index.md`, and exactly the four concept cards above (six content files). Verification support is limited to `tests/test_consumer_validate.py` (optional pinned-tool environment overrides preserving fail-closed checks) and `docs/issue50/validate-candidate.py` (read-only mapping of the actual four cards into the existing consumer validator; not a new canonical schema). Eight tracked paths total. No source captures or unrelated canonical entities/reports are modified.
 
 ## Exclusions
 
@@ -23,7 +23,7 @@ No UcPlayground pattern: inspection scope was only the approved Cardputer test-f
 
 ## Verification/review gates
 
-- Recheck changed-path allowlist (exactly the four concept cards, this plan, and the single `kb/index.md` navigation update); ensure no `sources/` path is tracked. Run `git diff --check` and parse all front matter; validate local internal links and exact revision/line metadata.
+- Recheck the exact eight-path allowlist above; ensure no `sources/` path is tracked. Run `git diff --check` and parse all front matter; validate local internal links and exact revision/line metadata. Run `python docs/issue50/validate-candidate.py` from any cwd; it derives the exact four cards, revisions, locators, canonical targets and four-item disposition mapping, then reports the existing consumer validator's universal proxy, graph, and consumer layers separately. Its output is structural evidence only, not factual, rights, device, or release validation.
 - Run the project's documented pinned `kb-bootstrap`/consumer structural validation only if the already-published tool/runtime is available without install/upgrade or QMD mutation. Report exact framework source pin, interpreter/import path/version, universal and consumer/graph layers separately. Do not claim corpus conformance from fixtures or partial checks.
 - Attempt applicable repository tests; distinguish missing test files from test failures. Do not run upstream programs or devices.
 - Independent read-only reviews must inspect the exact same full candidate commit and checklist (evidence/factual restraint, schema/links, rights/privacy/publication boundary). Any byte change invalidates prior review; rerun relevant checks and reviewers.
