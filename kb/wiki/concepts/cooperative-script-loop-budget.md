@@ -35,7 +35,7 @@ At the pinned Cardulator revision, `runScript` counts statement-loop iterations 
 This is an example to consider when designing explicit interpreter-loop budgeting and cooperative yield points. Define target-specific watchdog integration, scheduler behavior, counter semantics, and failure reporting for the actual runtime.
 
 ## Trade-offs and limits
-The counter and sampled-time checks occur only at interpreter-loop boundaries. Work within a statement, expression, or native call may take arbitrarily long relative to those checks; this does not establish a wall-clock bound, responsiveness, preemption, or real-time behavior. The inspected code does not check the watchdog-reset return value. It restores user functions and autocomplete at exit but explicitly leaves arrays unrestored. No watchdog safety or runtime success is claimed.
+The counter and sampled-time checks occur only at interpreter-loop boundaries. Work within a statement, expression, or native call may take arbitrarily long relative to those checks; this does not establish a wall-clock bound, responsiveness, preemption, or real-time behavior. The inspected code does not check the watchdog-reset return value. It explicitly leaves arrays unrestored. No watchdog safety or runtime success is claimed.
 
 ## Evidence and provenance
 Evidence is `code-inspected` at the exact revision and line locator above; no build, execution, watchdog, or device test was performed. Source identity and revision are immutable in the cited URL.
