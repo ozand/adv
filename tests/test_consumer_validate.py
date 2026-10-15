@@ -195,8 +195,8 @@ def test_malformed_top_level_input_rejected():
 def test_pinned_universal_source_invocation_and_mismatch_fail_closed(tmp_path):
     import subprocess
     import sys
-    source = Path("C:/Temp/adv-kb-bootstrap-clean-73277")
-    python = "C:/Temp/adv-kb-bootstrap-clean-73277-venv/Scripts/python.exe"
+    source = Path(__import__("os").environ.get("KB_BOOTSTRAP_SOURCE", "C:/Temp/adv-kb-bootstrap-clean-73277"))
+    python = __import__("os").environ.get("KB_BOOTSTRAP_PYTHON", "C:/Temp/adv-kb-bootstrap-clean-73277-venv/Scripts/python.exe")
     fixture = tmp_path / "fixture.json"
     fixture.write_text(json.dumps({"cards":[]}), encoding="utf-8")
     clean_env = {**__import__("os").environ, "PYTHONDONTWRITEBYTECODE":"1"}
