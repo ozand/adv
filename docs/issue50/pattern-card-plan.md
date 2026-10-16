@@ -1,0 +1,30 @@
+# Issue #50 pattern-card candidate plan
+
+## Authorization and boundaries
+
+Issue #50; the four-pattern draft scope was authorized as a coordinator interpretation of the owner's continuation instruction, recorded at [comment 6182055337](https://github.com/ozand/adv/issues/50#issuecomment-6182055337), not as a literal owner statement approving patterns or a GitHub-authored owner statement. The owner later authorized public delivery of the exact reviewed eight-file candidate at `06723ded47b598576aafd93afaffa0dbc818c764`; the coordinator-relayed verbatim instruction and bounded scope are recorded at [comment 6207340270](https://github.com/ozand/adv/issues/50#issuecomment-6207340270). That exact commit was delivered as [PR #90](https://github.com/ozand/adv/pull/90), currently open and unmerged. This authorizes delivery only; it does not authorize merge or Issue closure. Exact proposal/source scope: [comment 6159929423](https://github.com/ozand/adv/issues/50#issuecomment-6159929423). No additional source inspection, code/assets copying, builds/execution/device operation, QMD/private-corpus operation, or broader rights clearance is authorized.
+
+## Exact candidate outputs
+
+1. `kb/wiki/concepts/incremental-multiline-repl-assembly.md` — AREA512, `python_repl.c`, lines 23–90, 116–179, revision `5d0fef94f389161421b1f7559c15d8303effa7be`.
+2. `kb/wiki/concepts/sd-initialization-frequency-retry.md` — cardputer-examples, `src/sd/main.cpp`, lines 11–27, revision `6a648e32ad54457946ff7eb5a3b55a0dfaaa6cd2`.
+3. `kb/wiki/concepts/expression-evaluator-pipeline.md` — CalcPuter, `src/main.cpp`, lines 70–100, 144–188, revision `d70d88d707f9fd289d096c4295b61159963c9b47`.
+4. `kb/wiki/concepts/cooperative-script-loop-budget.md` — Cardulator, `src/script_engine.cpp`, lines 41–79, 1138–1145, revision `16e42a58bf67da0a4930ca7f257bdfd5b8c4f254`.
+
+A minimal navigation link is in `kb/index.md`; no new concept taxonomy, schema, service, or pilot was introduced. The existing Issue #49 comparison report was deliberately not edited because it states only #49 content and links to project entities; adding #50 links there would be unrelated scope. This plan remains a local task artifact; the canonical KB index points to the Issue #50 record instead of linking outside the KB graph.
+
+All are original synthesis, not copied implementation. Each claim is marked `code-inspected`; exact repository, immutable revision, file, and line locator are included. Runtime/applicability remains unknown where untested. Cards include problem, observed mechanism, applicability, trade-offs/limits, evidence/provenance, rights/transfer boundary, and links to existing project entities and the Issue #50 proposal. Cardulator limitations explicitly exclude bounded wall-clock time, responsiveness, preemption, real-time behavior, watchdog safety, and runtime success; SD sequence is not claimed reliable. See each card for detailed caveats.
+
+Content allowlist: this plan, `kb/index.md`, and exactly the four concept cards above (six content files). Verification support is limited to `tests/test_consumer_validate.py` (optional pinned-tool environment overrides preserving fail-closed checks), `tests/test_issue50_assessment_adapter.py` (durable receipt-field and mapping tests), `docs/issue50/validate-candidate.py` (read-only mapping of the actual four cards into the existing consumer validator; not a new canonical schema), and `docs/issue50/assessment-receipts.md` (a bounded source/target receipt record linking the independent assessment in Issue #50 comment 6207606025). Ten tracked paths total. No source captures or unrelated canonical entities/reports are modified.
+
+## Exclusions
+
+No UcPlayground pattern: inspection scope was only the approved Cardputer test-firmwares subtree, whose README/artifact inventory offered no inspectable source mechanism. No claim about the whole repository. No one-pattern-per-source quota. No other repositories/revisions, binaries/assets, screenshots, raw captures, source code, or third-party material are included. Rights are not cleared by root-license notes; cardputer-examples rights remain unknown and dependencies/assets are unaudited.
+
+## Verification/review gates
+
+- Recheck the exact ten-path allowlist above; ensure no `sources/` path is tracked. Run `git diff --check` and parse all front matter; validate local internal links and exact revision/line metadata. Run `python docs/issue50/validate-candidate.py` from any cwd; it derives the exact four cards, revisions, locators, dated reviewer identity, bounded outcomes/limitations/rights decisions from the linked assessment record, canonical targets and four-item disposition mapping. It reports the existing consumer validator's universal proxy, graph, and consumer layers separately and fails closed if any receipt is missing or does not match source pin, document locator, or exact target. Its output is structural/provenance evidence only, not factual truth, legal clearance, device behavior, or release validation.
+- Run the project's documented pinned `kb-bootstrap`/consumer structural validation only if the already-published tool/runtime is available without install/upgrade or QMD mutation. Report exact framework source pin, interpreter/import path/version, universal and consumer/graph layers separately. Do not claim corpus conformance from fixtures or partial checks.
+- Attempt applicable repository tests; distinguish missing test files from test failures. Do not run upstream programs or devices.
+- Independent read-only reviews must inspect the exact same full candidate commit and checklist (evidence/factual restraint, schema/links, rights/privacy/publication boundary). Any byte change invalidates prior review; rerun relevant checks and reviewers.
+- Public delivery of the exact reviewed eight-file candidate is owner-authorized and recorded at comment 6207340270; PR #90 is open and unmerged. Do not infer merge permission, Issue closure, broader source/rights/device authority, or publication eligibility beyond this exact package.

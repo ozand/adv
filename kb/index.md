@@ -13,6 +13,15 @@ This is the entry point for Cardputer knowledge. Bounded research captures in `r
 
 ## Topics
 
+### Issue #50 — source-inspected patterns (draft candidates)
+
+These four concept notes are local draft candidates, not approved public releases. Their claims are limited to pinned-source code inspection; the [Issue #50 record](https://github.com/ozand/adv/issues/50) is authoritative for the plan and review status.
+
+- [Incremental multiline REPL input assembly](wiki/concepts/incremental-multiline-repl-assembly.md)
+- [SD initialization frequency retry sequence](wiki/concepts/sd-initialization-frequency-retry.md)
+- [Expression evaluator pipeline structure](wiki/concepts/expression-evaluator-pipeline.md)
+- [Script statement-loop step cap and periodic yield calls](wiki/concepts/cooperative-script-loop-budget.md)
+
 - [Getting started with M5Stack Cardputer](wiki/reports/cardputer-setup.md) — identify Cardputer vs Cardputer-Adv and choose a documented, non-destructive development route.
 - [Reported Cardputer and agent-device interface examples](research/2026-10-08_cardputer-agent-usage/output.md) — Issue #35 bounded evidence handoff; project reports, not adoption data.
 
