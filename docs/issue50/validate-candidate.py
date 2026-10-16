@@ -64,9 +64,10 @@ def parse_receipt():
         target = re.search(r"(?m)^- \*\*Target relation:\*\* `([^`]+)` .+$", body)
         if not all((source_line, rev_line, outcome, limits, decisions, target)):
             raise ValueError(f"incomplete per-artifact receipt section: {title}")
-        if not all(match.group(1).strip() for match in (source_line, rev_line, outcome, limits, decisions, target)):
-            raise ValueError(f"blank required assessment field: {title}")
         source, revision, locator = source_line.group(1), rev_line.group(1), rev_line.group(2)
+        field_values = (source, revision, locator, outcome.group(1), limits.group(1), decisions.group(1), target.group(1))
+        if not all(isinstance(value, str) and value.strip() for value in field_values):
+            raise ValueError(f"blank required assessment field: {title}")
         key = (source, revision, locator)
         if key in parsed:
             raise ValueError(f"duplicate receipt identity: {key}")
