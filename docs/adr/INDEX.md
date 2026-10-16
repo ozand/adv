@@ -18,3 +18,4 @@
 | [ADR-018](ADR-018-deviceops-authority-grants-threat-model.md) | Bind DeviceOps authorization grants to principals, targets, operations, and effects | Accepted; local-user MVP; runtime implementation in progress under #70 |
 | [ADR-019](ADR-019-deviceops-operation-contract-proposals-remain-non-normative-until-reviewed.md) | Keep D02 operation contracts non-normative until reviewed | Proposed |
 | [ADR-021](ADR-021-deviceops-status-contract-and-bounds.md) | Define a bounded draft status-operation contract | Accepted; implementation/Issue #69 partial |
+| [ADR-022](ADR-022-use-owner-provisioned-git-for-qualification-probes.md) | Use an owner-provisioned Git executable for qualification probes | Accepted; runner correction implemented/scoped-reviewed; broader qualification partial |
