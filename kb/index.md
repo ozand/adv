@@ -13,9 +13,13 @@ This is the entry point for Cardputer knowledge. Bounded research captures in `r
 
 ## Topics
 
-### Issue #50 — source-inspected patterns (draft candidates)
+### Task-oriented navigation
 
-These four concept notes are local draft candidates, not approved public releases. Their claims are limited to pinned-source code inspection; the [Issue #50 record](https://github.com/ozand/adv/issues/50) is authoritative for the plan and review status.
+Choose among four bounded task routes in the [task-oriented Cardputer knowledge navigation](wiki/reports/task-oriented-navigation.md). It links the released project profiles and source-inspected concepts, distinguishes evidence classes, and keeps prerequisites and unknowns explicit; it is not a ranking or completeness claim.
+
+### Issue #50 — source-inspected patterns
+
+These four concept notes were delivered under Issue #50. Their claims are limited to pinned-source code inspection; see the [Issue #50 record](https://github.com/ozand/adv/issues/50) and each card's provenance and limitations.
 
 - [Incremental multiline REPL input assembly](wiki/concepts/incremental-multiline-repl-assembly.md)
 - [SD initialization frequency retry sequence](wiki/concepts/sd-initialization-frequency-retry.md)
@@ -28,7 +32,7 @@ These four concept notes are local draft candidates, not approved public release
 - [Selected Launcher projects](wiki/reports/2026-10-07_launcher-cardputer-projects.md) — revision-pinned, source-linked overview of three examples.
 - [CalcPuter](wiki/entities/calculator-calcputer.md) — upstream-documented calculator features and source/license references.
 - [Cardulator](wiki/entities/calculator-cardulator.md) — upstream-documented scientific calculator/REPL features and source/license references.
-- [Issue #49 comparison report](wiki/reports/issue49-cardputer-comparison.md) — owner-authorized bounded comparison; PR review and merge pending.
+- [Issue #49 comparison report](wiki/reports/issue49-cardputer-comparison.md) — owner-authorized bounded comparison; see the merged [PR #88](https://github.com/ozand/adv/pull/88).
 
 ## Workflow
 
