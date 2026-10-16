@@ -36,6 +36,12 @@ def load_validator():
     return module
 
 
+def validate_required_receipt_fields(values):
+    """Fail closed when any mandatory parsed receipt field is blank/whitespace."""
+    if not all(isinstance(value, str) and value.strip() for value in values):
+        raise ValueError("blank required assessment field")
+
+
 def parse_receipt():
     path = ROOT / "docs" / "issue50" / "assessment-receipts.md"
     text = path.read_text(encoding="utf-8")
@@ -65,9 +71,7 @@ def parse_receipt():
         if not all((source_line, rev_line, outcome, limits, decisions, target)):
             raise ValueError(f"incomplete per-artifact receipt section: {title}")
         source, revision, locator = source_line.group(1), rev_line.group(1), rev_line.group(2)
-        field_values = (source, revision, locator, outcome.group(1), limits.group(1), decisions.group(1), target.group(1))
-        if not all(isinstance(value, str) and value.strip() for value in field_values):
-            raise ValueError(f"blank required assessment field: {title}")
+        validate_required_receipt_fields((source, revision, locator, outcome.group(1), limits.group(1), decisions.group(1), target.group(1)))
         key = (source, revision, locator)
         if key in parsed:
             raise ValueError(f"duplicate receipt identity: {key}")
