@@ -8,6 +8,10 @@ Before starting work, read:
 - [docs/adr/INDEX.md](docs/adr/INDEX.md) and any relevant accepted ADR before changing architecture, publication boundaries, source handling, or canonical data contracts.
 - The governing open GitHub Issue and its linked PRD/design/ADR records before implementation.
 
+## Working-context checklist
+
+For a concise task-to-evidence workflow, use [Agent working context](docs/agent-working-context.md). It is supplemental: this file, the governing Issue, and accepted ADRs take precedence.
+
 ## Scope and privacy
 
 - This is the standalone public repository for synthesized Cardputer knowledge.
