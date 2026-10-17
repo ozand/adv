@@ -14,7 +14,7 @@ Use this short checklist when turning an existing KB question into bounded resea
 
 - Follow accepted ADR-007 for privacy, provenance, relevance, rights, and local-only source originals; ADR-010/011/012 for evidence, disposition, and validation boundaries; ADR-013 for bounded, exact-SHA review and delivery.
 - `kb/research/` is reviewed evidence; `kb/wiki/` is original, provenance-linked synthesis. QMD membership is not publication permission.
-- Do not infer C++ symbols or semantics from a tool that does not support C++; preserve source pins/locators and unknown applicability.
+- The cited symbol registry does not support C++ symbols; ordinary file links remain possible, but structural/reference checks do not validate symbol semantics. Preserve source pins/locators and unknown applicability.
 - External documentation/search behavior and local override precedence are properties of the cited tool, not this KB. Do not claim retrieval or freshness without the separately authorized check.
 - Treat generated agent templates as examples that can become stale. Reconcile any proposed text with current repository instructions; never replace them wholesale from an upstream template.
 - No new schema, dependency, service, graph, generator, MCP, hooks, migration, source execution, device operation, or QMD mutation without a separately governed decision and authorization.

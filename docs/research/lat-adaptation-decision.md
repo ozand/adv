@@ -16,9 +16,9 @@ The pinned upstream material describes a documentation-oriented research workflo
 
 Important constraints from the inspected pinned materials:
 
-- The symbol registry does not support C++; a passing structural/reference check cannot validate C++ symbols or establish source truth. Existing concept cards' pinned source URLs and locators remain the evidence anchors.
+- The symbol registry does not support C++ symbols. This does not prevent ordinary file links; nor does a structural/reference check validate symbol semantics or establish source truth. Existing concept cards' pinned source URLs and locators remain the evidence anchors.
 - External documentation sources are read-only and excluded from semantic search in the described project. This KB does not adopt or claim that retrieval setup.
-- A configured upstream commit can move, and a local dirty-content override may take precedence. Cite full immutable commit URLs; never substitute a mutable source reference or local override for provenance.
+- A configured source selection can change; a mutable ref resolves to an immutable commit pin for retrieval. A local content override may select another pin or expose dirty working-tree bytes even when the recorded HEAD matches the pin. Cite full immutable commit URLs for provenance, distinguish selected pin from actual local bytes, and never silently retarget or treat a local override as proof of source identity.
 - Structural validation checks shape/references, not semantic truth, runtime behavior, hardware compatibility, or rights.
 - Generated agent templates can become stale. The existing `AGENTS.md` and accepted ADRs remain authoritative; do not copy the upstream template wholesale, especially where its setup assumptions differ from this repository's offline-default guidance.
 - No unmeasured speed, multilingual, or other performance claim is adopted.
@@ -42,6 +42,6 @@ Pinned upstream sources inspected for this bounded adaptation:
 - [`lat-workflow.md`](https://github.com/vercel-labs/lat.md/blob/4cb85d97baff4a659e9da837a9aab447509e32cd/lat.md/docs/lat-workflow.md) — capture decisions and review intent/evidence.
 - [`concepts.md`](https://github.com/vercel-labs/lat.md/blob/4cb85d97baff4a659e9da837a9aab447509e32cd/lat.md/docs/concepts.md) — supported languages and the limits of references/checks.
 - [`external_sources.md`](https://github.com/vercel-labs/lat.md/blob/4cb85d97baff4a659e9da837a9aab447509e32cd/lat.md/docs/external_sources.md) and [`external-sources.md`](https://github.com/vercel-labs/lat.md/blob/4cb85d97baff4a659e9da837a9aab447509e32cd/lat.md/knowledge/external-sources.md) — pin identity, read-only/retrieval boundaries, mutable commit and local override caveats.
-- [README.md](https://github.com/vercel-labs/lat.md/blob/4cb85d97baff4a659e9da837a9aab447509e32cd/README.md) and [`templates/AGENTS.md`](https://github.com/vercel-labs/lat.md/blob/4cb85d97baff4a659e9da837a9aab447509e32cd/lat.md/templates/AGENTS.md) — project scope and template lifecycle/staleness context.
+- [README.md](https://github.com/vercel-labs/lat.md/blob/4cb85d97baff4a659e9da837a9aab447509e32cd/README.md) and [`templates/AGENTS.md`](https://github.com/vercel-labs/lat.md/blob/4cb85d97baff4a659e9da837a9aab447509e32cd/templates/AGENTS.md) — project scope and template lifecycle/staleness context.
 
 No upstream source was executed or modified. The upstream repository is cited as research evidence only; no code, generated template, assets, or bulk source content is copied here.
