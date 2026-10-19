@@ -24,15 +24,16 @@ Stop and report when the intended index cannot be established, a collection is a
 
 Keep source originals, whole repositories/books/PDFs, binaries, private captures, and bulky material in ignored local-only `sources/`. An externally obtained repository clone, if separately authorized, belongs under `sources/repo/` with a local provenance manifest recording canonical URL, exact revision, acquisition date, and any integrity hash; do not track that clone or copy it wholesale into public knowledge paths. Do not clone merely because a source is cited. A QMD result or local capture is not publication permission.
 
-For each consequential claim, distinguish:
+For each consequential claim, use the accepted claim-level evidence classes in [the knowledge model contract](knowledge-model-contract.md):
 
-- **source-reported** — a source states the claim; cite the exact source and locator.
-- **code-inspected** — the pinned code visibly implements the described structure; cite revision, path, and symbol/lines. This does not establish runtime behavior.
-- **observed** — behavior was actually executed or measured; record exact command/environment, revision, result, and limits.
-- **inference** — reasoning from evidence; label it and state assumptions and transfer limits.
-- **unknown / not_run** — evidence is absent or execution did not occur; do not convert it to a negative product finding.
+- **source-reported** — a source states the claim; cite the exact source and locator. A README or product page is not device verification.
+- **code-inspected** — pinned code visibly implements the described structure; cite revision, path, and symbol/lines. This does not establish runtime behavior.
+- **device-observed** — a direct observation on a named device; retain the exact device model, installed software/firmware revision and relevant configuration, procedure, result, source/provenance, limitations, and verifier/confirmation context. This record is the underlying observation, not verification of other claims or capabilities.
+- **device-verified** — the higher-threshold claim class for a claim-bounded device result. Use only when the exact device, software/configuration, procedure, result, provenance, limitations, and verifier context are all present and support that specific claim. If any are unresolved, do not call it device-verified; report the missing evidence instead.
 
-Separate evidence retrieval/indexing from substantive assessment. Preserve existing evidence labels and provenance; never raise confidence because a document is indexed, linked, or repeated in secondary sources.
+For non-device execution or measurement, report method, environment, version, result, and limitations as claim-linked evidence details; do not introduce a new evidence class. Label reasoning beyond direct evidence as inference in the explanation, with assumptions and transfer limits. `unknown` and `not_run` describe missing evidence or execution status; they are not evidence grades and do not imply a negative product finding.
+
+Separate evidence retrieval/indexing from substantive assessment. Preserve accepted evidence labels and provenance; never raise confidence because a document is indexed, linked, or repeated in secondary sources.
 
 ## 4. Synthesis and publication review
 
