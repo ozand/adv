@@ -8,10 +8,13 @@ Use this workflow for bounded, source-grounded research in the ADV knowledge pro
 - Verify a matching open GitHub Issue before research that changes tracked artifacts. Record included topics, exclusions, owner decisions needed, and stop conditions.
 - Reuse current `kb/wiki/` records and accepted ADRs before starting duplicate research. Keep one question per bounded source set; do not turn every question into a market-research pipeline.
 - If the request requires a new data boundary, source-access method, schema, dependency, or publication rule, stop for the applicable Issue/owner/ADR gate.
+- For web research, define the question, source set, timebox, and stop condition before browsing. Prefer local/canonical evidence first; web search is optional, not a required pipeline.
 
 ## 2. Source hierarchy and retrieval
 
-Prefer, in order appropriate to the question: primary project documentation; exact, immutable source revisions and manifests; standards or official platform references; then secondary analysis and community reports. A source search hit is a lead, not verification. Record canonical source identity, exact revision or dated URL, relevant file/section/line locator, access date, and why the source is relevant. If a revision or locator cannot be established, mark it unknown rather than guessing.
+Prefer, in order appropriate to the question: primary project documentation; exact, immutable source revisions and manifests; standards or official platform references; then secondary analysis and community reports. A source search hit is a lead, not verification. Record canonical source identity, exact revision or dated URL, relevant file/section/line locator, access date, and why the source is relevant. If a revision or locator cannot be established, mark it unknown rather than guessing. For bounded web research, capture only the relevant public page/section and metadata needed to support the question; do not broaden the query or retain unrelated results. A page's own statement is `source-reported`; independently executed/measured behavior is `observed` and requires its own environment and result receipt. Never relabel reported claims as observed behavior.
+
+Use Surf only when an Issue authorizes the bounded web-research action and the operator has selected the browser/window and access context. Follow the installed Surf skill's read-only navigation and capture guidance; do not open a new account, change login state, submit forms, or access private conversations as an implied part of research. If the intended browser/window or access authority is unclear, stop. Surf is optional and no Surf setup or dependency is required by this guide.
 
 QMD is an optional, read-only retrieval aid. Before lookup, follow [Project QMD usage](qmd-usage.md): inspect the selected local runtime index and registered collections, then use only a listed collection. An index database selector is not a collection selector, and a tracked declaration does not prove runtime registration. A clean clone may lack the local index or source collections. Do not redirect to a parent/workspace index when routing is unexpected.
 
@@ -19,7 +22,7 @@ Stop and report when the intended index cannot be established, a collection is a
 
 ## 3. Capture and evidence classification
 
-Keep source originals, whole repositories/books/PDFs, binaries, private captures, and bulky material in ignored local-only `sources/`. Do not copy whole upstream files into public knowledge paths. A QMD result or local capture is not publication permission.
+Keep source originals, whole repositories/books/PDFs, binaries, private captures, and bulky material in ignored local-only `sources/`. An externally obtained repository clone, if separately authorized, belongs under `sources/repo/` with a local provenance manifest recording canonical URL, exact revision, acquisition date, and any integrity hash; do not track that clone or copy it wholesale into public knowledge paths. Do not clone merely because a source is cited. A QMD result or local capture is not publication permission.
 
 For each consequential claim, distinguish:
 
@@ -33,7 +36,7 @@ Separate evidence retrieval/indexing from substantive assessment. Preserve exist
 
 ## 4. Synthesis and publication review
 
-Write original, concise synthesis in `kb/wiki/` with claim-level provenance and applicability/limitations. Bounded evidence captures belong in `kb/raw/` or `kb/research/` only when useful and only after privacy, secret, relevance, provenance, and rights review under accepted ADR-007/010/011. Evidence captures remain evidence; they are not canonical conclusions. Do not publish credentials, personal data, private network/device details, unredacted logs, unlicensed excerpts, source archives, or private conversations/URLs.
+Write original, concise synthesis in `kb/wiki/` with claim-level provenance and applicability/limitations. A useful, bounded public-source capture may be kept under `kb/research/<date>_<slug>/raw/` when appropriate; include only necessary excerpts/notes, source URL, access date, revision where available, and capture limitations. Screenshots are optional and only when needed to preserve relevant visual evidence; they are not required for every research task. Any capture tracked under `kb/raw/` or `kb/research/` requires privacy, secret, relevance, provenance, and rights review under accepted ADR-007/010/011. Evidence captures remain evidence; they are not canonical conclusions. Do not publish credentials, personal data, private network/device details, unredacted logs, unlicensed excerpts, source archives, or private conversations/URLs.
 
 Before promoting a finding into canonical knowledge, check whether evidence supports each claim at the layer stated; identify contradictions, freshness, version limits, and unanswered questions. Keep primary-source observations separate from inference and community anecdote. Link to existing canonical knowledge rather than duplicating it when possible.
 
