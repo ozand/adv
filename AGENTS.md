@@ -7,6 +7,7 @@ Before starting work, read:
 - [README.md](README.md) for a concise repository overview.
 - [docs/adr/INDEX.md](docs/adr/INDEX.md) and any relevant accepted ADR before changing architecture, publication boundaries, source handling, or canonical data contracts.
 - The governing open GitHub Issue and its linked PRD/design/ADR records before implementation.
+- [Capability research workflow](docs/capability-research-workflow.md) when documenting hardware/module capabilities, firmware operations, or data scenarios.
 
 ## Working-context checklist
 
@@ -25,7 +26,8 @@ For a concise task-to-evidence workflow, use [Agent working context](docs/agent-
 - Preserve source identity and citations when synthesizing claims into `kb/`.
 - Keep original repositories, books/PDFs, binaries, private captures, and bulky source material only in ignored `sources/`; do not copy whole books or repositories into public KB paths. Publish reviewed captures only under `kb/raw/` or `kb/research/` after privacy, secret, relevance, provenance, and rights review.
 - Validate structural changes with `kb-bootstrap validate --dir kb --project-root .` when the tool is available.
-- QMD is optional local search; `.qmd/` state is ignored. Before QMD lookup, read [Project QMD usage](docs/qmd-usage.md); do not mutate indexes or collections without separate authorization. For source research and synthesis, follow the [Research workflow](docs/research-workflow.md).
+- For hardware/module capability and data-operation documentation, follow [Capability research workflow](docs/capability-research-workflow.md); preserve claim-level provenance and unknown compatibility details.
+- QMD is optional local search; `.qmd/` state is ignored. Before QMD lookup, read [Project QMD usage](docs/qmd-usage.md); do not mutate indexes or collections without separate authorization. For bounded source research, use the [Research workflow](docs/research-workflow.md).
 - ADR-004 (Accepted) defines an optional ignored `local-lessons/` store. If it exists, inspect its index before repeating a relevant diagnostic and preserve lesson evidence labels/provenance; never silently upgrade confidence. See the tracked [local lessons workflow](docs/local-lessons-workflow.md), which is available on clean clones. The local store is not public KB content and must never be staged/published.
 
 ## Issue, PRD, ADR, and PR workflow
