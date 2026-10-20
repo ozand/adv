@@ -9,7 +9,7 @@ Create concise, evidence-backed knowledge pages from reviewed sources. Follow th
 
 ## Process
 
-1. **Identify scope and sources.** Read the governing issue and applicable accepted ADRs. Keep original repositories, account data, private captures, and bulky sources in ignored `sources/`. Never publish them.
+1. **Identify scope and sources.** Read the governing issue and accepted [ADR-007](../../../docs/adr/ADR-007-publish-reviewed-research-captures-exclude-local-source-originals.md) and [ADR-010](../../../docs/adr/ADR-010-define-extensible-knowledge-evidence-contract.md). Keep original repositories, account data, private captures, and bulky sources in ignored `sources/`. Never publish them.
 2. **Trace both directions.** For each question, map `device → module/component → firmware/tool and version → operation → input/output data → scenario`. Work forward from a claimed capability and backward from desired data/setup. Do not infer a missing edge.
 3. **Record relations, not broad labels.** For each supported relation, record named device/module, firmware/tool version or `unknown`, operation, setup/prerequisites, data direction/format/destination/limits, scenario, source locator/revision, evidence class, and gaps. Use a small table or linked bullets; do not introduce a new schema.
 4. **Qualify every claim.** Distinguish `source-reported`, `code-inspected`, `device-observed`, and `device-verified` per accepted ADR-010. Cite the exact source/revision. A successful build or README claim is not device verification. Mark inaccessible or unverified details `unknown`; use `unsupported` only when evidence establishes absence of support.
