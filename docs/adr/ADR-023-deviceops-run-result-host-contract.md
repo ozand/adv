@@ -26,11 +26,12 @@ ADR-006 already defines the firmware wire commands and cache; this proposal adds
 
 ### What this IS
 
-- A bounded host request for one firmware `run <ID>` and a separate read-only `result <ID>` query.
-- A core-generated `operation_id` remains the authoritative host job identity. A firmware run ID is a separate adapter-generated 1–12 character `[A-Z0-9]` value, recorded in provenance and scoped to the active transport/session generation. Never derive it from, or accept it as, a client-supplied operation ID.
-- The adapter sends at most one `run <ID>` frame per accepted host operation. A full write is not an acknowledgement. Partial/failed write, timeout, lost acknowledgement, reset/session loss, malformed or mismatched response yields `INCONCLUSIVE`; never automatically retry `run`.
-- `result <ID>` is a separate bounded, read-only query against the retained firmware slot. It must not implicitly submit/replay a run. A busy slot, wrong/unknown ID, empty slot after reset, or unavailable result maps to an explicit bounded outcome without inventing a physical PASS.
-- Same accepted host request follows existing principal/target/request dedup rules. Firmware result-cache reuse is only valid when the same firmware session/generation is known; reset invalidates that evidence.
+- A bounded, distinct host-level run operation with a host-generated operation ID and a separate read-only result query referencing that host operation ID. The exact request/result representation and enum mapping remain explicit owner decisions below; ADR-021 types are not implicitly widened.
+- A firmware run ID is adapter-generated, 1–12 uppercase ASCII alphanumeric, recorded as provenance, and bound to the active transport/session generation. It is never accepted as the host operation ID or as authorization input.
+- The adapter issues at most one `run <ID>` frame per accepted host run. A complete host write is not a device acknowledgement. Partial/failed write, timeout, lost acknowledgement, reset/session loss, malformed or mismatched response yields an inconclusive outcome and never automatically retries run.
+- The separate result operation references a prior host operation ID, resolves its bound firmware ID/session mapping, and issues only bounded read-only `result <ID>`; it cannot submit/replay run. Busy slot, wrong/unknown ID, unavailable mapping, empty slot after reset or unavailable result yields explicit non-success/inconclusive status; never fabricate a result or physical PASS.
+- Mapping lifetime is scoped to the known transport session/generation. After process restart, transport reopen or firmware reset without a verifiable same-session cache, mapping is unavailable and must not authorize run replay or fabricated receipt. Durable mapping policy is an unresolved owner decision; proposed initial behavior is fail closed rather than persisting a claim of device-slot continuity.
+- Existing principal/target/request dedup still applies to host operations; it does not extend firmware volatile result lifetime or promise exactly-once device execution.
 
 ### What this IS NOT
 
@@ -38,9 +39,19 @@ ADR-006 already defines the firmware wire commands and cache; this proposal adds
 - Permission for real serial/COM/USB access, automatic `sd_test`, audio, reset, flash, service, or hardware testing.
 - A claim that software result states establish physical PASS, persistent storage across reboot, or exactly-once device execution.
 
-### Proposed request/result contract questions for owner disposition
+### Explicit owner decisions required before implementation
 
-Before implementation, the owner must select the concrete representation: either a separately versioned request/result schema/profile or a new operation-specific closed shape. Required distinctions are one `run` request with accepted host ID/target/session binding, one read-only `result` query referencing the host operation, and a result that preserves transmission, acknowledgement, effect certainty, verification, firmware run ID and session-generation provenance. This ADR does not modify ADR-021's accepted types or prescribe unreviewed enum values.
+This ADR recommends the separate profile above but does not accept or enact it. The owner must choose each item (or reject the profile):
+
+| Decision | Recommendation in this proposal | Owner disposition |
+|---|---|---|
+| Host request/result shape | New operation-specific closed request/result profile, separate from ADR-021 `diagnostic_start` / `STATUS`; do not introduce a generic version-negotiation framework | OPEN |
+| Result-query binding | `result` request references the host `operation_id`; server resolves the stored mapping; clients never submit raw firmware ID | OPEN |
+| Receipt semantics | Reuse existing transmission / ACK / effect-certainty / verification axes and add bounded firmware-ID/session provenance only if accepted schema permits; otherwise hold fields in internal evidence, no new enum values presumed | OPEN |
+| Mapping lifetime | Process/session-generation scoped initially; after restart/reopen/reset, unavailable mapping is blocked/inconclusive unless continuity is independently established | OPEN |
+| Firmware-slot semantics | Mirror ADR-006 same-ID cache, busy-other-ID, reset-loses-result; no automatic resubmission after uncertain `run` | OPEN |
+
+Implementation cannot start until owner disposition resolves the shape and receipt-field question; schema/enum expansion may require a subsequent ADR-021 amendment or a further superseding decision. ADR-006 and ADR-021 remain unchanged by this Proposed ADR.
 
 ### Success criteria
 
@@ -83,8 +94,9 @@ ADR-006 firmware commands remain authoritative; ADR-021 STATUS remains read-only
 | Claim | Test scenario | Currently |
 |---|---|---|
 | Firmware ID is bounded uppercase ASCII and invalid IDs reject before run write | fake request/adapter tests | not yet written |
-| Accepted run writes exactly one command; uncertainty never retries | partial write, timeout, lost ACK, duplicate/reopen fake tests | not yet written |
-| Result query is read-only and bound to host operation/session mapping | transcript asserts only `result <ID>` and binding | not yet written |
+| Accepted run writes at most one command; uncertainty never retries | fake transcript + partial-write/timeout/lost-ACK tests | not yet written |
+| Result query is read-only and references host operation/session mapping | fake transcript asserts only `result <ID>` and binding | not yet written |
+| Restart/reset without known session continuity cannot replay or fabricate result | fake lost-mapping/reset scenario | not yet written |
 | Busy/cache/reset and unsupported marker map conservatively | stateful fake firmware slot and marker matrix | not yet written |
 | Existing STATUS bytes/schema remain unchanged | existing STATUS adapter/composition regression suite | existing tests; exact future candidate must rerun |
 
