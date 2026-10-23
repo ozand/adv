@@ -36,5 +36,5 @@ No WPA/security-generation or 802.11-variant support, device compatibility, runt
 
 ## Related
 - [Issue #100: WiFi domain ontology](https://github.com/ozand/adv/issues/100)
-- [Issue #99 ontology validation note](../../../research/issue-99-ontology-validation.md)
+- [Issue #99 ontology validation note](../../../../docs/research/issue-99-ontology-validation.md)
 - [Capability research workflow](../../../../docs/capability-research-workflow.md)
