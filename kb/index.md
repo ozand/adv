@@ -17,6 +17,10 @@ This is the entry point for Cardputer knowledge. Bounded research captures in `r
 
 Choose among four bounded task routes in the [task-oriented Cardputer knowledge navigation](wiki/reports/task-oriented-navigation.md). It links the released project profiles and source-inspected concepts, distinguishes evidence classes, and keeps prerequisites and unknowns explicit; it is not a ranking or completeness claim.
 
+### Issue #100 — WiFi passive monitoring
+
+- [WiFi passive monitoring receive path](wiki/concepts/operations/wifi-passive-monitoring.md) — pinned-source, code-inspected receive/deferred-record pattern; device mapping, runtime prerequisites, and output details remain unknown.
+
 ### Issue #50 — source-inspected patterns
 
 These four concept notes were delivered under Issue #50. Their claims are limited to pinned-source code inspection; see the [Issue #50 record](https://github.com/ozand/adv/issues/50) and each card's provenance and limitations.
