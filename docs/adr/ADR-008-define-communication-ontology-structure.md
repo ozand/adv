@@ -1,7 +1,8 @@
-# ADR-008: Proposed communication ontology structure
+# ADR-008: Communication ontology structure
 
-**Status:** Proposed — structure accepted by the owner for continued Issue #99 validation; remaining criteria are unresolved
+**Status:** Accepted — decision accepted by the owner; Issue #99 validation criteria remain unresolved
 **Date:** 2026-10-20
+**Accepted:** 2026-10-23 — owner acceptance receipt: https://github.com/ozand/adv/issues/99#issuecomment-6355158066
 **Issue:** #99
 **Related:** Accepted ADR-007, ADR-010; open Issue #50
 
@@ -87,3 +88,7 @@ If the remaining Issue #99 criteria are later accepted, the structure can guide 
 1. Does the page-type field guidance clearly distinguish OKF requirements from adv recommendations?
 2. Are evidence, uncertainty, and applicability rules faithfully bounded by accepted ADR-010?
 3. Which documented sample gaps remain for Issue #99, and what separately authorized evidence would be needed to resolve them?
+
+## Addendum (2026-10-23): Owner acceptance
+
+The owner [accepted ADR-008](https://github.com/ozand/adv/issues/99#issuecomment-6355158066). Earlier references above to a proposed artifact or proposed decision describe the pre-acceptance state; the current decision status is Accepted. This status records acceptance of the structure, not satisfaction of every Issue #99 criterion, completion of the sample coverage, implementation, or activation of dependent Issues #100–#107. Existing evidence limitations and validation dispositions remain unchanged.
