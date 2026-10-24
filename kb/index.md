@@ -20,6 +20,7 @@ Choose among four bounded task routes in the [task-oriented Cardputer knowledge 
 ### Issue #100 — WiFi passive monitoring
 
 - [WiFi passive monitoring receive path](wiki/concepts/operations/wifi-passive-monitoring.md) — pinned-source, code-inspected receive/deferred-record pattern; device mapping, runtime prerequisites, and output details remain unknown.
+- [WiFi AP authentication-mode display labels](wiki/concepts/operations/wifi-ap-auth-labels.md) — pinned-source mapping from an AP-record field to a static UI label; not protocol support or runtime evidence.
 
 ### Issue #50 — source-inspected patterns
 
