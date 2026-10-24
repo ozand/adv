@@ -25,7 +25,7 @@ evidence:
 
 At pinned revision `a59213f3ec6cd302fa32c2042b2700c9c24d991a`, `autoMode2String` maps named auth-mode cases to labels such as `WPA_PSK`, `WPA2_PSK`, and `WPA3_PSK`; unmatched values return `UNKNOWN`. These are code-inspected token-to-string mappings, not explanations of protocol semantics. The external enum definitions were not inspected.
 
-The inspected path is: AP record → `authmode` field → `autoMode2String` → label in the `Auth mode` row. The header declares the `displayAPInfo()` entry point (`ap_info.h`, lines 1–6); `fillInfo` reads and converts the field (`ap_info.cpp`, lines 74–90, 109–111), and the view displays the row (lines 119–123). This is static source structure, not a scan result, runtime observation, or evidence of successful connection or authentication.
+The inspected path is: AP record → `authmode` field → `autoMode2String` → label in the `Auth mode` row. The [header](https://github.com/brucedevices/firmware/blob/a59213f3ec6cd302fa32c2042b2700c9c24d991a/src/modules/wifi/ap_info.h#L1-L6) declares the `displayAPInfo()` entry point; `fillInfo` reads and converts the field (`ap_info.cpp`, lines 74–90, 109–111), and the view displays the row (lines 119–123). This is static source structure, not a scan result, runtime observation, or evidence of successful connection or authentication.
 
 ## Relation and unknowns
 
