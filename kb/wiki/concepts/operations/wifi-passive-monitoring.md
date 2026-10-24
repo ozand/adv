@@ -17,6 +17,11 @@ evidence:
     revision: "38d7078c09205e23b65018fd486a5fd1e40ee440"
     method: "code-inspected"
     locator: "lines 131-142; 640-692; 966-979"
+  - claim: "The OINK scanning state consumes the shared network list populated by the receive/deferred-record path; in this inspected slice, that state name does not establish a separate active scan mechanism or make the whole mode passive."
+    source: "https://github.com/0ct0sec/m5porkchop/blob/38d7078c09205e23b65018fd486a5fd1e40ee440/src/core/network_recon.cpp"
+    revision: "38d7078c09205e23b65018fd486a5fd1e40ee440"
+    method: "code-inspected"
+    locator: "getNetworks lines 1090-1095; deferred processing lines 640-695; OINK consumer in src/modes/oink.cpp lines 480-524 and 1009-1050"
   - claim: "The README describes DO NO HAM as passive and OINK as active."
     source: "https://github.com/0ct0sec/m5porkchop/blob/38d7078c09205e23b65018fd486a5fd1e40ee440/README.md"
     revision: "38d7078c09205e23b65018fd486a5fd1e40ee440"
@@ -29,7 +34,7 @@ evidence:
 ## Bounded example
 At the pinned revision, the shared recon service configures promiscuous reception and registers a callback. The callback classifies received management/data frames and dispatches handling. Selected network metadata is placed in a bounded pending-record queue; deferred processing drains records during later updates. These are source structures, not observed device behavior.
 
-The README reports DO NO HAM as passive and OINK as active. Those are mode descriptions reported by the project, not proof that the shared receive path or product as a whole has zero transmission. This page describes a receive-path pattern only; it does not document or recommend operating any mode.
+The README reports DO NO HAM as passive and OINK as active. Those are mode descriptions reported by the project, not proof that the shared receive path or product as a whole has zero transmission. In the inspected OINK path, its scanning state consumes the shared `NetworkRecon` list derived from received frames ([pinned OINK source, lines 196–199](https://github.com/0ct0sec/m5porkchop/blob/38d7078c09205e23b65018fd486a5fd1e40ee440/src/modes/oink.cpp#L196-L199) and [1009–1050](https://github.com/0ct0sec/m5porkchop/blob/38d7078c09205e23b65018fd486a5fd1e40ee440/src/modes/oink.cpp#L1009-L1050)); the state name does not establish a separate active scan mechanism or make the whole mode passive. This is a bounded code-inspected distinction, not a claim about APIs or behavior outside the cited source paths. This page describes a receive-path pattern only; it does not document or recommend operating any mode.
 
 ## Relation and unknowns
 
