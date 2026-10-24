@@ -17,9 +17,10 @@ This is the entry point for Cardputer knowledge. Bounded research captures in `r
 
 Choose among four bounded task routes in the [task-oriented Cardputer knowledge navigation](wiki/reports/task-oriented-navigation.md). It links the released project profiles and source-inspected concepts, distinguishes evidence classes, and keeps prerequisites and unknowns explicit; it is not a ranking or completeness claim.
 
-### Issue #100 — WiFi passive monitoring
+### Issue #100 — WiFi
 
 - [WiFi passive monitoring receive path](wiki/concepts/operations/wifi-passive-monitoring.md) — pinned-source, code-inspected receive/deferred-record pattern; device mapping, runtime prerequisites, and output details remain unknown.
+- [WiFi AP authentication-mode display labels](wiki/concepts/operations/wifi-ap-auth-labels.md) — pinned-source mapping from an AP-record field to a static UI label; not protocol support or runtime evidence.
 
 ### Issue #50 — source-inspected patterns
 
