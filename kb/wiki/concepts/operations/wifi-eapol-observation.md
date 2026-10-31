@@ -11,14 +11,14 @@ evidence:
     source: "https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/WiFiScan.cpp"
     revision: "b2b9f92382eb60b39b8741be3b567e416cdbe672"
     method: "code-inspected"
-    locator: "eapolSnifferCallback, lines 10361–10390 and 10505–10524; related buffer append lines 10326–10333"
+    locator: "eapolSnifferCallback, lines 10361–10390 and 10505–10524, including EAPOL count at line 10517; EAPOL/beacon buffer append lines 10572–10573"
 ---
 
 # WiFi EAPOL callback and buffer structure
 
 ## Bounded example
 
-At the pinned Marauder revision, an [EAPOL-related callback](https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/WiFiScan.cpp#L10361-L10390) processes received packet metadata and tracks EAPOL-related records. A bounded [branch](https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/WiFiScan.cpp#L10326-L10333) appends received packet data to an internal buffer. These are code structures only; they do not establish a completed handshake, successful capture, exported format, or runtime behavior.
+At the pinned Marauder revision, `eapolSnifferCallback` processes received frames, classifies EAPOL-related traffic, and increments an EAPOL counter in its data-frame path ([callback setup and frame handling](https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/WiFiScan.cpp#L10361-L10390), [EAPOL count and frame parsing](https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/WiFiScan.cpp#L10505-L10524)). A separate bounded branch appends a received frame to an internal buffer when the callback marks it as EAPOL or beacon ([append condition](https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/WiFiScan.cpp#L10572-L10574)). These are code structures only; they do not establish a completed handshake, successful capture, exported format, or runtime behavior.
 
 ## Relation and unknowns
 
