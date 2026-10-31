@@ -22,6 +22,13 @@ Choose among four bounded task routes in the [task-oriented Cardputer knowledge 
 - [Partial WiFi domain synthesis](wiki/reports/protocols/wifi.md) — bounded evidence matrix across three inspected source repositories; operation coverage and runtime/device questions remain open.
 - [WiFi passive monitoring receive path](wiki/concepts/operations/wifi-passive-monitoring.md) — pinned-source, code-inspected receive/deferred-record pattern; device mapping, runtime prerequisites, and output details remain unknown.
 - [WiFi AP authentication-mode display labels](wiki/concepts/operations/wifi-ap-auth-labels.md) — pinned-source mapping from an AP-record field to a static UI label; not protocol support or runtime evidence.
+- [Wi-Fi generation and security context](wiki/entities/protocols/wifi-80211.md) — bounded Wi-Fi Alliance and ESP-IDF source-reported context; not Cardputer compatibility evidence.
+- [WiFi receive-side AP discovery records](wiki/concepts/operations/wifi-scanning-records.md) — bounded receive-side discovery example; device and runtime applicability unknown.
+- [WiFi deauthentication state structure](wiki/concepts/operations/wifi-deauthentication-state.md) — static state and received-frame examples; no operational effect claimed.
+- [WiFi beacon-frame field helper](wiki/concepts/operations/wifi-beacon-frame-helper.md) — one buffer-field update, not complete beacon generation or repeated transmission.
+- [WiFi portal request and state structure](wiki/concepts/operations/wifi-evil-portal-structure.md) — source-level handler/state flow; WPAD and deployment remain unknown.
+- [WiFi portal request-derived state](wiki/concepts/operations/wifi-credential-dataflow.md) — static state-to-output path; no actual credentials or capture observed.
+- [WiFi EAPOL callback and buffer structure](wiki/concepts/operations/wifi-eapol-observation.md) — bounded callback/buffer example; complete handshake capture remains unestablished.
 
 ### Issue #50 — source-inspected patterns
 
