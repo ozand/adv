@@ -11,14 +11,14 @@ evidence:
     source: "https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/WiFiScan.cpp"
     revision: "b2b9f92382eb60b39b8741be3b567e416cdbe672"
     method: "code-inspected"
-    locator: "RunAPScan, lines 4331–4368; apSnifferCallbackFull, lines 7406–7424"
+    locator: "RunAPScan, lines 4331–4368; apSnifferCallbackFull metadata/classification, lines 7406–7424; AP record update/construction, lines 7471–7497 and 7548–7597; queued display line, 7538–7541"
 ---
 
 # WiFi receive-side AP discovery records
 
 ## Bounded example
 
-At the pinned Marauder revision, [`RunAPScan`](https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/WiFiScan.cpp#L4331-L4368) configures the `apSnifferCallbackFull` path and channel selection. The [callback](https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/WiFiScan.cpp#L7406-L7424) receives packet metadata, obtains an address from the frame payload, and branches on management-frame type. This documents a source-level receive/discovery structure, not an observed scan result or a claim about all AP fields.
+At the pinned Marauder revision, [`RunAPScan`](https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/WiFiScan.cpp#L4331-L4368) configures the `apSnifferCallbackFull` path and channel selection. The [callback](https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/WiFiScan.cpp#L7406-L7424) receives packet metadata, obtains an address from the frame payload, and branches on management-frame type. Its beacon branch updates an existing AP record or constructs one with selected fields ([record handling](https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/WiFiScan.cpp#L7471-L7497), [construction and metadata assignment](https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/WiFiScan.cpp#L7548-L7597)); the callback also queues a display line in a conditional UI path ([display queue](https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/WiFiScan.cpp#L7538-L7541)). This documents a source-level receive/discovery and selected-record presentation structure, not an observed scan result or a claim about all AP fields.
 
 ## Relation and unknowns
 

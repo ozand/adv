@@ -49,7 +49,7 @@ Forward trace: the source records connect selected code structures to receive, r
 
 ## Coverage and publication limits
 
-The evidence is sufficient to organize a partial domain around distinct activities and dataflows, but not to justify new WiFi protocol or device entities. No claim is made that all original operation targets are supported. Missing evidence remains unknown, not unsupported. Follow-up acceptance criteria remain open, including broader pinned-source coverage, protocol/security semantics, source rights/privacy review, and any separately authorized device validation.
+At the stage represented by the initial three-repository synthesis above, the evidence was sufficient to organize a partial domain around distinct activities and dataflows, but not to justify a WiFi protocol or device entity; that stage did not include the later bounded protocol/security-context work below. No claim is made that all original operation targets are supported. Missing evidence remains unknown, not unsupported. Follow-up acceptance criteria remain open, including broader pinned-source coverage, protocol/security semantics, source rights/privacy review, and any separately authorized device validation.
 
 The cited MIT/AGPL license metadata is a lead, not blanket rights clearance. This report uses original bounded paraphrase only; it contains no copied source/assets, credentials, private paths, operational captures, packet details, code excerpts, setup instructions, or execution guidance. Privacy/relevance review and rights review remain separate gates under ADR-007. Structural validation cannot approve publication rights or verify factual/runtime claims.
 
