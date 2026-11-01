@@ -56,8 +56,8 @@ The cited MIT/AGPL license metadata is a lead, not blanket rights clearance. Thi
 ## Related
 
 - [Issue #100: WiFi domain ontology](https://github.com/ozand/adv/issues/100)
-- [Issue #99 bounded ontology validation note](../../../../docs/research/issue-99-ontology-validation.md)
-- [Capability research workflow](../../../../docs/capability-research-workflow.md)
+- [Issue #99 bounded ontology validation note](https://github.com/ozand/adv/blob/2b507f321f8d2f73dd8088c4a2ec7c48c9ae214c/docs/research/issue-99-ontology-validation.md)
+- [Capability research workflow](https://github.com/ozand/adv/blob/2b507f321f8d2f73dd8088c4a2ec7c48c9ae214c/docs/capability-research-workflow.md)
 
 ## Additional bounded operation synthesis (Issue #100)
 
