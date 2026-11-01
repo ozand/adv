@@ -16,7 +16,7 @@ sources:
 
 ## Scope and evidence
 
-This is a bounded partial synthesis, not completion of Issue #100 or corpus coverage. Claims below are source-reported or static `code-inspected`; no code ran, no network/device was used, and no device behavior was observed. Pins are immutable. This batch consolidates the provided inspection artifacts and published Issue #99 validation note; it adds no upstream inspection.
+This is a bounded partial synthesis, not completion of Issue #100 or corpus coverage. Claims below are source-reported or static `code-inspected`; no code ran, no network/device was used, and no device behavior was observed. Pins are immutable. The initial synthesis batch consolidated provided inspection artifacts and the published Issue #99 validation note without new upstream inspection; later bounded additions identify their own sources and methods.
 
 | Source artifact | Inspected scope and evidence | Rights / limits |
 |---|---|---|
