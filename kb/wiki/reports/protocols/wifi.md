@@ -16,7 +16,7 @@ sources:
 
 ## Scope and evidence
 
-This is a bounded partial synthesis, not completion of Issue #100 or corpus coverage. Claims below are source-reported or static `code-inspected`; no code ran, no network/device was used, and no device behavior was observed. Pins are immutable. This batch consolidates the provided inspection artifacts and published Issue #99 validation note; it adds no upstream inspection.
+This is a bounded partial synthesis, not completion of Issue #100 or corpus coverage. Claims below are source-reported or static `code-inspected`; no code ran, no network/device was used, and no device behavior was observed. Pins are immutable. The initial synthesis batch consolidated provided inspection artifacts and the published Issue #99 validation note without new upstream inspection; later bounded additions identify their own sources and methods.
 
 | Source artifact | Inspected scope and evidence | Rights / limits |
 |---|---|---|
@@ -78,7 +78,7 @@ The following source-pattern concepts extend the three-repository synthesis abov
 
 The new [Wi-Fi generation and security context entity](../../entities/protocols/wifi-80211.md) uses two official Wi-Fi Alliance overviews and versioned ESP-IDF v5.2.3 documentation for the ESP32-C6 target. The Alliance overview names Wi-Fi 4/5/6/7 and describes selected features; its Wi-Fi 6 text says 6 GHz was introduced alongside 2.4/5 GHz, without distinguishing Wi-Fi 6E or saying all Wi-Fi 6 devices use 6 GHz. Its public security page summarizes WPA3 and PMF but does not compare WPA2. The versioned SDK page lists 802.11b/g/n/ax and WPA/WPA2/WPA3 families for ESP32-C6. These source-reported statements describe standards/product context and one SDK target; they do not prove support by any cited Cardputer firmware or device.
 
-The pinned [m5porkchop README](https://github.com/0ct0sec/m5porkchop/blob/38d7078c09205e23b65018fd486a5fd1e40ee440/README.md#L131-L134) separately reports an optional M5MonsterC5 coprocessor as dual-band Wi-Fi 6/802.11ax over UART. This is upstream-reported context only, not an inspected integration path or Cardputer compatibility. Likewise the [Bruce AP authentication-label concept](../../concepts/operations/wifi-ap-auth-labels.md) documents enum-token-to-string mapping, not protocol semantics or negotiation evidence.
+The pinned [m5porkchop README](https://github.com/0ct0sec/m5porkchop/blob/38d7078c09205e23b65018fd486a5fd1e40ee440/README.md#L131-L134) separately reports an optional M5MonsterC5 coprocessor as dual-band Wi-Fi 6/802.11ax over UART. This is upstream-reported context only, not an inspected integration path or Cardputer compatibility. The [AP authentication-label concept](../../concepts/operations/wifi-ap-auth-labels.md) also documents a separate pinned m5porkchop Cardputer/ESP32-S3 build declaration and its beacon-field-based authmode classification. That static heuristic, like Bruce's separate enum-token-to-string mapping, does not establish protocol correctness, negotiation, or device behavior.
 
 Remaining gaps include primary IEEE normative text, a WPA2-specific Alliance comparison, SDK evidence for other targets such as the Cardputer's ESP32-S3 or the mentioned ESP32-C5 coprocessor, and inspected application integration. No such support or device behavior is inferred. This bounded batch used the authorized Surf browser for the official pages; no local browser failure is claimed.
 
