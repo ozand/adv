@@ -1,8 +1,9 @@
 # Private source material: cloned repositories, downloads, books, captures
 /sources/
 
-# Local operational lessons; private and not synchronized via Git
+# Local operational lessons and ephemeral evidence; private and not synchronized
 /local-lessons/
+/.search/
 
 # Local QMD state and generated indexes
 /.qmd/
