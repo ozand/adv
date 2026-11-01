@@ -72,7 +72,7 @@ The following source-pattern concepts extend the three-repository synthesis abov
 | Evil portal / WPAD | A pinned HTTP handler/state structure serves configured HTML and processes request-derived state; a separate source contains WPAD-related structures. | [Portal structure](../../concepts/operations/wifi-evil-portal-structure.md) and [WPAD structures](../../concepts/operations/wifi-wpad-structures.md); no end-to-end operation established. |
 | Credential capture | A separate code path carries request-derived state to serial/internal-buffer/optional-display output. | [Request-derived state](../../concepts/operations/wifi-credential-dataflow.md); no actual credentials or successful capture were observed. |
 | Handshake capture | A pinned callback recognizes EAPOL-related traffic and uses a settings-gated PCAP buffer path with a full-buffer drop branch. | [EAPOL callback structure](../../concepts/operations/wifi-eapol-observation.md); actual output, complete handshake capture and export are not established. |
-| CSI sensing | A separate pinned wiview source initializes CSI and defines a receive callback. | [CSI capture structure](../../concepts/operations/wifi-csi-sensing.md); no runtime or device behavior established. |
+| CSI sensing | A separate pinned wiview source initializes CSI, defines a receive callback and a bounded-retry snapshot reader. | [CSI capture structure](../../concepts/operations/wifi-csi-sensing.md); concurrent snapshot coherence and runtime/device behavior are not established. |
 
 ## Protocol and security-generation context
 
