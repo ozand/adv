@@ -31,7 +31,7 @@ At the pinned Marauder revision, [`RunAPScan`](https://github.com/justcallmekoko
 
 At the pinned Adversary revision, [`startScan`](https://github.com/isonimus/adversary/blob/79085dd76f45afa745f2c054eaa22df77cb3cbf2/src/modules/wifi/wifi_scanner.cpp#L134-L178) calls an asynchronous scan with arguments commented as requesting hidden networks and passive scanning. Its [`update` and `processResults` paths](https://github.com/isonimus/adversary/blob/79085dd76f45afa745f2c054eaa22df77cb3cbf2/src/modules/wifi/wifi_scanner.cpp#L211-L269) check completion and populate records including network name, signal strength, channel and an application security classification. This is a separate API-based source pattern, not the Marauder callback above. The comments and argument values do not independently establish driver semantics, zero radio transmissions, scan completeness, accurate security classification or device behavior; no execution was performed.
 
-## Relation and unknowns
+## Marauder relations and unknowns
 
 | Relation | Evidence and status |
 |---|---|
@@ -40,6 +40,17 @@ At the pinned Adversary revision, [`startScan`](https://github.com/isonimus/adve
 | Operation | Receive-side AP discovery/recording path; static code only. |
 | Setup | Runtime configuration, permissions, and radio prerequisites: `unknown`. |
 | Data/output | Frame metadata is read; complete record schema, persistence, and retention: `unknown`. |
+| Scenario | Editorial source-pattern description only; no live network or device observation. |
+
+## Adversary relations and unknowns
+
+| Relation | Evidence and status |
+|---|---|
+| Device/component | Target device and radio variant: `unknown` for this inspected path. |
+| Firmware/source | Adversary at the pinned revision; static inspection only. |
+| Operation | The scan call requests asynchronous operation; the source comments describe the other selected arguments. Driver behavior is `unknown`. |
+| Setup | Runtime configuration, radio prerequisites and successful initialization: `unknown`. |
+| Data/output | Completion processing constructs network records with fields including name, signal, channel and security classification; correctness, persistence and retention are `unknown`. |
 | Scenario | Editorial source-pattern description only; no live network or device observation. |
 
 ## Limits
