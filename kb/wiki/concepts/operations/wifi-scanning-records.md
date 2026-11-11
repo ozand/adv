@@ -4,11 +4,18 @@ title: "WiFi receive-side AP discovery records"
 description: "A pinned-source example of building and displaying AP records from received management frames."
 issue: "https://github.com/ozand/adv/issues/100"
 sources:
+  - resource: "https://github.com/runaque/adv_wardriver"
+    revision: "ed08a787ecf0090cb174f9d55216033db5dce58a"
   - resource: "https://github.com/justcallmekoko/esp32marauder"
     revision: "b2b9f92382eb60b39b8741be3b567e416cdbe672"
   - resource: "https://github.com/isonimus/adversary"
     revision: "79085dd76f45afa745f2c054eaa22df77cb3cbf2"
 evidence:
+  - claim: "The ADV Wardriver README reports 2.4 GHz scans and GPS-fix-dependent SD logging, and names Cardputer ADV, Cap LoRa-1262 and microSD as hardware; original Cardputer is stated to be unsupported."
+    source: "https://github.com/runaque/adv_wardriver/blob/ed08a787ecf0090cb174f9d55216033db5dce58a/README.md"
+    revision: "ed08a787ecf0090cb174f9d55216033db5dce58a"
+    method: "source-reported"
+    locator: "README lines 8–9, 25–34, 42–50, 167–170"
   - claim: "The AP scan path initializes a promiscuous callback and channel selection; callback code reads received management-frame metadata."
     source: "https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/WiFiScan.cpp"
     revision: "b2b9f92382eb60b39b8741be3b567e416cdbe672"
@@ -31,11 +38,15 @@ At the pinned Marauder revision, [`RunAPScan`](https://github.com/justcallmekoko
 
 At the pinned Adversary revision, [`startScan`](https://github.com/isonimus/adversary/blob/79085dd76f45afa745f2c054eaa22df77cb3cbf2/src/modules/wifi/wifi_scanner.cpp#L134-L178) calls an asynchronous scan with arguments commented as requesting hidden networks and passive scanning. Its [`update` and `processResults` paths](https://github.com/isonimus/adversary/blob/79085dd76f45afa745f2c054eaa22df77cb3cbf2/src/modules/wifi/wifi_scanner.cpp#L211-L269) check completion and populate records including network name, signal strength, channel and an application security classification. This is a separate API-based source pattern, not the Marauder callback above. The comments and argument values do not independently establish driver semantics, zero radio transmissions, scan completeness, accurate security classification or device behavior; no execution was performed.
 
+## Cardputer ADV example (source-reported)
+
+The pinned [ADV Wardriver README](https://github.com/runaque/adv_wardriver/blob/ed08a787ecf0090cb174f9d55216033db5dce58a/README.md#L25-L50) describes scanning 2.4 GHz access points and recording them to microSD with GNSS coordinates in WiGLE CSV format. It lists a Cardputer ADV, Cap LoRa-1262 and microSD, and explicitly says the original Cardputer is not supported. The README says an access point is logged only after a GPS fix and once per session ([logging rules](https://github.com/runaque/adv_wardriver/blob/ed08a787ecf0090cb174f9d55216033db5dce58a/README.md#L167-L170)). These are the author's reported features and requirements, not independently verified hardware behavior or compatibility. Location-tagged network records can be sensitive; handle their storage and sharing accordingly.
+
 ## Marauder relations and unknowns
 
 | Relation | Evidence and status |
 |---|---|
-| Device/component | Target device and radio variant: `unknown`. |
+| Device/component | Marauder target device and radio variant: `unknown`; ADV Wardriver's declared hardware is a separate README-reported example above. |
 | Firmware/source | Marauder at the pinned revision; code-inspected structure, not Cardputer compatibility. |
 | Operation | Receive-side AP discovery/recording path; static code only. |
 | Setup | Runtime configuration, permissions, and radio prerequisites: `unknown`. |
