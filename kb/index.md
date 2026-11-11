@@ -13,6 +13,8 @@ This is the entry point for Cardputer knowledge. Bounded research captures in `r
 
 ## Topics
 
+- [NucleoOS project overview](wiki/entities/nucleoos.md) and [bounded research summary](wiki/reports/nucleoos-research.md) — source-reported architecture and static firmware entry-point observations; device behavior unverified.
+
 ### Task-oriented navigation
 
 Choose among four bounded task routes in the [task-oriented Cardputer knowledge navigation](wiki/reports/task-oriented-navigation.md). It links the released project profiles and source-inspected concepts, distinguishes evidence classes, and keeps prerequisites and unknowns explicit; it is not a ranking or completeness claim.
