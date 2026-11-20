@@ -76,6 +76,8 @@ The following source-pattern concepts extend the three-repository synthesis abov
 
 A separate [Adversary scanner example](../../concepts/operations/wifi-scanning-records.md#separate-scan-results-example) requests an asynchronous scan and constructs records from the results. This is a `code-inspected` API-based pattern, distinct from the receive callback above; source comments do not prove driver behavior, scan completeness or device support.
 
+A separate [m5stick-nemo observation-buffer example](../../concepts/operations/wifi-scanning-records.md#repeated-observation-example) groups selected scan results and updates repeated observations. This static `code-inspected` path does not establish accurate classification, radio behavior or Cardputer compatibility.
+
 ## Protocol and security-generation context
 
 The new [Wi-Fi generation and security context entity](../../entities/protocols/wifi-80211.md) uses two official Wi-Fi Alliance overviews and versioned ESP-IDF v5.2.3 documentation for the ESP32-C6 target. The Alliance overview names Wi-Fi 4/5/6/7 and describes selected features; its Wi-Fi 6 text says 6 GHz was introduced alongside 2.4/5 GHz, without distinguishing Wi-Fi 6E or saying all Wi-Fi 6 devices use 6 GHz. Its public security page summarizes WPA3 and PMF but does not compare WPA2. The versioned SDK page lists 802.11b/g/n/ax and WPA/WPA2/WPA3 families for ESP32-C6. These source-reported statements describe standards/product context and one SDK target; they do not prove support by any cited Cardputer firmware or device.

@@ -10,6 +10,8 @@ sources:
     revision: "b2b9f92382eb60b39b8741be3b567e416cdbe672"
   - resource: "https://github.com/isonimus/adversary"
     revision: "79085dd76f45afa745f2c054eaa22df77cb3cbf2"
+  - resource: "https://github.com/n0xa/m5stick-nemo"
+    revision: "0b8c5c73d5ccf69355be865b07831d47098dbff4"
 evidence:
   - claim: "The ADV Wardriver README reports 2.4 GHz scans and GPS-fix-dependent SD logging, and names Cardputer ADV, Cap LoRa-1262 and microSD as hardware; original Cardputer is stated to be unsupported."
     source: "https://github.com/runaque/adv_wardriver/blob/ed08a787ecf0090cb174f9d55216033db5dce58a/README.md"
@@ -26,6 +28,11 @@ evidence:
     revision: "79085dd76f45afa745f2c054eaa22df77cb3cbf2"
     method: "code-inspected"
     locator: "startScan, lines 134–178; update and processResults, lines 211–269"
+  - claim: "A separate scan path groups selected results by BSSID and updates a matching SSID record's signal and timestamp."
+    source: "https://github.com/n0xa/m5stick-nemo/blob/0b8c5c73d5ccf69355be865b07831d47098dbff4/m5stick-nemo.ino"
+    revision: "0b8c5c73d5ccf69355be865b07831d47098dbff4"
+    method: "code-inspected"
+    locator: "scan_and_analyze, lines 3146–3167; add_scan_result, lines 3200–3221"
 ---
 
 # WiFi receive-side AP discovery records
@@ -37,6 +44,10 @@ At the pinned Marauder revision, [`RunAPScan`](https://github.com/justcallmekoko
 ## Separate scan-results example
 
 At the pinned Adversary revision, [`startScan`](https://github.com/isonimus/adversary/blob/79085dd76f45afa745f2c054eaa22df77cb3cbf2/src/modules/wifi/wifi_scanner.cpp#L134-L178) calls an asynchronous scan with arguments commented as requesting hidden networks and passive scanning. Its [`update` and `processResults` paths](https://github.com/isonimus/adversary/blob/79085dd76f45afa745f2c054eaa22df77cb3cbf2/src/modules/wifi/wifi_scanner.cpp#L211-L269) check completion and populate records including network name, signal strength, channel and an application security classification. This is a separate API-based source pattern, not the Marauder callback above. The comments and argument values do not independently establish driver semantics, zero radio transmissions, scan completeness, accurate security classification or device behavior; no execution was performed.
+
+## Repeated observation example
+
+In the pinned m5stick-nemo source, a [scan path](https://github.com/n0xa/m5stick-nemo/blob/0b8c5c73d5ccf69355be865b07831d47098dbff4/m5stick-nemo.ino#L3146-L3167) passes selected network identifiers and signal values to a buffer. The [buffer update](https://github.com/n0xa/m5stick-nemo/blob/0b8c5c73d5ccf69355be865b07831d47098dbff4/m5stick-nemo.ino#L3200-L3221) groups them by BSSID, updates signal and timestamp for a matching SSID, or adds a new record. This is a separate `code-inspected` dataflow, not an observed scan. A nearby source comment about passive scanning does not establish the driver behavior of the uncommented call; classification accuracy, retention, Cardputer applicability and runtime remain unknown.
 
 ## Cardputer ADV example (source-reported)
 
