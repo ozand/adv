@@ -78,6 +78,15 @@ A separate [Adversary scanner example](../../concepts/operations/wifi-scanning-r
 
 A separate [m5stick-nemo observation-buffer example](../../concepts/operations/wifi-scanning-records.md#repeated-observation-example) groups selected scan results and updates repeated observations. This static `code-inspected` path does not establish accurate classification, radio behavior or Cardputer compatibility.
 
+## Additional scan-result handling examples
+
+These static examples complement the existing [AP discovery](../../concepts/operations/wifi-scanning-records.md) and [authentication-label](../../concepts/operations/wifi-ap-auth-labels.md) concepts. They do not establish runtime behavior or increase a corpus coverage denominator.
+
+| Pinned source | Inspected pattern | Boundary |
+|---|---|---|
+| [GhostESP `ap_scan.c`, lines 221–308](https://github.com/ghostesp-revival/ghostesp/blob/fc6197c9b94d4d15bdba26caecb2e79a51125ccc/main/scans/wifi/ap_scan.c#L221-L308) | A per-channel loop skips scan errors, accumulates records up to a cap and compares BSSIDs before adding records; `code-inspected`. | Its `total_seen > acc_count` flag can reflect duplicates as well as a cap; neither successful complete scanning nor radio/device behavior follows. |
+| [Open WiFi Scanner `wifi.cpp`, lines 17–30](https://github.com/geo-tp/open-wifi-scanner/blob/e12ecf60bc06cac1e1524c25ecb599948a533792/src/wifi.cpp#L17-L30) and [110–122](https://github.com/geo-tp/open-wifi-scanner/blob/e12ecf60bc06cac1e1524c25ecb599948a533792/src/wifi.cpp#L110-L122) | One function builds network records from scan results; a separate function maps authentication-mode values to labels with an unknown fallback; `code-inspected`. | The cited functions alone do not establish that every record is displayed, label accuracy, protocol support or device compatibility. |
+
 ## Protocol and security-generation context
 
 The new [Wi-Fi generation and security context entity](../../entities/protocols/wifi-80211.md) uses two official Wi-Fi Alliance overviews and versioned ESP-IDF v5.2.3 documentation for the ESP32-C6 target. The Alliance overview names Wi-Fi 4/5/6/7 and describes selected features; its Wi-Fi 6 text says 6 GHz was introduced alongside 2.4/5 GHz, without distinguishing Wi-Fi 6E or saying all Wi-Fi 6 devices use 6 GHz. Its public security page summarizes WPA3 and PMF but does not compare WPA2. The versioned SDK page lists 802.11b/g/n/ax and WPA/WPA2/WPA3 families for ESP32-C6. These source-reported statements describe standards/product context and one SDK target; they do not prove support by any cited Cardputer firmware or device.
