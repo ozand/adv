@@ -6,6 +6,8 @@ issue: "https://github.com/ozand/adv/issues/100"
 sources:
   - resource: "https://github.com/justcallmekoko/esp32marauder"
     revision: "b2b9f92382eb60b39b8741be3b567e416cdbe672"
+  - resource: "https://github.com/lshaf/unigeek"
+    revision: "a5ad2f379e115d375d4e5978720f40c345464ed1"
 evidence:
   - claim: "An EAPOL-related callback inspects received packet fields, tracks an EAPOL count, and has packet-buffer append code in the bounded inspected branch."
     source: "https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/WiFiScan.cpp"
@@ -17,6 +19,11 @@ evidence:
     revision: "b2b9f92382eb60b39b8741be3b567e416cdbe672"
     method: "code-inspected"
     locator: "openFile and pcapOpen lines 61–82; add and append lines 93–128; WiFiScan.cpp lines 3738–3746 and 5178"
+  - claim: "A beacon callback can return when a ring is full; the consumer handles EAPOL records with bounded pending storage and conditionally calls a validation update."
+    source: "https://github.com/lshaf/unigeek/blob/a5ad2f379e115d375d4e5978720f40c345464ed1/firmware/src/screens/wifi/WifiEapolScreen.cpp"
+    revision: "a5ad2f379e115d375d4e5978720f40c345464ed1"
+    method: "code-inspected"
+    locator: "lines 670–673, 765–805 and 855–882"
 ---
 
 # WiFi EAPOL callback and buffer structure
@@ -28,6 +35,10 @@ At the pinned Marauder revision, `eapolSnifferCallback` processes received frame
 ## Conditional record path
 
 The scan requests PCAP initialization through `startPcap` ([scan](https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/WiFiScan.cpp#L5178-L5178), [wrapper](https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/WiFiScan.cpp#L3738-L3746)). The [buffer opening code](https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/Buffer.cpp#L61-L82) checks a saving setting and whether a destination is available. Its [append path](https://github.com/justcallmekoko/esp32marauder/blob/b2b9f92382eb60b39b8741be3b567e416cdbe672/esp32_marauder/Buffer.cpp#L93-L128) separately checks a packet-saving setting and can return without adding a record when its buffers are full. This static path does not establish that a record was saved, flushed, complete, or usable.
+
+## Separate queue and conditional processing example
+
+In pinned [UniGeek source](https://github.com/lshaf/unigeek/blob/a5ad2f379e115d375d4e5978720f40c345464ed1/firmware/src/screens/wifi/WifiEapolScreen.cpp#L855-L882), the beacon callback can return when its ring is full; the [consumer](https://github.com/lshaf/unigeek/blob/a5ad2f379e115d375d4e5978720f40c345464ed1/firmware/src/screens/wifi/WifiEapolScreen.cpp#L670-L673) advances through queued slots. Its [EAPOL branch](https://github.com/lshaf/unigeek/blob/a5ad2f379e115d375d4e5978720f40c345464ed1/firmware/src/screens/wifi/WifiEapolScreen.cpp#L765-L805) uses bounded pending storage when an SSID is unavailable, and calls a validation update only under a write-path flag. These are `code-inspected` structures: the flag does not establish successful persistence, validation correctness, complete handshakes, safe concurrency or device behavior.
 
 ## Relation and unknowns
 
