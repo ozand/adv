@@ -19,6 +19,10 @@ This is the entry point for Cardputer knowledge. Bounded research captures in `r
 
 Choose among four bounded task routes in the [task-oriented Cardputer knowledge navigation](wiki/reports/task-oriented-navigation.md). It links the released project profiles and source-inspected concepts, distinguishes evidence classes, and keeps prerequisites and unknowns explicit; it is not a ranking or completeness claim.
 
+### ESP32 implementation patterns
+
+- [Bounded communication code patterns](wiki/reports/esp32-code-patterns.md) — source-linked examples and explicit gaps; parameter extraction and data exfiltration remain unresolved under Issue #107.
+
 ### Issue #100 — WiFi
 
 - [Partial WiFi domain synthesis](wiki/reports/protocols/wifi.md) — bounded evidence matrix across three inspected source repositories; operation coverage and runtime/device questions remain open.
