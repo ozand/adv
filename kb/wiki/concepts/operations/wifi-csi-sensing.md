@@ -6,6 +6,8 @@ issue: "https://github.com/ozand/adv/issues/100"
 sources:
   - resource: "https://github.com/mohith-das/wiview"
     revision: "00de456ba58a5bcae4978e51c3c9095809801b7c"
+  - resource: "https://github.com/kvx17/kvxputer"
+    revision: "c2ff56f154c35eb13fcfab845fb30dcecf372449"
 evidence:
   - claim: "The README describes a CSI sensing application for Cardputer-Adv."
     source: "https://github.com/mohith-das/wiview/blob/00de456ba58a5bcae4978e51c3c9095809801b7c/README.md"
@@ -22,6 +24,11 @@ evidence:
     revision: "00de456ba58a5bcae4978e51c3c9095809801b7c"
     method: "code-inspected"
     locator: "callback lines 57–63; csi_latest_iq lines 140–155"
+  - claim: "A CSI callback derives amplitudes, whereas an ESP-NOW callback copies received bytes into the value array; the menu lists RSSI, CSI and ESP-NOW paths separately."
+    source: "https://github.com/kvx17/kvxputer/blob/c2ff56f154c35eb13fcfab845fb30dcecf372449/src/menu/wifi/csi_radar/csi_radar_menu.cpp"
+    revision: "c2ff56f154c35eb13fcfab845fb30dcecf372449"
+    method: "code-inspected"
+    locator: "lines 27–41, 52–63, 110–125 and 172–179"
 ---
 
 # Wi-Fi CSI capture: a bounded source example
@@ -29,6 +36,10 @@ evidence:
 The pinned [wiview README](https://github.com/mohith-das/wiview/blob/00de456ba58a5bcae4978e51c3c9095809801b7c/README.md#L1-L9) describes a Channel State Information (CSI) sensing application for Cardputer-Adv. This target and sensing behavior are upstream-reported, not independently observed.
 
 In the same revision, [initialization](https://github.com/mohith-das/wiview/blob/00de456ba58a5bcae4978e51c3c9095809801b7c/firmware/src/csi/csi_capture.cpp#L74-L104) configures CSI, registers a receive callback and enables CSI, returning failure when those calls fail. The [callback](https://github.com/mohith-das/wiview/blob/00de456ba58a5bcae4978e51c3c9095809801b7c/firmware/src/csi/csi_capture.cpp#L38-L69) calculates an aggregate from received I/Q pairs and retains a length-limited snapshot. These are static code structures, not evidence that initialization succeeds, CSI is received, or any person is detected.
+
+## Do not equate similarly labelled inputs
+
+In [`kvxputer` at `c2ff56f`](https://github.com/kvx17/kvxputer/blob/c2ff56f154c35eb13fcfab845fb30dcecf372449/src/menu/wifi/csi_radar/csi_radar_menu.cpp#L172-L179), the menu names RSSI hopping, station CSI and an ESP-NOW path separately. The [build-conditional CSI callback](https://github.com/kvx17/kvxputer/blob/c2ff56f154c35eb13fcfab845fb30dcecf372449/src/menu/wifi/csi_radar/csi_radar_menu.cpp#L27-L41) derives amplitudes from pairs of received buffer values; the [ESP-NOW receive callback](https://github.com/kvx17/kvxputer/blob/c2ff56f154c35eb13fcfab845fb30dcecf372449/src/menu/wifi/csi_radar/csi_radar_menu.cpp#L52-L63) instead copies received payload bytes into the displayed-value array. The [station path](https://github.com/kvx17/kvxputer/blob/c2ff56f154c35eb13fcfab845fb30dcecf372449/src/menu/wifi/csi_radar/csi_radar_menu.cpp#L110-L125) conditionally registers and enables the CSI callback. These are `code-inspected` structures, not proof that a build enables CSI, that payload bytes represent CSI, or that any path senses motion or works on a device. Similar menu labels do not make these inputs interchangeable.
 
 ## Snapshot handoff and uncertainty
 
