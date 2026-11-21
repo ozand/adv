@@ -78,6 +78,16 @@ A separate [Adversary scanner example](../../concepts/operations/wifi-scanning-r
 
 A separate [m5stick-nemo observation-buffer example](../../concepts/operations/wifi-scanning-records.md#repeated-observation-example) groups selected scan results and updates repeated observations. This static `code-inspected` path does not establish accurate classification, radio behavior or Cardputer compatibility.
 
+## Later cross-source distinctions
+
+These separately inspected examples extend—not replace—the historical three-source tables above. Follow the linked concepts for full immutable source paths, revisions and evidence limits; no corpus prevalence or device validation is implied.
+
+| Area | Synthesis | Boundary |
+|---|---|---|
+| [Beacon structures](../../concepts/operations/wifi-beacon-frame-helper.md) | Saturn updates a frame buffer and calls a transmit API; UniGeek's screen selects inputs and calls a separate helper. | Calling is not proof of over-the-air transmission; the UniGeek helper is not inspected in that example. |
+| [EAPOL processing](../../concepts/operations/wifi-eapol-observation.md) | UniGeek separates queue consumption and conditional pending/validation processing; a beacon branch can drop when its ring is full. Marauder separately uses a settings-gated buffer. | Neither example establishes successful persistence, complete handshakes or device behavior. |
+| [CSI and other inputs](../../concepts/operations/wifi-csi-sensing.md) | In kvxputer, build-conditional CSI amplitude processing is distinct from RSSI and an ESP-NOW callback copying received bytes. | Similar labels do not establish equivalent measurements, payload origin, sensing accuracy or hardware support. |
+
 ## Additional scan-result handling examples
 
 These static examples complement the existing [AP discovery](../../concepts/operations/wifi-scanning-records.md) and [authentication-label](../../concepts/operations/wifi-ap-auth-labels.md) concepts. They do not establish runtime behavior or increase a corpus coverage denominator.
