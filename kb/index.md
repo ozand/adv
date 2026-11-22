@@ -21,7 +21,7 @@ Choose among four bounded task routes in the [task-oriented Cardputer knowledge 
 
 ### ESP32 implementation patterns
 
-- [Bounded communication code patterns](wiki/reports/esp32-code-patterns.md) — source-linked examples and explicit gaps; parameter extraction and data exfiltration remain unresolved under Issue #107.
+- [Bounded communication code patterns](wiki/reports/esp32-code-patterns.md) — source-linked examples and explicit gaps; data exfiltration remains unresolved under Issue #107.
 
 ### Issue #100 — WiFi
 
