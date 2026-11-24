@@ -13,9 +13,9 @@ This partial map connects existing WiFi concepts with selected additional source
 
 | Question | Existing evidence | Boundary |
 |---|---|---|
-| How might WiFi observations be collected? | [Passive receive and deferred records](../concepts/operations/wifi-passive-monitoring.md); [AP discovery records](../concepts/operations/wifi-scanning-records.md). | A receive path does not prove the whole program transmits nothing, or retains every observation. |
-| Is a CSI-labelled input a motion measurement? | [CSI callback and distinct inputs](../concepts/operations/wifi-csi-sensing.md): source distinguishes CSI, RSSI and ESP-NOW paths. | Sensing accuracy, actual measurements and device support are unknown. |
-| Does a packet callback produce a complete retained capture? | [EAPOL callback and buffer](../concepts/operations/wifi-eapol-observation.md) includes conditional buffering. | Successful persistence, completeness and a usable capture are not established. |
+| How might WiFi observations be collected? | [Passive receive and deferred records](../../concepts/operations/wifi-passive-monitoring.md); [AP discovery records](../../concepts/operations/wifi-scanning-records.md). | A receive path does not prove the whole program transmits nothing, or retains every observation. |
+| Is a CSI-labelled input a motion measurement? | [CSI callback and distinct inputs](../../concepts/operations/wifi-csi-sensing.md): source distinguishes CSI, RSSI and ESP-NOW paths. | Sensing accuracy, actual measurements and device support are unknown. |
+| Does a packet callback produce a complete retained capture? | [EAPOL callback and buffer](../../concepts/operations/wifi-eapol-observation.md) includes conditional buffering. | Successful persistence, completeness and a usable capture are not established. |
 
 ## BLE observations are not necessarily passive
 

@@ -25,7 +25,7 @@ Choose among four bounded task routes in the [task-oriented Cardputer knowledge 
 
 ### Network monitoring and sensing
 
-- [Bounded monitoring and sensing map](wiki/reports/network-monitoring.md) — source-inspected WiFi, BLE, positioning and packet-record structures; device behavior and coverage remain unknown.
+- [Bounded monitoring and sensing map](wiki/reports/protocols/network-monitoring.md) — source-inspected WiFi, BLE, positioning and packet-record structures; device behavior and coverage remain unknown.
 
 ### Issue #100 — WiFi
 
