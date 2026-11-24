@@ -23,6 +23,10 @@ Choose among four bounded task routes in the [task-oriented Cardputer knowledge 
 
 - [Bounded communication code patterns](wiki/reports/esp32-code-patterns.md) — source-linked communication patterns; upload code does not prove unauthorized disclosure or device behavior.
 
+### Network monitoring and sensing
+
+- [Bounded monitoring and sensing map](wiki/reports/protocols/network-monitoring.md) — source-inspected WiFi, BLE, positioning and packet-record structures; device behavior and coverage remain unknown.
+
 ### Issue #100 — WiFi
 
 - [Partial WiFi domain synthesis](wiki/reports/protocols/wifi.md) — bounded evidence matrix across three inspected source repositories; operation coverage and runtime/device questions remain open.
